@@ -73,7 +73,7 @@ For a nontechnical admin, Nzuko AI should be delivered as a hosted pilot:
 
 The admin should not install Node, Docker, WAHA, or manage API keys.
 
-The login screen is customised for the Umuokoroji Family WhatsApp Group. To use a family-specific photo, place the approved image at `public/assets/umuokoroji-login.jpg` before hosting.
+The hosted app now starts from a neutral login screen so each user can choose their own approved WhatsApp group after sign-in.
 
 For hosting, use [HOSTING.md](./HOSTING.md). For the free route, use [FREE_HOSTING.md](./FREE_HOSTING.md). The short version: run Nzuko AI and WAHA on an always-on server, set `PUBLIC_APP_URL`, keep WAHA private, and give the admin only the hosted Nzuko AI link and passcode.
 

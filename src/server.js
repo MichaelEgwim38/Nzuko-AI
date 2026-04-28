@@ -47,13 +47,13 @@ const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, ''
 const adminPasscode = process.env.ADMIN_PASSCODE || '';
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const adminSessions = new Map();
-const initialApprovedGroupId = process.env.APPROVED_GROUP_ID || mockGroups[0].id;
+const initialApprovedGroupId = process.env.APPROVED_GROUP_ID || '';
 const initialCapturedMessages = await loadCapturedMessages({ groupId: initialApprovedGroupId, limit: 500 });
 
 const state = {
   settings: {
     approvedGroupId: initialApprovedGroupId,
-    approvedGroupName: process.env.APPROVED_GROUP_NAME || mockGroups[0].name,
+    approvedGroupName: process.env.APPROVED_GROUP_NAME || '',
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
     retentionDays: Number(process.env.RETENTION_DAYS || 14),
     postingMode: 'review-first',
@@ -574,8 +574,8 @@ async function handleApi(request, response) {
     const body = await readBody(request);
     state.settings = {
       ...state.settings,
-      approvedGroupId: body.approvedGroupId || state.settings.approvedGroupId,
-      approvedGroupName: body.approvedGroupName || state.settings.approvedGroupName,
+      approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
+      approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
       consentConfirmed: Boolean(body.consentConfirmed),
       retentionDays: Number(body.retentionDays || state.settings.retentionDays),
       connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',

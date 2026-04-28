@@ -23,8 +23,8 @@ export function timestampMs(message = {}) {
 
 export function defaultSettings() {
   return {
-    approvedGroupId: process.env.APPROVED_GROUP_ID || mockGroups[0].id,
-    approvedGroupName: process.env.APPROVED_GROUP_NAME || mockGroups[0].name,
+    approvedGroupId: process.env.APPROVED_GROUP_ID || '',
+    approvedGroupName: process.env.APPROVED_GROUP_NAME || '',
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
     retentionDays: Number(process.env.RETENTION_DAYS || 14),
     postingMode: 'review-first',

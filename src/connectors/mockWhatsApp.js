@@ -1,7 +1,7 @@
 export const mockGroups = [
   {
-    id: 'group-family-committee',
-    name: 'Family Committee',
+    id: 'group-demo-community',
+    name: 'Demo Community Group',
     memberCount: 42,
     consentStatus: 'pending',
   },

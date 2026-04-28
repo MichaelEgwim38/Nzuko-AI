@@ -121,7 +121,7 @@ async function loadStatus() {
   $('#connector').textContent = status.connector;
   $('#posting-mode').textContent = status.settings.postingMode;
   $('#audit-count').textContent = String(status.auditCount + status.capturedCount);
-  $('#group-name').value = status.settings.approvedGroupName;
+  $('#group-name').value = status.settings.approvedGroupName || '';
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
@@ -265,6 +265,10 @@ async function chooseGroup(event) {
 }
 
 function collapseGroupList(settings) {
+  if (!settings.approvedGroupId) {
+    $('#group-list').textContent = 'No approved group selected yet.';
+    return;
+  }
   $('#group-list').innerHTML = `
     <div class="selected-group">
       <span>
@@ -450,7 +454,7 @@ if (auth.authenticated) {
   showLogin(
     auth.userCount
       ? 'Sign in with your email and passcode.'
-      : 'Create the first account to open the dashboard.',
+      : 'Create the first account to open the dashboard. You will choose a WhatsApp group after sign-in.',
     auth.userCount ? 'login' : 'register'
   );
 }

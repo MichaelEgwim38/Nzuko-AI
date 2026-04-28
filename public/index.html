@@ -9,21 +9,33 @@
   <body>
     <main id="login-screen" class="login-shell" hidden>
       <section class="login-panel">
-        <div class="login-art" aria-label="Umuokoroji family visual">
+        <div class="login-art" aria-label="Nzuko AI platform introduction">
           <div class="login-art-main">
             <p>Nzuko AI</p>
-            <span>AI minutes for group chats.</span>
+            <span>Review-first AI minutes for WhatsApp groups, community teams, associations, and clubs.</span>
           </div>
-          <div class="login-symbol-strip">
-            <img alt="Heap of yam tubers" src="/assets/yam-heap.jpg" />
-            <img alt="Palm fruit heap" src="/assets/palm-fruit.jpg" />
-            <img alt="Traditional palm-wine keg" src="/assets/palmwine-keg.jpg" />
-            <img alt="Kola nut" src="/assets/kola-nut.jpg" />
+          <div class="login-feature-strip" aria-label="Product highlights">
+            <article>
+              <strong>Choose your group</strong>
+              <span>Connect the WhatsApp group you manage.</span>
+            </article>
+            <article>
+              <strong>Review first</strong>
+              <span>Drafts stay editable before anything is posted.</span>
+            </article>
+            <article>
+              <strong>Capture voice notes</strong>
+              <span>Transcribe and translate audio with human review.</span>
+            </article>
+            <article>
+              <strong>Keep an audit trail</strong>
+              <span>Approved minutes remain searchable and organized.</span>
+            </article>
           </div>
         </div>
         <section class="login-form">
           <p class="eyebrow">Review-first pilot</p>
-          <h1 class="login-title">Umuokoroji Family WhatsApp Group</h1>
+          <h1 class="login-title">Sign in to manage your WhatsApp group minutes</h1>
           <p class="powered-by">Powered by Nzuko AI</p>
           <div class="button-row">
             <button id="show-login-mode" class="button secondary" type="button">Sign in</button>
@@ -56,13 +68,10 @@
             <button class="button" type="submit">Create account</button>
           </form>
           <p class="login-status" id="login-status">Approved access only.</p>
-          <a class="site-map-card" href="/assets/community-site-map.jpg" target="_blank" rel="noreferrer">
-            <img alt="Umuokoroji community site map preview" src="/assets/community-site-map.jpg" />
-            <span>
-              <strong>Community site map</strong>
-              <small>Click</small>
-            </span>
-          </a>
+          <div class="login-note">
+            <strong>Global-ready setup</strong>
+            <small>Choose the group you want after sign-in. No default WhatsApp group is preselected.</small>
+          </div>
         </section>
       </section>
     </main>
@@ -75,12 +84,12 @@
       <section class="hero">
         <p class="eyebrow">Review-first pilot</p>
         <h1>Nzuko AI</h1>
-        <p class="lead">Customised for the Umuokoroji Family WhatsApp Group. Capture decisions, action items, unresolved points, and voice-note summaries for one approved group.</p>
-        <div class="symbol-strip" aria-label="Nzuko AI visual symbols">
-          <img alt="Heap of yam tubers" src="/assets/yam-heap.jpg" />
-          <img alt="Palm fruit heap" src="/assets/palm-fruit.jpg" />
-          <img alt="Traditional palm-wine keg" src="/assets/palmwine-keg.jpg" />
-          <img alt="Kola nut" src="/assets/kola-nut.jpg" />
+        <p class="lead">Capture decisions, action items, unresolved points, and reviewed voice-note summaries for the WhatsApp group you choose.</p>
+        <div class="hero-pillars" aria-label="Platform capabilities">
+          <div><strong>One chosen group</strong><span>Select a group after connecting WAHA.</span></div>
+          <div><strong>Human review</strong><span>Check drafts before anything goes back to chat.</span></div>
+          <div><strong>Voice-note support</strong><span>Transcribe, translate, and flag uncertain audio.</span></div>
+          <div><strong>Audit history</strong><span>Keep approved minutes visible for follow-up.</span></div>
         </div>
         <div class="status-grid">
           <div>
@@ -117,12 +126,12 @@
           <div>
             <p class="eyebrow">Consent boundary</p>
             <h2>Approved group only</h2>
-          </div>
-          <button id="load-sample" class="button secondary">Load demo sample</button>
+        </div>
+        <button id="load-sample" class="button secondary">Load demo sample</button>
         </div>
         <label>
           Group name
-          <input id="group-name" value="Family Committee" />
+          <input id="group-name" placeholder="Shows after you choose a WhatsApp group" />
         </label>
         <label>
           Connector mode

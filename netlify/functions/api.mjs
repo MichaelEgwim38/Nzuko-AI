@@ -547,8 +547,8 @@ export default async function handler(request) {
       const state = await loadAppState();
       state.settings = {
         ...state.settings,
-        approvedGroupId: body.approvedGroupId || state.settings.approvedGroupId,
-        approvedGroupName: body.approvedGroupName || state.settings.approvedGroupName,
+        approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
+        approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
         retentionDays: Number(body.retentionDays || state.settings.retentionDays),
         connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',
