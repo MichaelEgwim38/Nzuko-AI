@@ -64,9 +64,20 @@ function ensureSupabase() {
 
 async function completeSocialSession() {
   const supabase = ensureSupabase();
-  const code = new URL(window.location.href).searchParams.get('code');
+  const currentUrl = new URL(window.location.href);
+  const code = currentUrl.searchParams.get('code');
+  const hashParams = new URLSearchParams(currentUrl.hash.startsWith('#') ? currentUrl.hash.slice(1) : currentUrl.hash);
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      throw error;
+    }
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (hashParams.get('access_token') && hashParams.get('refresh_token')) {
+    const { error } = await supabase.auth.setSession({
+      access_token: hashParams.get('access_token'),
+      refresh_token: hashParams.get('refresh_token'),
+    });
     if (error) {
       throw error;
     }

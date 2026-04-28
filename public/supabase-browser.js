@@ -13,6 +13,7 @@ export function browserSupabase({ url, publishableKey }) {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        flowType: 'pkce',
         detectSessionInUrl: false,
       },
     });
