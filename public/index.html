@@ -87,225 +87,340 @@
       </section>
     </main>
 
-    <main id="app-shell" class="shell" hidden>
-      <nav class="app-topbar" aria-label="Dashboard navigation">
-        <div class="brand-lockup app-brand" aria-label="Nzuko AI dashboard">
-          <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
-          <div class="brand-lockup-copy">
-            <div class="brand-lockup-wordmark"><span class="brand-word">Nzuko</span> <span class="brand-ai">AI</span></div>
-            <div class="brand-lockup-tagline">MEETING MINUTES. <span>COMMUNITY.</span> CLARITY.</div>
+    <main id="app-shell" class="shell dashboard-shell" hidden>
+      <div class="dashboard-frame">
+        <nav class="app-topbar" aria-label="Dashboard navigation">
+          <div class="brand-lockup app-brand" aria-label="Nzuko AI dashboard">
+            <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
+            <div class="brand-lockup-copy">
+              <div class="brand-lockup-wordmark"><span class="brand-word">Nzuko</span> <span class="brand-ai">AI</span></div>
+              <div class="brand-lockup-tagline">MEETING MINUTES. <span>COMMUNITY.</span> CLARITY.</div>
+            </div>
           </div>
-        </div>
-        <button id="back-to-login" class="button secondary compact-button" type="button">Back to login</button>
-      </nav>
-      <section class="hero">
-        <p class="eyebrow">WhatsApp group minutes</p>
-        <h1>Nzuko AI</h1>
-        <p class="lead">Capture decisions, action items, unresolved points, and reviewed voice-note summaries for the WhatsApp group you choose.</p>
-        <div class="hero-pillars" aria-label="Platform capabilities">
-          <div><strong>One chosen group</strong><span>Select a group after connecting WAHA.</span></div>
-          <div><strong>Human review</strong><span>Check drafts before anything goes back to chat.</span></div>
-          <div><strong>Voice-note support</strong><span>Transcribe, translate, and flag uncertain audio.</span></div>
-          <div><strong>Audit history</strong><span>Keep approved minutes visible for follow-up.</span></div>
-        </div>
-        <div class="status-grid">
-          <div>
-            <span>Connector</span>
-            <strong id="connector">Loading</strong>
-          </div>
-          <div>
-            <span>Posting</span>
-            <strong id="posting-mode">Review first</strong>
-          </div>
-          <div>
-            <span>Audit log</span>
-            <strong id="audit-count">0</strong>
-          </div>
-        </div>
-        <button id="logout" class="button secondary logout-button" type="button">Back to login</button>
-      </section>
+          <button id="back-to-login" class="button secondary compact-button" type="button">Back to login</button>
+        </nav>
 
-      <section class="panel" id="handover">
-        <p class="eyebrow">Plug-and-play handover</p>
-        <h2>What the group admin does</h2>
-        <ol class="setup-steps">
-          <li>Open the secure Nzuko AI link.</li>
-          <li>Confirm that the group approved the pilot.</li>
-          <li>Scan the WhatsApp Linked Devices QR with the approved account.</li>
-          <li>Select only the approved WhatsApp group.</li>
-          <li>Review each draft before anything is posted back to the group.</li>
-        </ol>
-        <p class="hint">No code, Docker, server setup, or API keys should be handled by a normal group admin.</p>
-      </section>
+        <div class="dashboard-layout">
+          <aside class="dashboard-sidebar">
+            <nav class="sidebar-nav" aria-label="Primary dashboard sections">
+              <a class="sidebar-link active" href="#overview">Dashboard</a>
+              <a class="sidebar-link" href="#connect">Groups</a>
+              <a class="sidebar-link" href="#messages">Meetings</a>
+              <a class="sidebar-link" href="#review">Action items</a>
+              <a class="sidebar-link" href="#privacy">Decisions</a>
+              <a class="sidebar-link" href="#audit">Recent activity</a>
+              <a class="sidebar-link" href="#handover">Getting started</a>
+            </nav>
 
-      <section class="panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Consent boundary</p>
-            <h2>Approved group only</h2>
-          </div>
-          <button id="load-sample" class="button secondary">Load demo sample</button>
-        </div>
-        <label>
-          Group name
-          <input id="group-name" placeholder="Shows after you choose a WhatsApp group" />
-        </label>
-        <label>
-          Connector mode
-          <select id="connector-mode">
-            <option value="mock">Mock demo</option>
-            <option value="waha">WAHA linked device</option>
-          </select>
-        </label>
-        <label class="check-row">
-          <input id="consent-confirmed" type="checkbox" />
-          <span>Admin and group consent have been confirmed for this pilot.</span>
-        </label>
-        <button id="save-settings" class="button">Save consent settings</button>
-        <p class="hint" id="settings-status">Consent must be confirmed before approving a recap.</p>
-      </section>
+            <section class="sidebar-card">
+              <p class="eyebrow">AI is ready</p>
+              <strong>Nzuko AI is actively monitoring your groups and summarizing conversations.</strong>
+              <a href="#audit">View activity</a>
+            </section>
 
-      <section class="panel" id="connect">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">WAHA bridge</p>
-            <h2>Connect the approved account</h2>
-          </div>
-          <button id="check-waha" class="button secondary">Check WAHA</button>
-        </div>
-        <div class="field-grid">
-          <label>
-            WAHA URL
-            <input id="waha-base-url" value="http://localhost:3000" />
-          </label>
-          <label>
-            Session
-            <input id="waha-session" value="default" />
-          </label>
-        </div>
-        <label>
-          API key
-          <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
-        </label>
-        <div class="button-row">
-          <button id="start-waha" class="button">Start session</button>
-          <button id="show-qr" class="button secondary">Show QR</button>
-          <button id="load-groups" class="button">Load WhatsApp groups</button>
-          <button id="pull-waha" class="button secondary">Pull recent messages</button>
-          <button id="pull-today" class="button">Pull today&apos;s messages</button>
-          <button id="configure-webhook" class="button secondary">Enable live capture</button>
-        </div>
-        <div id="qr-box" class="qr-box">Start the session, then show the QR and scan it from WhatsApp Linked Devices.</div>
-        <p class="hint">For a hosted pilot, these connection fields should be prepared by the operator before the admin joins.</p>
-        <div class="link-row">
-          <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
-        </div>
-        <div id="group-list" class="group-list">No WAHA groups loaded yet.</div>
-        <p class="hint" id="waha-status">WAHA is optional until you run a local WAHA server and scan the approved account QR.</p>
-      </section>
+            <section class="sidebar-account" aria-label="Workspace details">
+              <div class="sidebar-account-badge">R</div>
+              <div>
+                <strong>Rohari Group LTD</strong>
+                <span>Admin workspace</span>
+              </div>
+            </section>
+          </aside>
 
-      <section class="panel" id="messages">
-        <p class="eyebrow">Message capture</p>
-        <h2>Today&apos;s group material</h2>
-        <label>
-          Chat messages
-          <textarea id="chat-text" rows="9"></textarea>
-        </label>
-        <label>
-          Voice-note transcripts
-          <textarea id="voice-notes" rows="6"></textarea>
-        </label>
-        <label>
-          Voice-note language
-          <select id="transcribe-language">
-            <option value="auto">Auto detect</option>
-            <option value="en">English</option>
-            <option value="pl">Polish</option>
-            <option value="ro">Romanian</option>
-            <option value="pa">Punjabi</option>
-            <option value="ur">Urdu</option>
-            <option value="igbo">Igbo</option>
-            <option value="yoruba">Yoruba</option>
-            <option value="zimbabwe-shona">Zimbabwe (Shona)</option>
-            <option value="ghana-twi">Ghana (Twi)</option>
-            <option value="india-hindi">India (Hindi)</option>
-          </select>
-        </label>
-        <p class="hint">Igbo voice-note transcripts are marked for human review before any recap is posted. On Netlify, transcription may complete a short time after capture.</p>
-        <div class="range-tools">
-          <div class="field-grid">
-            <label>
-              Summary period
-              <select id="summary-preset">
-                <option value="today">Today</option>
-                <option value="week">This week</option>
-                <option value="month">This month</option>
-                <option value="year">This year</option>
-                <option value="custom">Custom dates</option>
-              </select>
-            </label>
-            <label>
-              From
-              <input id="summary-from" type="date" />
-            </label>
-            <label>
-              To
-              <input id="summary-to" type="date" />
-            </label>
-          </div>
-          <div class="button-row">
-            <button id="load-range" class="button secondary">Load stored period</button>
-            <button id="generate-range" class="button">Generate period recap</button>
-          </div>
-          <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
-        </div>
-        <div class="button-row">
-          <button id="generate" class="button">Generate recap</button>
-          <button id="purge" class="button secondary">Clear raw draft</button>
-        </div>
-      </section>
+          <section class="dashboard-main">
+            <section class="hero dashboard-hero" id="overview">
+              <div class="dashboard-hero-copy">
+                <p class="eyebrow">Welcome back</p>
+                <h1>Nzuko AI</h1>
+                <p class="lead">We capture decisions, action items, and voice-note summaries from your WhatsApp meetings so your community stays aligned and nothing gets missed.</p>
+                <div class="dashboard-hero-actions">
+                  <a class="button" href="#connect">Connect WhatsApp group</a>
+                  <a class="button secondary light-secondary" href="#messages">Upload voice note</a>
+                </div>
+              </div>
 
-      <section class="panel" id="review">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">WhatsApp post draft</p>
-            <h2>Review before posting</h2>
-          </div>
-          <button id="approve" class="button">Approve post</button>
+              <div class="dashboard-hero-visual" aria-hidden="true">
+                <div class="hero-visual-card">
+                  <div class="hero-visual-wave"></div>
+                  <div class="hero-visual-badges">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-grid dashboard-status-grid">
+                <div>
+                  <span>Connector</span>
+                  <strong id="connector">Loading</strong>
+                  <small>Connection status</small>
+                </div>
+                <div>
+                  <span>Audit log</span>
+                  <strong id="audit-count">0</strong>
+                  <small>Approved entries</small>
+                </div>
+                <div>
+                  <span>Posting</span>
+                  <strong id="posting-mode">Review first</strong>
+                  <small>Current mode</small>
+                </div>
+                <div>
+                  <span>Active groups</span>
+                  <strong>1</strong>
+                  <small>Approved scope</small>
+                </div>
+              </div>
+              <button id="logout" class="button secondary logout-button" type="button">Back to login</button>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Meetings over time</p>
+                  <h2>Activity trend</h2>
+                </div>
+                <span class="chart-range">Last 7 days</span>
+              </div>
+              <svg class="trend-chart" viewBox="0 0 760 220" aria-hidden="true">
+                <defs>
+                  <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(111, 174, 69, 0.22)"/>
+                    <stop offset="100%" stop-color="rgba(111, 174, 69, 0)"/>
+                  </linearGradient>
+                </defs>
+                <path class="trend-area" d="M20 170 C80 150, 120 110, 180 120 S300 155, 360 132 S470 92, 540 114 S650 122, 720 88 L720 210 L20 210 Z"></path>
+                <path class="trend-line" d="M20 170 C80 150, 120 110, 180 120 S300 155, 360 132 S470 92, 540 114 S650 122, 720 88"></path>
+                <circle cx="720" cy="88" r="6"></circle>
+              </svg>
+            </section>
+
+            <section class="dashboard-steps-strip">
+              <div>
+                <strong>1</strong>
+                <span>Connect a WhatsApp group</span>
+              </div>
+              <div>
+                <strong>2</strong>
+                <span>Capture your first meeting</span>
+              </div>
+              <div>
+                <strong>3</strong>
+                <span>Review insights</span>
+              </div>
+            </section>
+
+            <div class="workspace-stack">
+              <section class="panel" id="handover">
+                <p class="eyebrow">Plug-and-play handover</p>
+                <h2>What the group admin does</h2>
+                <ol class="setup-steps">
+                  <li>Open the secure Nzuko AI link.</li>
+                  <li>Confirm that the group approved the pilot.</li>
+                  <li>Scan the WhatsApp Linked Devices QR with the approved account.</li>
+                  <li>Select only the approved WhatsApp group.</li>
+                  <li>Review each draft before anything is posted back to the group.</li>
+                </ol>
+                <p class="hint">No code, Docker, server setup, or API keys should be handled by a normal group admin.</p>
+              </section>
+
+              <section class="panel">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Consent boundary</p>
+                    <h2>Approved group only</h2>
+                  </div>
+                  <button id="load-sample" class="button secondary">Load demo sample</button>
+                </div>
+                <label>
+                  Group name
+                  <input id="group-name" placeholder="Shows after you choose a WhatsApp group" />
+                </label>
+                <label>
+                  Connector mode
+                  <select id="connector-mode">
+                    <option value="mock">Mock demo</option>
+                    <option value="waha">WAHA linked device</option>
+                  </select>
+                </label>
+                <label class="check-row">
+                  <input id="consent-confirmed" type="checkbox" />
+                  <span>Admin and group consent have been confirmed for this pilot.</span>
+                </label>
+                <button id="save-settings" class="button">Save consent settings</button>
+                <p class="hint" id="settings-status">Consent must be confirmed before approving a recap.</p>
+              </section>
+
+              <section class="panel" id="connect">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">WAHA bridge</p>
+                    <h2>Connect the approved account</h2>
+                  </div>
+                  <button id="check-waha" class="button secondary">Check WAHA</button>
+                </div>
+                <div class="field-grid">
+                  <label>
+                    WAHA URL
+                    <input id="waha-base-url" value="http://localhost:3000" />
+                  </label>
+                  <label>
+                    Session
+                    <input id="waha-session" value="default" />
+                  </label>
+                </div>
+                <label>
+                  API key
+                  <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
+                </label>
+                <div class="button-row">
+                  <button id="start-waha" class="button">Start session</button>
+                  <button id="show-qr" class="button secondary">Show QR</button>
+                  <button id="load-groups" class="button">Load WhatsApp groups</button>
+                  <button id="pull-waha" class="button secondary">Pull recent messages</button>
+                  <button id="pull-today" class="button">Pull today&apos;s messages</button>
+                  <button id="configure-webhook" class="button secondary">Enable live capture</button>
+                </div>
+                <div id="qr-box" class="qr-box">Start the session, then show the QR and scan it from WhatsApp Linked Devices.</div>
+                <p class="hint">For a hosted pilot, these connection fields should be prepared by the operator before the admin joins.</p>
+                <div class="link-row">
+                  <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
+                </div>
+                <div id="group-list" class="group-list">No WAHA groups loaded yet.</div>
+                <p class="hint" id="waha-status">WAHA is optional until you run a local WAHA server and scan the approved account QR.</p>
+              </section>
+
+              <section class="panel" id="messages">
+                <p class="eyebrow">Message capture</p>
+                <h2>Today&apos;s group material</h2>
+                <label>
+                  Chat messages
+                  <textarea id="chat-text" rows="9"></textarea>
+                </label>
+                <label>
+                  Voice-note transcripts
+                  <textarea id="voice-notes" rows="6"></textarea>
+                </label>
+                <label>
+                  Voice-note language
+                  <select id="transcribe-language">
+                    <option value="auto">Auto detect</option>
+                    <option value="en">English</option>
+                    <option value="pl">Polish</option>
+                    <option value="ro">Romanian</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="ur">Urdu</option>
+                    <option value="igbo">Igbo</option>
+                    <option value="yoruba">Yoruba</option>
+                    <option value="zimbabwe-shona">Zimbabwe (Shona)</option>
+                    <option value="ghana-twi">Ghana (Twi)</option>
+                    <option value="india-hindi">India (Hindi)</option>
+                  </select>
+                </label>
+                <p class="hint">Igbo voice-note transcripts are marked for human review before any recap is posted. On Netlify, transcription may complete a short time after capture.</p>
+                <div class="range-tools">
+                  <div class="field-grid">
+                    <label>
+                      Summary period
+                      <select id="summary-preset">
+                        <option value="today">Today</option>
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="year">This year</option>
+                        <option value="custom">Custom dates</option>
+                      </select>
+                    </label>
+                    <label>
+                      From
+                      <input id="summary-from" type="date" />
+                    </label>
+                    <label>
+                      To
+                      <input id="summary-to" type="date" />
+                    </label>
+                  </div>
+                  <div class="button-row">
+                    <button id="load-range" class="button secondary">Load stored period</button>
+                    <button id="generate-range" class="button">Generate period recap</button>
+                  </div>
+                  <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
+                </div>
+                <div class="button-row">
+                  <button id="generate" class="button">Generate recap</button>
+                  <button id="purge" class="button secondary">Clear raw draft</button>
+                </div>
+              </section>
+
+              <section class="panel" id="review">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">WhatsApp post draft</p>
+                    <h2>Review before posting</h2>
+                  </div>
+                  <button id="approve" class="button">Approve post</button>
+                </div>
+                <pre id="recap-output">Generate a recap to preview the WhatsApp-ready post.</pre>
+                <p class="hint" id="approve-status">Posting uses a mock connector until WAHA is wired.</p>
+              </section>
+
+              <section class="panel" id="privacy">
+                <p class="eyebrow">Privacy controls</p>
+                <h2>Rules for the pilot</h2>
+                <ul class="rules">
+                  <li>Only the approved group is processed.</li>
+                  <li>Private chats are out of scope.</li>
+                  <li>Voice notes are transcribed only with group consent.</li>
+                  <li>Raw drafts can be cleared while approved minutes stay in the audit log.</li>
+                  <li>Automatic posting stays off until the pilot proves trust.</li>
+                </ul>
+                <ol class="setup-steps">
+                  <li>Use a hosted Nzuko AI link prepared by the operator.</li>
+                  <li>Scan the QR only with the approved WhatsApp account.</li>
+                  <li>Select only the approved group.</li>
+                  <li>Review the draft minutes before posting.</li>
+                  <li>Ask for corrections in the group within the review window.</li>
+                </ol>
+              </section>
+            </div>
+          </section>
+
+          <aside class="dashboard-rail">
+            <section class="panel rail-card" id="audit">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Recent activity</p>
+                  <h2>Audit stream</h2>
+                </div>
+                <a class="rail-link" href="#review">View all</a>
+              </div>
+              <div id="audit-log" class="audit-log">No approved recaps yet.</div>
+            </section>
+
+            <section class="panel rail-card">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Integrations</p>
+                  <h2>Connected tools</h2>
+                </div>
+                <a class="rail-link" href="#connect">Manage all</a>
+              </div>
+              <div class="integration-list">
+                <div><strong>WhatsApp</strong><span>Connected</span></div>
+                <div><strong>Google Drive</strong><span>Ready</span></div>
+                <div><strong>Voice notes</strong><span>Monitored</span></div>
+                <div><strong>Posting</strong><span>Review first</span></div>
+              </div>
+            </section>
+          </aside>
         </div>
-        <pre id="recap-output">Generate a recap to preview the WhatsApp-ready post.</pre>
-        <p class="hint" id="approve-status">Posting uses a mock connector until WAHA is wired.</p>
-      </section>
 
-      <section class="panel" id="privacy">
-        <p class="eyebrow">Privacy controls</p>
-        <h2>Rules for the pilot</h2>
-        <ul class="rules">
-          <li>Only the approved group is processed.</li>
-          <li>Private chats are out of scope.</li>
-          <li>Voice notes are transcribed only with group consent.</li>
-          <li>Raw drafts can be cleared while approved minutes stay in the audit log.</li>
-          <li>Automatic posting stays off until the pilot proves trust.</li>
-        </ul>
-        <ol class="setup-steps">
-          <li>Use a hosted Nzuko AI link prepared by the operator.</li>
-          <li>Scan the QR only with the approved WhatsApp account.</li>
-          <li>Select only the approved group.</li>
-          <li>Review the draft minutes before posting.</li>
-          <li>Ask for corrections in the group within the review window.</li>
-        </ol>
-      </section>
-
-      <section class="panel" id="audit">
-        <p class="eyebrow">Approved minutes</p>
-        <h2>Audit log</h2>
-        <div id="audit-log" class="audit-log">No approved recaps yet.</div>
-      </section>
-      <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
-        <a href="#connect">Connect</a>
-        <a href="#messages">Messages</a>
-        <a href="#review">Review</a>
-      </nav>
+        <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
+          <a href="#connect">Connect</a>
+          <a href="#messages">Messages</a>
+          <a href="#review">Review</a>
+        </nav>
+      </div>
     </main>
     <script src="/app.js" type="module"></script>
   </body>
