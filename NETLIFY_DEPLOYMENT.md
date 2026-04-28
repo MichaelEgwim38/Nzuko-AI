@@ -42,6 +42,8 @@ Add these before production use:
 
 - `ADMIN_SESSION_SECRET`
 - `BACKGROUND_TASK_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
 - `WAHA_BASE_URL`
 - `WAHA_SESSION`
 - `WAHA_API_KEY` if your WAHA server needs it
@@ -66,7 +68,26 @@ Use strong random values for these two:
 - `ADMIN_SESSION_SECRET`
 - `BACKGROUND_TASK_SECRET`
 
-`ADMIN_PASSCODE` is now optional. The app supports user signup with email and passcode. Only set `ADMIN_PASSCODE` if you want a temporary legacy fallback login.
+`ADMIN_PASSCODE` is optional and only useful as a temporary legacy fallback.
+
+## Supabase social login setup
+
+This deploy now expects Supabase Auth for Google and Microsoft login.
+
+1. Create a Supabase project.
+2. In Supabase, go to `Authentication` -> `URL Configuration`.
+3. Set the `Site URL` to your Netlify app URL.
+4. Add your Netlify app URL to the redirect allow list.
+5. Enable `Google` in Supabase Auth providers and add the Google client ID and secret.
+6. Enable `Azure (Microsoft)` in Supabase Auth providers and add the Azure client ID and secret.
+7. Copy your project URL and publishable key into Netlify as:
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+
+Provider setup references:
+
+- Google: https://supabase.com/docs/guides/auth/social-login/auth-google
+- Azure (Microsoft): https://supabase.com/docs/guides/auth/social-login/auth-azure
 
 Example PowerShell commands:
 

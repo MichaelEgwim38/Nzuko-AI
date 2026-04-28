@@ -12,37 +12,17 @@
         <div class="auth-mark" aria-hidden="true">AI</div>
         <p class="eyebrow auth-eyebrow">Nzuko AI</p>
         <h1 class="login-title">Sign in to your workspace</h1>
-        <p class="auth-subtitle">Create an account or sign in to manage WhatsApp group minutes in one place.</p>
-        <div class="auth-switch" role="tablist" aria-label="Authentication mode">
-          <button id="show-register-mode" class="auth-switch-button" type="button">Create account</button>
-          <button id="show-login-mode" class="auth-switch-button" type="button">Sign in</button>
+        <p class="auth-subtitle">Choose a provider to sign in and manage WhatsApp group minutes in one place.</p>
+        <div class="provider-buttons" aria-label="Social login providers">
+          <button id="continue-google" class="provider-button" type="button">
+            <span class="provider-icon google-icon" aria-hidden="true">G</span>
+            <span>Continue with Google</span>
+          </button>
+          <button id="continue-microsoft" class="provider-button" type="button">
+            <span class="provider-icon microsoft-icon" aria-hidden="true">M</span>
+            <span>Continue with Microsoft</span>
+          </button>
         </div>
-        <form id="user-login" class="auth-form" hidden>
-          <label>
-            Email address
-            <input id="login-email" type="email" autocomplete="email" placeholder="name@example.com" />
-          </label>
-          <label>
-            Passcode
-            <input id="login-passcode" type="password" autocomplete="current-password" placeholder="Enter your passcode" />
-          </label>
-          <button class="button auth-submit" type="submit">Sign in</button>
-        </form>
-        <form id="user-register" class="auth-form" hidden>
-          <label>
-            Full name
-            <input id="register-name" type="text" autocomplete="name" placeholder="Enter your full name" />
-          </label>
-          <label>
-            Email address
-            <input id="register-email" type="email" autocomplete="email" placeholder="name@example.com" />
-          </label>
-          <label>
-            Create passcode
-            <input id="register-passcode" type="password" autocomplete="new-password" placeholder="Create a passcode" />
-          </label>
-          <button class="button auth-submit" type="submit">Create account</button>
-        </form>
         <p class="login-status" id="login-status">Choose a sign-in option to continue.</p>
         <p class="auth-footnote">No default WhatsApp group is preselected. You will choose your group after sign-in.</p>
       </section>

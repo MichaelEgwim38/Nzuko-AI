@@ -1,6 +1,9 @@
+import { browserSupabase } from './supabase-browser.js';
+
 const $ = (selector) => document.querySelector(selector);
 let currentApprovedGroupId = '';
-let authMode = 'login';
+let supabaseClient = null;
+let authConfig = null;
 
 function syncLanguageOptions(options = [], selected = 'auto') {
   const select = $('#transcribe-language');
@@ -33,16 +36,9 @@ async function api(path, options = {}) {
   return payload;
 }
 
-function setAuthMode(mode) {
-  authMode = mode === 'register' ? 'register' : 'login';
-  $('#user-login').hidden = authMode !== 'login';
-  $('#user-register').hidden = authMode !== 'register';
-}
-
-function showLogin(message = '', mode = authMode) {
+function showLogin(message = '') {
   $('#login-screen').hidden = false;
   $('#app-shell').hidden = true;
-  setAuthMode(mode);
   if (message) {
     $('#login-status').textContent = message;
   }
@@ -53,55 +49,85 @@ function showApp() {
   $('#app-shell').hidden = false;
 }
 
-async function login(event) {
-  event.preventDefault();
-  try {
-    const email = $('#login-email').value.trim();
-    const passcode = $('#login-passcode').value;
-    const payload = await api('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, passcode }),
+function ensureSupabase() {
+  if (!authConfig?.configured) {
+    throw new Error('Social login is not configured yet. Add Supabase settings in Netlify first.');
+  }
+  if (!supabaseClient) {
+    supabaseClient = browserSupabase({
+      url: authConfig.supabaseUrl,
+      publishableKey: authConfig.supabasePublishableKey,
     });
-    $('#login-email').value = '';
-    $('#login-passcode').value = '';
-    showApp();
-    $('#login-status').textContent = payload.message;
-    await startApp();
+  }
+  return supabaseClient;
+}
+
+async function completeSocialSession() {
+  const supabase = ensureSupabase();
+  const code = new URL(window.location.href).searchParams.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      throw error;
+    }
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw error;
+  }
+  const accessToken = data.session?.access_token;
+  if (!accessToken) {
+    return false;
+  }
+
+  await api('/api/auth/social-session', {
+    method: 'POST',
+    body: JSON.stringify({ accessToken }),
+  });
+  return true;
+}
+
+async function startProviderLogin(provider) {
+  try {
+    const supabase = ensureSupabase();
+    const options = {
+      redirectTo: window.location.origin,
+    };
+    if (provider === 'azure') {
+      options.scopes = 'email';
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options,
+    });
+    if (error) throw error;
   } catch (error) {
-    showLogin(error.message, 'login');
+    showLogin(error.message);
   }
 }
 
-async function register(event) {
-  event.preventDefault();
-  try {
-    const fullName = $('#register-name').value.trim();
-    const email = $('#register-email').value.trim();
-    const passcode = $('#register-passcode').value;
-    const payload = await api('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ fullName, email, passcode }),
-    });
-    $('#register-name').value = '';
-    $('#register-email').value = '';
-    $('#register-passcode').value = '';
-    showApp();
-    $('#login-status').textContent = payload.message;
-    await startApp();
-  } catch (error) {
-    showLogin(error.message, 'register');
-  }
+async function continueWithGoogle() {
+  await startProviderLogin('google');
+}
+
+async function continueWithMicrosoft() {
+  await startProviderLogin('azure');
 }
 
 async function logout() {
   try {
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    }
     await api('/api/auth/logout', { method: 'POST', body: '{}' });
   } catch {
     // Still return the browser to the login screen if the session already expired.
   }
   clearDraftFields();
   window.scrollTo({ top: 0, behavior: 'instant' });
-  showLogin('Sign in to continue.', 'login');
+  showLogin('Choose a sign-in option to continue.');
 }
 
 async function startApp() {
@@ -438,23 +464,29 @@ $('#generate-range').addEventListener('click', generateRangeRecap);
 $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
-$('#user-login').addEventListener('submit', login);
-$('#user-register').addEventListener('submit', register);
-$('#show-login-mode').addEventListener('click', () => showLogin('Sign in to continue.', 'login'));
-$('#show-register-mode').addEventListener('click', () => showLogin('Create your account to continue.', 'register'));
+$('#continue-google').addEventListener('click', continueWithGoogle);
+$('#continue-microsoft').addEventListener('click', continueWithMicrosoft);
 $('#logout').addEventListener('click', logout);
 $('#back-to-login').addEventListener('click', logout);
 
 clearDraftFields();
 const auth = await api('/api/auth/status');
+authConfig = auth.auth || null;
 if (auth.authenticated) {
   showApp();
   await startApp();
 } else {
-  showLogin(
-    auth.userCount
-      ? 'Sign in with your email and passcode.'
-      : 'Create the first account to open the dashboard. You will choose a WhatsApp group after sign-in.',
-    auth.userCount ? 'login' : 'register'
-  );
+  try {
+    const connected = await completeSocialSession();
+    if (connected) {
+      showApp();
+      await startApp();
+    } else if (!authConfig?.configured) {
+      showLogin('Social login is not configured yet. Add Supabase settings in Netlify first.');
+    } else {
+      showLogin('Choose a sign-in option to continue.');
+    }
+  } catch (error) {
+    showLogin(error.message || 'Could not complete social sign-in.');
+  }
 }

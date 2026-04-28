@@ -43,13 +43,15 @@ Required Netlify environment variables:
 
 - `ADMIN_SESSION_SECRET`
 - `BACKGROUND_TASK_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
 - `WAHA_BASE_URL`
 - `WAHA_SESSION`
 - `WAHA_API_KEY` when your WAHA instance requires it
 - `OPENAI_API_KEY` for voice-note transcription and translation
 - `PUBLIC_APP_URL` for webhook registration in production
 
-Authentication now supports user signup with email plus passcode. `ADMIN_PASSCODE` is optional and only kept as a legacy fallback if you want a single shared admin secret during transition.
+Authentication now uses provider-based login. Configure Google and Azure (Microsoft) inside Supabase Auth, then set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in Netlify so the browser can start the OAuth flow and the Netlify API can verify Supabase-issued access tokens.
 
 Voice-note language choices in the dashboard now include auto-detect, the five most common main languages in England and Wales from Census 2021, and extra community options requested for this pilot: Igbo, Yoruba, Zimbabwe (Shona), Ghana (Twi), and India (Hindi).
 
