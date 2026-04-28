@@ -4,10 +4,12 @@ import {
   countCapturedMessages,
   loadAppState,
   loadCapturedMessages,
+  loadUsers,
   saveCapturedMessage,
   saveAppState,
+  saveUsers,
 } from '../../src/netlifyStore.js';
-import { backgroundTaskSecret, cookieFlags, createSessionToken, parseCookies, passcodeMatches, readAdminSession } from '../../src/netlifyAuth.js';
+import { backgroundTaskSecret, cookieFlags, createSessionToken, hashUserPasscode, normaliseEmail, passcodeMatches, readUserSession, verifyUserPasscode } from '../../src/netlifyAuth.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from '../../src/connectors/mockWhatsApp.js';
@@ -46,6 +48,7 @@ function sendJson(statusCode, payload, headers = {}) {
 
 function publicApiRoute(pathname) {
   return pathname === '/api/auth/status' ||
+    pathname === '/api/auth/register' ||
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     pathname === '/api/webhooks/waha';
@@ -72,6 +75,27 @@ function webhookBaseUrl(requestUrl) {
 async function readBody(request) {
   const raw = await request.text();
   return raw ? JSON.parse(raw) : {};
+}
+
+function publicUser(user = null) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role || 'admin',
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt || null,
+  };
+}
+
+function authSessionForUser(user) {
+  return {
+    userId: user.id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role || 'admin',
+  };
 }
 
 function approvedGroupChatId(payload = {}) {
@@ -282,26 +306,105 @@ export default async function handler(request) {
   try {
     if (request.method === 'GET' && pathname === '/api/auth/status') {
       const state = await loadAppState();
+      const users = await loadUsers();
+      const session = readUserSession(request);
       return sendJson(200, {
-        passcodeRequired: Boolean(adminPasscode),
-        authenticated: Boolean(readAdminSession(request)),
+        passcodeRequired: false,
+        signupEnabled: true,
+        userCount: users.length,
+        authenticated: Boolean(session),
+        user: session || null,
         appName: 'Nzuko AI',
         groupName: state.settings.approvedGroupName,
       });
     }
 
+    if (request.method === 'POST' && pathname === '/api/auth/register') {
+      const body = await readBody(request);
+      const fullName = String(body.fullName || '').trim();
+      const email = normaliseEmail(body.email);
+      const passcode = String(body.passcode || '');
+
+      if (fullName.length < 2) {
+        return sendJson(400, { error: 'Enter your full name.' });
+      }
+      if (!email.includes('@')) {
+        return sendJson(400, { error: 'Enter a valid email address.' });
+      }
+      if (passcode.length < 8) {
+        return sendJson(400, { error: 'Create a passcode with at least 8 characters.' });
+      }
+
+      const users = await loadUsers();
+      if (users.some((user) => user.email === email)) {
+        return sendJson(409, { error: 'An account with that email already exists.' });
+      }
+
+      const user = {
+        id: `user-${randomUUID()}`,
+        fullName,
+        email,
+        role: 'admin',
+        passwordHash: hashUserPasscode(passcode),
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+      users.unshift(user);
+      await saveUsers(users);
+
+      const token = createSessionToken(authSessionForUser(user), adminSessionMaxAgeSeconds);
+      return sendJson(201, {
+        ok: true,
+        message: 'Account created. You are now signed in.',
+        user: publicUser(user),
+      }, {
+        'set-cookie': `nzuko_admin=${encodeURIComponent(token)}; ${cookieFlags(request, adminSessionMaxAgeSeconds)}`,
+      });
+    }
+
     if (request.method === 'POST' && pathname === '/api/auth/login') {
       const body = await readBody(request);
-      if (!passcodeMatches(body.passcode, adminPasscode)) {
-        return sendJson(401, { error: 'The admin passcode is not correct.' });
+      const email = normaliseEmail(body.email);
+      const passcode = String(body.passcode || '');
+      const users = await loadUsers();
+      const user = users.find((item) => item.email === email);
+
+      if (!user) {
+        if (adminPasscode && passcodeMatches(passcode, adminPasscode) && !email) {
+          const token = createSessionToken({
+            userId: 'legacy-admin',
+            fullName: 'Admin',
+            email: '',
+            role: 'admin',
+          }, adminSessionMaxAgeSeconds);
+          return sendJson(200, {
+            ok: true,
+            message: 'Admin login confirmed.',
+            user: {
+              userId: 'legacy-admin',
+              fullName: 'Admin',
+              email: '',
+              role: 'admin',
+            },
+          }, {
+            'set-cookie': `nzuko_admin=${encodeURIComponent(token)}; ${cookieFlags(request, adminSessionMaxAgeSeconds)}`,
+          });
+        }
+        return sendJson(401, { error: 'No account was found for that email.' });
       }
-      const token = createSessionToken(adminSessionMaxAgeSeconds);
+
+      if (!verifyUserPasscode(passcode, user.passwordHash)) {
+        return sendJson(401, { error: 'The email or passcode is not correct.' });
+      }
+
+      user.lastLoginAt = new Date().toISOString();
+      await saveUsers(users);
+
+      const token = createSessionToken(authSessionForUser(user), adminSessionMaxAgeSeconds);
       return sendJson(200, {
         ok: true,
-        passcodeRequired: Boolean(adminPasscode),
-        message: adminPasscode
-          ? 'Admin login confirmed.'
-          : 'Local development login allowed. Set ADMIN_PASSCODE before hosting.',
+        message: 'Welcome back.',
+        user: publicUser(user),
       }, {
         'set-cookie': `nzuko_admin=${encodeURIComponent(token)}; ${cookieFlags(request, adminSessionMaxAgeSeconds)}`,
       });
@@ -313,8 +416,9 @@ export default async function handler(request) {
       });
     }
 
-    if (!publicApiRoute(pathname) && !readAdminSession(request)) {
-      return sendJson(401, { error: 'Admin login is required.' });
+    const session = readUserSession(request);
+    if (!publicApiRoute(pathname) && !session) {
+      return sendJson(401, { error: 'Login is required.' });
     }
 
     if (request.method === 'POST' && pathname === '/api/webhooks/waha') {

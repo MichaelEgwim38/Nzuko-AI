@@ -1,5 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
 let currentApprovedGroupId = '';
+let authMode = 'login';
 
 function syncLanguageOptions(options = [], selected = 'auto') {
   const select = $('#transcribe-language');
@@ -32,9 +33,16 @@ async function api(path, options = {}) {
   return payload;
 }
 
-function showLogin(message = '') {
+function setAuthMode(mode) {
+  authMode = mode === 'register' ? 'register' : 'login';
+  $('#user-login').hidden = authMode !== 'login';
+  $('#user-register').hidden = authMode !== 'register';
+}
+
+function showLogin(message = '', mode = authMode) {
   $('#login-screen').hidden = false;
   $('#app-shell').hidden = true;
+  setAuthMode(mode);
   if (message) {
     $('#login-status').textContent = message;
   }
@@ -48,17 +56,40 @@ function showApp() {
 async function login(event) {
   event.preventDefault();
   try {
-    const passcode = $('#admin-passcode').value;
+    const email = $('#login-email').value.trim();
+    const passcode = $('#login-passcode').value;
     const payload = await api('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ passcode }),
+      body: JSON.stringify({ email, passcode }),
     });
-    $('#admin-passcode').value = '';
+    $('#login-email').value = '';
+    $('#login-passcode').value = '';
     showApp();
     $('#login-status').textContent = payload.message;
     await startApp();
   } catch (error) {
-    showLogin(error.message);
+    showLogin(error.message, 'login');
+  }
+}
+
+async function register(event) {
+  event.preventDefault();
+  try {
+    const fullName = $('#register-name').value.trim();
+    const email = $('#register-email').value.trim();
+    const passcode = $('#register-passcode').value;
+    const payload = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ fullName, email, passcode }),
+    });
+    $('#register-name').value = '';
+    $('#register-email').value = '';
+    $('#register-passcode').value = '';
+    showApp();
+    $('#login-status').textContent = payload.message;
+    await startApp();
+  } catch (error) {
+    showLogin(error.message, 'register');
   }
 }
 
@@ -70,7 +101,7 @@ async function logout() {
   }
   clearDraftFields();
   window.scrollTo({ top: 0, behavior: 'instant' });
-  showLogin('Enter passcode.');
+  showLogin('Sign in to continue.', 'login');
 }
 
 async function startApp() {
@@ -403,7 +434,10 @@ $('#generate-range').addEventListener('click', generateRangeRecap);
 $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
-$('#admin-login').addEventListener('submit', login);
+$('#user-login').addEventListener('submit', login);
+$('#user-register').addEventListener('submit', register);
+$('#show-login-mode').addEventListener('click', () => showLogin('Sign in to continue.', 'login'));
+$('#show-register-mode').addEventListener('click', () => showLogin('Create your account to continue.', 'register'));
 $('#logout').addEventListener('click', logout);
 $('#back-to-login').addEventListener('click', logout);
 
@@ -412,8 +446,11 @@ const auth = await api('/api/auth/status');
 if (auth.authenticated) {
   showApp();
   await startApp();
-} else if (auth.passcodeRequired) {
-  showLogin('Enter passcode.');
 } else {
-  showLogin('Local setup. Add ADMIN_PASSCODE before hosting.');
+  showLogin(
+    auth.userCount
+      ? 'Sign in with your email and passcode.'
+      : 'Create the first account to open the dashboard.',
+    auth.userCount ? 'login' : 'register'
+  );
 }

@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 function base64UrlEncode(value) {
   return Buffer.from(value, 'utf8').toString('base64url');
@@ -41,17 +41,31 @@ function signValue(value) {
   return createHmac('sha256', sessionSecret()).update(value).digest('base64url');
 }
 
-export function createSessionToken(maxAgeSeconds) {
+export function hashUserPasscode(passcode) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(String(passcode), salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+export function verifyUserPasscode(passcode, storedHash = '') {
+  const [salt, hash] = String(storedHash).split(':');
+  if (!salt || !hash) return false;
+  const provided = Buffer.from(scryptSync(String(passcode), salt, 64).toString('hex'));
+  const expected = Buffer.from(hash);
+  return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+export function createSessionToken(session, maxAgeSeconds) {
   const payload = base64UrlEncode(
     JSON.stringify({
-      role: 'admin',
+      ...session,
       exp: Date.now() + maxAgeSeconds * 1000,
     })
   );
   return `${payload}.${signValue(payload)}`;
 }
 
-export function readAdminSession(request) {
+export function readUserSession(request) {
   const token = parseCookies(request.headers.get('cookie')).nzuko_admin;
   if (!token) return null;
   const [payload, signature] = token.split('.');
@@ -75,6 +89,10 @@ export function readAdminSession(request) {
 export function cookieFlags(request, maxAgeSeconds) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return `HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
+}
+
+export function normaliseEmail(value = '') {
+  return String(value).trim().toLowerCase();
 }
 
 export function backgroundTaskSecret() {

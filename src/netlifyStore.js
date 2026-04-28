@@ -3,6 +3,7 @@ import { mockGroups } from './connectors/mockWhatsApp.js';
 
 const stateKey = 'app-state';
 const messagesKey = 'captured-messages';
+const usersKey = 'users';
 
 function blobStore() {
   return getStore({ name: 'nzuko-ai', consistency: 'strong' });
@@ -140,4 +141,13 @@ export async function loadCapturedMessages({ groupId, from, to, limit = 500 } = 
 export async function countCapturedMessages({ groupId } = {}) {
   const messages = await loadMessagesRaw();
   return messages.filter((message) => !groupId || message.groupId === groupId).length;
+}
+
+export async function loadUsers() {
+  const stored = await loadJson(usersKey, []);
+  return Array.isArray(stored) ? stored : [];
+}
+
+export async function saveUsers(users) {
+  return saveJson(usersKey, users);
 }

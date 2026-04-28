@@ -21,16 +21,41 @@
             <img alt="Kola nut" src="/assets/kola-nut.jpg" />
           </div>
         </div>
-        <form id="admin-login" class="login-form">
+        <section class="login-form">
           <p class="eyebrow">Review-first pilot</p>
           <h1 class="login-title">Umuokoroji Family WhatsApp Group</h1>
           <p class="powered-by">Powered by Nzuko AI</p>
-          <label>
-            Admin passcode
-            <input id="admin-passcode" type="password" autocomplete="current-password" placeholder="Enter admin passcode" />
-          </label>
+          <div class="button-row">
+            <button id="show-login-mode" class="button secondary" type="button">Sign in</button>
+            <button id="show-register-mode" class="button secondary" type="button">Create account</button>
+          </div>
+          <form id="user-login" hidden>
+            <label>
+              Email address
+              <input id="login-email" type="email" autocomplete="email" placeholder="Enter your email" />
+            </label>
+            <label>
+              Passcode
+              <input id="login-passcode" type="password" autocomplete="current-password" placeholder="Enter your passcode" />
+            </label>
+            <button class="button" type="submit">Enter dashboard</button>
+          </form>
+          <form id="user-register" hidden>
+            <label>
+              Full name
+              <input id="register-name" type="text" autocomplete="name" placeholder="Enter your full name" />
+            </label>
+            <label>
+              Email address
+              <input id="register-email" type="email" autocomplete="email" placeholder="Enter your email" />
+            </label>
+            <label>
+              Create passcode
+              <input id="register-passcode" type="password" autocomplete="new-password" placeholder="Create a passcode" />
+            </label>
+            <button class="button" type="submit">Create account</button>
+          </form>
           <p class="login-status" id="login-status">Approved access only.</p>
-          <button class="button" type="submit">Enter dashboard</button>
           <a class="site-map-card" href="/assets/community-site-map.jpg" target="_blank" rel="noreferrer">
             <img alt="Umuokoroji community site map preview" src="/assets/community-site-map.jpg" />
             <span>
@@ -38,7 +63,7 @@
               <small>Click</small>
             </span>
           </a>
-        </form>
+        </section>
       </section>
     </main>
 

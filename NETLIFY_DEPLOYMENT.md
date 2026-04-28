@@ -40,7 +40,6 @@ Netlify should detect `netlify.toml` automatically.
 
 Add these before production use:
 
-- `ADMIN_PASSCODE`
 - `ADMIN_SESSION_SECRET`
 - `BACKGROUND_TASK_SECRET`
 - `WAHA_BASE_URL`
@@ -51,6 +50,7 @@ Add these before production use:
 
 Optional:
 
+- `ADMIN_PASSCODE`
 - `APPROVED_GROUP_NAME`
 - `APPROVED_GROUP_ID`
 - `CONSENT_CONFIRMED`
@@ -65,6 +65,8 @@ Use strong random values for these two:
 
 - `ADMIN_SESSION_SECRET`
 - `BACKGROUND_TASK_SECRET`
+
+`ADMIN_PASSCODE` is now optional. The app supports user signup with email and passcode. Only set `ADMIN_PASSCODE` if you want a temporary legacy fallback login.
 
 Example PowerShell commands:
 
