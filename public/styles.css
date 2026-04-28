@@ -140,8 +140,17 @@ textarea {
   height: 30px;
 }
 
+.app-brand .brand-lockup-copy {
+  gap: 2px;
+}
+
 .app-brand .brand-lockup-wordmark {
   font-size: 18px;
+}
+
+.app-brand .brand-lockup-tagline {
+  font-size: 8px;
+  letter-spacing: 0.12em;
 }
 
 .login-stage {
@@ -900,8 +909,17 @@ pre {
     height: 24px;
   }
 
+  .app-brand .brand-lockup-copy {
+    gap: 1px;
+  }
+
   .app-brand .brand-lockup-wordmark {
     font-size: 15px;
+  }
+
+  .app-brand .brand-lockup-tagline {
+    font-size: 7px;
+    letter-spacing: 0.08em;
   }
 
   .app-topbar .button {
