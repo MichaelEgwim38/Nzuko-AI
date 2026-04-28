@@ -1,0 +1,4 @@
+{$PUBLIC_APP_HOST} {
+  encode gzip
+  reverse_proxy app:5177
+}

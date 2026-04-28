@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.host
+.env.local
+.DS_Store
+data/*.json
+!data/.gitkeep
+app.log
+server.out.log
+server.err.log
+cloudflared.out.log
+cloudflared.err.log
+.netlify/
+sessions/

@@ -1,0 +1,14 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["ffmpeg-static"]
+  included_files = ["node_modules/ffmpeg-static/**"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api?path=:splat"
+  status = 200
+  force = true

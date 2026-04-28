@@ -1,0 +1,63 @@
+name: nzuko-ai
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      PUBLIC_APP_HOST: ${PUBLIC_APP_HOST:?Set PUBLIC_APP_HOST in .env.host}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: ${PORT:-5177}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?Set PUBLIC_APP_URL in .env.host}
+      APPROVED_GROUP_NAME: ${APPROVED_GROUP_NAME:-Umuokoroji Family WhatsApp Group}
+      APPROVED_GROUP_ID: ${APPROVED_GROUP_ID:-}
+      CONSENT_CONFIRMED: ${CONSENT_CONFIRMED:-true}
+      RETENTION_DAYS: ${RETENTION_DAYS:-14}
+      CONNECTOR_MODE: ${CONNECTOR_MODE:-waha}
+      WAHA_BASE_URL: http://waha:3000
+      WAHA_PUBLIC_URL: ${WAHA_PUBLIC_URL:-}
+      WAHA_SESSION: ${WAHA_SESSION:-default}
+      WAHA_API_KEY: ${WAHA_API_KEY:?Set WAHA_API_KEY in .env.host}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env.host}
+      ADMIN_PASSCODE: ${ADMIN_PASSCODE:?Set ADMIN_PASSCODE in .env.host}
+      ADMIN_SESSION_MAX_AGE_SECONDS: ${ADMIN_SESSION_MAX_AGE_SECONDS:-604800}
+      TRANSCRIBE_MODEL: ${TRANSCRIBE_MODEL:-gpt-4o-transcribe}
+      TRANSCRIBE_LANGUAGE: ${TRANSCRIBE_LANGUAGE:-auto}
+      TRANSLATE_MODEL: ${TRANSLATE_MODEL:-gpt-4.1-mini}
+    expose:
+      - "5177"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - waha
+
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest}
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY:?Set WAHA_API_KEY in .env.host}
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-NOWEB}
+      WHATSAPP_HOOK_EVENTS: ${WHATSAPP_HOOK_EVENTS:-message,message.any}
+      WAHA_MEDIA_STORAGE: ${WAHA_MEDIA_STORAGE:-LOCAL}
+      WAHA_PRINT_QR: "False"
+      WAHA_CLIENT_DEVICE_NAME: ${WAHA_CLIENT_DEVICE_NAME:-Nzuko AI}
+      WAHA_CLIENT_BROWSER_NAME: ${WAHA_CLIENT_BROWSER_NAME:-Chrome}
+    volumes:
+      - ./sessions:/app/.sessions
+
+volumes:
+  caddy_data:
+  caddy_config:
