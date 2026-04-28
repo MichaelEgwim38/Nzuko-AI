@@ -8,71 +8,43 @@
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
-      <section class="login-panel">
-        <div class="login-art" aria-label="Nzuko AI platform introduction">
-          <div class="login-art-main">
-            <p>Nzuko AI</p>
-            <span>Review-first AI minutes for WhatsApp groups, community teams, associations, and clubs.</span>
-          </div>
-          <div class="login-feature-strip" aria-label="Product highlights">
-            <article>
-              <strong>Choose your group</strong>
-              <span>Connect the WhatsApp group you manage.</span>
-            </article>
-            <article>
-              <strong>Review first</strong>
-              <span>Drafts stay editable before anything is posted.</span>
-            </article>
-            <article>
-              <strong>Capture voice notes</strong>
-              <span>Transcribe and translate audio with human review.</span>
-            </article>
-            <article>
-              <strong>Keep an audit trail</strong>
-              <span>Approved minutes remain searchable and organized.</span>
-            </article>
-          </div>
+      <section class="auth-card">
+        <div class="auth-mark" aria-hidden="true">AI</div>
+        <p class="eyebrow auth-eyebrow">Nzuko AI</p>
+        <h1 class="login-title">Sign in to your workspace</h1>
+        <p class="auth-subtitle">Create an account or sign in to manage WhatsApp group minutes in one place.</p>
+        <div class="auth-switch" role="tablist" aria-label="Authentication mode">
+          <button id="show-register-mode" class="auth-switch-button" type="button">Create account</button>
+          <button id="show-login-mode" class="auth-switch-button" type="button">Sign in</button>
         </div>
-        <section class="login-form">
-          <p class="eyebrow">WhatsApp group minutes</p>
-          <h1 class="login-title">Sign in to manage your WhatsApp group minutes</h1>
-          <p class="powered-by">Powered by Nzuko AI</p>
-          <div class="button-row">
-            <button id="show-login-mode" class="button secondary" type="button">Sign in</button>
-            <button id="show-register-mode" class="button secondary" type="button">Create account</button>
-          </div>
-          <form id="user-login" hidden>
-            <label>
-              Email address
-              <input id="login-email" type="email" autocomplete="email" placeholder="Enter your email" />
-            </label>
-            <label>
-              Passcode
-              <input id="login-passcode" type="password" autocomplete="current-password" placeholder="Enter your passcode" />
-            </label>
-            <button class="button" type="submit">Enter dashboard</button>
-          </form>
-          <form id="user-register" hidden>
-            <label>
-              Full name
-              <input id="register-name" type="text" autocomplete="name" placeholder="Enter your full name" />
-            </label>
-            <label>
-              Email address
-              <input id="register-email" type="email" autocomplete="email" placeholder="Enter your email" />
-            </label>
-            <label>
-              Create passcode
-              <input id="register-passcode" type="password" autocomplete="new-password" placeholder="Create a passcode" />
-            </label>
-            <button class="button" type="submit">Create account</button>
-          </form>
-          <p class="login-status" id="login-status">Approved access only.</p>
-          <div class="login-note">
-            <strong>Global-ready setup</strong>
-            <small>Choose the group you want after sign-in. No default WhatsApp group is preselected.</small>
-          </div>
-        </section>
+        <form id="user-login" class="auth-form" hidden>
+          <label>
+            Email address
+            <input id="login-email" type="email" autocomplete="email" placeholder="name@example.com" />
+          </label>
+          <label>
+            Passcode
+            <input id="login-passcode" type="password" autocomplete="current-password" placeholder="Enter your passcode" />
+          </label>
+          <button class="button auth-submit" type="submit">Sign in</button>
+        </form>
+        <form id="user-register" class="auth-form" hidden>
+          <label>
+            Full name
+            <input id="register-name" type="text" autocomplete="name" placeholder="Enter your full name" />
+          </label>
+          <label>
+            Email address
+            <input id="register-email" type="email" autocomplete="email" placeholder="name@example.com" />
+          </label>
+          <label>
+            Create passcode
+            <input id="register-passcode" type="password" autocomplete="new-password" placeholder="Create a passcode" />
+          </label>
+          <button class="button auth-submit" type="submit">Create account</button>
+        </form>
+        <p class="login-status" id="login-status">Choose a sign-in option to continue.</p>
+        <p class="auth-footnote">No default WhatsApp group is preselected. You will choose your group after sign-in.</p>
       </section>
     </main>
 
