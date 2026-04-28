@@ -590,20 +590,15 @@ pre {
     background: linear-gradient(180deg, #f7fbf5, var(--bg));
   }
 
-  body:has(#app-shell:not([hidden])) {
-    padding-bottom: 74px;
-  }
-
   .shell {
     width: min(100%, calc(100% - 20px));
-    padding: 10px 0 26px;
+    padding: 10px 0 92px;
   }
 
   .status-grid,
   .field-grid,
   .hero-pillars,
   .login-panel,
-  .login-feature-strip,
   .section-heading,
   .button-row {
     grid-template-columns: 1fr;
@@ -621,7 +616,7 @@ pre {
   }
 
   .login-art {
-    min-height: 230px;
+    min-height: 190px;
     padding: 14px;
   }
 
@@ -636,6 +631,16 @@ pre {
 
   .login-art-main span {
     font-size: 15px;
+  }
+
+  .login-feature-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .login-feature-strip article {
+    min-height: 84px;
+    padding: 10px;
   }
 
   .login-form {
