@@ -95,9 +95,6 @@ async function startProviderLogin(provider) {
     const options = {
       redirectTo: window.location.origin,
     };
-    if (provider === 'azure') {
-      options.scopes = 'email';
-    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options,
@@ -110,10 +107,6 @@ async function startProviderLogin(provider) {
 
 async function continueWithGoogle() {
   await startProviderLogin('google');
-}
-
-async function continueWithMicrosoft() {
-  await startProviderLogin('azure');
 }
 
 async function logout() {
@@ -465,7 +458,6 @@ $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
 $('#continue-google').addEventListener('click', continueWithGoogle);
-$('#continue-microsoft').addEventListener('click', continueWithMicrosoft);
 $('#logout').addEventListener('click', logout);
 $('#back-to-login').addEventListener('click', logout);
 

@@ -290,7 +290,7 @@ export default async function handler(request) {
         groupName: state.settings.approvedGroupName,
         auth: {
           configured: supabase.configured,
-          providers: ['google', 'azure'],
+          providers: ['google'],
           supabaseUrl: supabase.url,
           supabasePublishableKey: supabase.publishableKey,
         },

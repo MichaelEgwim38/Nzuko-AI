@@ -127,21 +127,19 @@ textarea {
 .provider-icon {
   width: 28px;
   height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .google-icon {
-  background: #ffffff;
-  color: #ea4335;
+  flex: 0 0 28px;
 }
 
-.microsoft-icon {
-  background: linear-gradient(135deg, #f35325 0 50%, #81bc06 50% 100%);
-  color: #ffffff;
+.google-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .login-status {
