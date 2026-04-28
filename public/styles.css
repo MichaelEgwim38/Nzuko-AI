@@ -51,11 +51,136 @@ textarea {
 .login-shell {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 28px;
+  align-content: start;
+  justify-items: center;
+  gap: 42px;
+  padding: 28px 28px 40px;
   background:
     radial-gradient(circle at top, rgba(111, 174, 69, 0.14), transparent 26%),
-    linear-gradient(180deg, #080808, #111111);
+    radial-gradient(circle at 82% 38%, rgba(89, 168, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #060606, #111111 58%, #0b0b0b);
+}
+
+.login-brand {
+  color: #f5f5f5;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.login-stage {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) minmax(300px, 1fr);
+  align-items: center;
+  gap: 52px;
+}
+
+.login-aside {
+  position: relative;
+  color: #f4f4f4;
+  padding: 24px 0 24px 20px;
+}
+
+.login-aside::before,
+.login-aside::after {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 180px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.login-aside::before {
+  content: "\201C";
+  top: 16px;
+  left: 0;
+}
+
+.login-aside::after {
+  content: "\201D";
+  right: 8px;
+  bottom: -12px;
+}
+
+.login-aside-kicker {
+  margin: 0;
+  color: #8ed96d;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.login-aside h2 {
+  position: relative;
+  margin-top: 16px;
+  max-width: 560px;
+  color: #ffffff;
+  font-size: 46px;
+  line-height: 1.08;
+  z-index: 1;
+}
+
+.login-aside-copy {
+  position: relative;
+  max-width: 540px;
+  margin: 18px 0 0;
+  color: #d4d4d4;
+  font-size: 18px;
+  line-height: 1.65;
+  z-index: 1;
+}
+
+.login-aside-points {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  margin-top: 30px;
+  z-index: 1;
+}
+
+.login-aside-points div {
+  max-width: 520px;
+  border-left: 2px solid rgba(255, 255, 255, 0.16);
+  padding-left: 16px;
+}
+
+.login-aside-points strong,
+.login-aside-points span {
+  display: block;
+}
+
+.login-aside-points strong {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.login-aside-points span {
+  margin-top: 6px;
+  color: #d0d0d0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.login-trust {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.login-trust span {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d1d1d1;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 16px 18px;
+  text-align: center;
+  backdrop-filter: blur(10px);
 }
 
 .auth-card {
@@ -122,6 +247,13 @@ textarea {
   font-weight: 800;
   min-height: 58px;
   padding: 14px 16px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.provider-button:hover,
+.provider-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
 }
 
 .provider-icon {
@@ -178,6 +310,13 @@ textarea {
   margin: 20px 0 0;
   color: #8f8f8f;
   font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-legal {
+  margin: 16px 0 0;
+  color: #7e7e7e;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -609,13 +748,28 @@ pre {
   }
 
   .login-shell {
-    min-height: 100vh;
-    padding: 10px;
-    place-items: center;
+    gap: 24px;
+    padding: 18px 12px 28px;
+    justify-items: stretch;
+  }
+
+  .login-brand {
+    font-size: 19px;
+    letter-spacing: 0.06em;
+  }
+
+  .login-stage,
+  .login-trust {
+    width: min(100%, 420px);
+  }
+
+  .login-stage {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .auth-card {
-    width: min(100%, 420px);
+    width: 100%;
     padding: 24px 18px 20px;
   }
 
@@ -625,6 +779,35 @@ pre {
 
   .auth-subtitle {
     font-size: 15px;
+  }
+
+  .login-aside {
+    padding: 0 4px;
+    order: -1;
+  }
+
+  .login-aside::before,
+  .login-aside::after {
+    display: none;
+  }
+
+  .login-aside h2 {
+    font-size: 34px;
+  }
+
+  .login-aside-copy {
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .login-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .login-trust span {
+    padding: 14px 12px;
+    font-size: 13px;
   }
 
   .auth-switch {
@@ -761,6 +944,19 @@ pre {
   }
 }
 @media (min-width: 761px) and (max-width: 980px) {
+  .login-stage {
+    grid-template-columns: minmax(300px, 420px) minmax(280px, 1fr);
+    gap: 30px;
+  }
+
+  .login-aside h2 {
+    font-size: 38px;
+  }
+
+  .login-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hero-pillars {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
