@@ -255,17 +255,17 @@
                   <button id="check-waha" class="button secondary">Check WAHA</button>
                 </div>
                 <p class="hint connect-copy">Start the shared WhatsApp session, scan the QR from the phone that should be active right now, then load that account&apos;s groups. Nzuko AI handles the server connection behind the scenes.</p>
-                <div class="field-grid managed-field-grid" data-managed-hidden="true">
-                  <label class="managed-field" data-managed-hidden="true">
+                <div class="field-grid managed-field-grid managed-hidden" data-managed-hidden="true" aria-hidden="true">
+                  <label class="managed-field managed-hidden" data-managed-hidden="true">
                     WAHA URL
                     <input id="waha-base-url" value="http://localhost:3000" />
                   </label>
-                  <label class="managed-field" data-managed-hidden="true">
+                  <label class="managed-field managed-hidden" data-managed-hidden="true">
                     Session
                     <input id="waha-session" value="default" />
                   </label>
                 </div>
-                <label class="managed-field" data-managed-hidden="true">
+                <label class="managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   API key
                   <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
                 </label>
@@ -279,7 +279,7 @@
                 </div>
                 <div id="qr-box" class="qr-box">Start the session, then show the QR and scan it from WhatsApp Linked Devices.</div>
                 <p class="hint">Only one WhatsApp account is active at a time. To switch people, end the session and let the next user scan the new QR.</p>
-                <div class="link-row managed-field" data-managed-hidden="true">
+                <div class="link-row managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
                 <div id="group-list" class="group-list">No WAHA groups loaded yet.</div>
