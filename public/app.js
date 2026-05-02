@@ -5,6 +5,7 @@ let currentApprovedGroupId = '';
 let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
+let latestStatus = null;
 
 function firstNameFromUser(user = {}) {
   const fullName = String(user.displayName || user.name || user.email || '').trim();
@@ -28,6 +29,61 @@ function applyManagedWorkspaceUi() {
   document.querySelectorAll('[data-managed-hidden="true"]').forEach((node) => {
     node.classList.toggle('managed-hidden', managedWahaWorkspace);
   });
+}
+
+function setButtonDisabled(id, disabled) {
+  const button = $(`#${id}`);
+  if (button) {
+    button.disabled = disabled;
+  }
+}
+
+function renderWorkspaceStatus(status = {}) {
+  latestStatus = status;
+  const trial = status.trial || {};
+  const sharedSession = status.sharedSession || {};
+  const trialSummary = $('#trial-summary');
+  const workspaceNotice = $('#workspace-notice');
+
+  if (trialSummary) {
+    if (trial.isSubscribed) {
+      trialSummary.hidden = false;
+      trialSummary.textContent = `${trial.planName || 'Active plan'} is active.`;
+    } else if (trial.canUseApp) {
+      trialSummary.hidden = false;
+      trialSummary.textContent = `Free trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left · ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
+    } else {
+      trialSummary.hidden = false;
+      trialSummary.textContent = 'Your free trial has ended. Subscribe to continue using Nzuko AI.';
+    }
+  }
+
+  if (workspaceNotice) {
+    let notice = '';
+    if (!managedWahaWorkspace) {
+      notice = '';
+    } else if (sharedSession.hasOwner && sharedSession.isCurrentUserOwner) {
+      notice = 'You are using the active shared WhatsApp connection right now.';
+    } else if (sharedSession.hasOwner) {
+      notice = 'Another WhatsApp account is currently connected. Switch WhatsApp user to connect your own account.';
+    } else if (sharedSession.isExpired) {
+      notice = 'The current WhatsApp connection appears inactive. You can switch and connect your own account.';
+    } else {
+      notice = 'No WhatsApp account is connected yet. Start a session to connect your account.';
+    }
+    workspaceNotice.hidden = !notice;
+    workspaceNotice.textContent = notice;
+  }
+
+  const canUseApp = Boolean(trial.canUseApp);
+  const canClaimSession = canUseApp && (!sharedSession.hasOwner || sharedSession.isCurrentUserOwner || sharedSession.isExpired);
+  const canOperateLive = canUseApp && Boolean(sharedSession.isCurrentUserOwner);
+
+  ['save-settings', 'check-waha', 'switch-waha-user'].forEach((id) => setButtonDisabled(id, !canUseApp));
+  ['start-waha', 'show-qr'].forEach((id) => setButtonDisabled(id, !canClaimSession));
+  ['load-groups', 'pull-waha', 'pull-today', 'configure-webhook', 'load-range', 'generate-range', 'generate', 'approve', 'purge'].forEach((id) =>
+    setButtonDisabled(id, !canOperateLive)
+  );
 }
 
 function syncLanguageOptions(options = [], selected = 'auto') {
@@ -174,6 +230,7 @@ async function loadStatus() {
   const status = await api('/api/status');
   managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
+  renderWorkspaceStatus(status);
   currentApprovedGroupId = status.settings.approvedGroupId || '';
   $('#group-name').value = status.settings.approvedGroupName || '';
   $('#connector-mode').value = status.settings.connectorMode;
@@ -240,6 +297,7 @@ async function startWaha() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/start', { method: 'POST', body: '{}' });
+    await loadStatus();
     $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'starting'}.`;
   } catch (error) {
     $('#waha-status').textContent = `WhatsApp start failed: ${error.message}`;
@@ -433,6 +491,7 @@ async function generateRangeRecap() {
     $('#recap-output').textContent = payload.draft.recap.text;
     $('#approve-status').textContent = 'Period draft ready. Review before approving.';
     $('#range-status').textContent = 'Generated from stored approved-group messages for the selected period.';
+    await loadStatus();
   } catch (error) {
     $('#range-status').textContent = `Period recap failed: ${error.message}`;
   }
@@ -464,6 +523,7 @@ async function generateRecap() {
   });
   $('#recap-output').textContent = payload.draft.recap.text;
   $('#approve-status').textContent = 'Draft ready. Review before approving.';
+  await loadStatus();
 }
 
 async function approveRecap() {

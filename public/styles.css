@@ -768,6 +768,26 @@ h2 {
   line-height: 1.65;
 }
 
+.status-banner {
+  width: fit-content;
+  max-width: min(100%, 640px);
+  margin: 16px 0 0;
+  border: 1px solid rgba(154, 230, 62, 0.4);
+  border-radius: 999px;
+  background: rgba(154, 230, 62, 0.12);
+  color: #244329;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 10px 14px;
+}
+
+.status-banner.secondary {
+  border-color: rgba(36, 93, 56, 0.16);
+  background: rgba(36, 93, 56, 0.06);
+  color: #4f5d54;
+}
+
 .hero-pillars {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -85,12 +85,22 @@ function defaultWebhookStats() {
   };
 }
 
+function defaultSharedSession() {
+  return {
+    ownerUserId: '',
+    ownerName: '',
+    claimedAt: null,
+    lastActivityAt: null,
+  };
+}
+
 export function createDefaultState() {
   return {
     settings: defaultSettings(),
     currentDraft: null,
     auditLog: [],
     webhookStats: defaultWebhookStats(),
+    sharedSession: defaultSharedSession(),
   };
 }
 
@@ -107,6 +117,10 @@ function mergeState(stored = {}) {
     webhookStats: {
       ...defaults.webhookStats,
       ...(stored.webhookStats || {}),
+    },
+    sharedSession: {
+      ...defaults.sharedSession,
+      ...(stored.sharedSession || {}),
     },
   };
 }
