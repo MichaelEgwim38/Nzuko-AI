@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { generateRecap } from '../../src/minutesAgent.js';
 import {
   countCapturedMessages,
@@ -25,6 +26,37 @@ import {
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
+const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$/, '');
+const managedWahaApiKey = String(process.env.WAHA_API_KEY || '');
+
+function userScope(session = {}) {
+  return String(session.userId || session.email || 'shared').trim().toLowerCase();
+}
+
+function deriveWahaSessionName(session = {}) {
+  const base = String(session.userId || session.email || 'shared-user')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return `user-${base || 'shared-user'}`;
+}
+
+function managedSettingsForUser(settings = {}, session = {}) {
+  return {
+    ...settings,
+    connectorMode: managedWahaBaseUrl ? 'waha' : settings.connectorMode,
+    wahaBaseUrl: managedWahaBaseUrl || settings.wahaBaseUrl,
+    wahaApiKey: managedWahaApiKey || settings.wahaApiKey,
+    wahaSession: deriveWahaSessionName(session),
+  };
+}
+
+function webhookTokenForUser(session = {}) {
+  return createHmac('sha256', process.env.ADMIN_SESSION_SECRET || 'nzuko-webhook-secret')
+    .update(userScope(session))
+    .digest('hex');
+}
 
 function publicSettings(settings) {
   return {
@@ -214,7 +246,30 @@ async function pullWahaMessagesForRange({ settings, range, limit = 1000 }) {
   }
 }
 
-async function enqueueVoiceNoteProcessing({ requestUrl, payload }) {
+async function ensureUserWahaSession({ settings, requestUrl, session }) {
+  const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha?scope=${encodeURIComponent(userScope(session))}&token=${encodeURIComponent(webhookTokenForUser(session))}`;
+  try {
+    await configureWahaWebhook({
+      baseUrl: settings.wahaBaseUrl,
+      session: settings.wahaSession,
+      apiKey: settings.wahaApiKey,
+      webhookUrl,
+    });
+  } catch (error) {
+    if (!String(error.message || '').includes('404')) {
+      throw error;
+    }
+    await createWahaSession({
+      baseUrl: settings.wahaBaseUrl,
+      session: settings.wahaSession,
+      apiKey: settings.wahaApiKey,
+      webhookUrl,
+    });
+  }
+  return webhookUrl;
+}
+
+async function enqueueVoiceNoteProcessing({ requestUrl, payload, scope }) {
   try {
     await fetch(`${requestUrl.origin}/.netlify/functions/process-voice-note-background`, {
       method: 'POST',
@@ -222,37 +277,38 @@ async function enqueueVoiceNoteProcessing({ requestUrl, payload }) {
         'content-type': 'application/json',
         'x-nzuko-task-secret': backgroundTaskSecret(),
       },
-      body: JSON.stringify({ payload }),
+      body: JSON.stringify({ payload, scope }),
     });
   } catch (error) {
     console.error(`Background voice-note dispatch failed: ${error.message}`);
   }
 }
 
-async function captureMappedWahaMessage({ message, requestUrl, settings }) {
+async function captureMappedWahaMessage({ message, requestUrl, settings, scope }) {
   const storedMessage = {
     ...message,
     groupId: settings.approvedGroupId,
   };
   if (isVoiceMedia(storedMessage)) {
-    await saveCapturedMessage({
+    await saveCapturedMessage(scope, {
       ...buildPendingVoiceNote({ payload: storedMessage, reason: 'transcription queued in background' }),
       groupId: settings.approvedGroupId,
     });
-    await enqueueVoiceNoteProcessing({ requestUrl, payload: storedMessage });
+    await enqueueVoiceNoteProcessing({ requestUrl, payload: storedMessage, scope });
     return;
   }
-  await saveCapturedMessage(storedMessage);
+  await saveCapturedMessage(scope, storedMessage);
 }
 
-async function captureApprovedWebhookPayload({ payload, requestUrl, settings }) {
+async function captureApprovedWebhookPayload({ payload, requestUrl, settings, scope }) {
   if (isVoiceMedia(payload)) {
-    await saveCapturedMessage({
+    await saveCapturedMessage(scope, {
       ...buildPendingVoiceNote({ payload, reason: 'transcription queued in background' }),
       groupId: settings.approvedGroupId,
     });
     await enqueueVoiceNoteProcessing({
       requestUrl,
+      scope,
       payload: {
         ...payload,
         groupId: settings.approvedGroupId,
@@ -263,7 +319,7 @@ async function captureApprovedWebhookPayload({ payload, requestUrl, settings }) 
 
   const body = messageBody(payload);
   if (body) {
-    await saveCapturedMessage({
+    await saveCapturedMessage(scope, {
       id: payload.id?._serialized || payload.id || `message-${Date.now()}`,
       groupId: settings.approvedGroupId,
       from: messageSender(payload),
@@ -280,14 +336,14 @@ export default async function handler(request) {
 
   try {
     if (request.method === 'GET' && pathname === '/api/auth/status') {
-      const state = await loadAppState();
       const session = readUserSession(request);
+      const state = session ? await loadAppState(userScope(session)) : null;
       const supabase = supabaseAuthConfig();
       return sendJson(200, {
         authenticated: Boolean(session),
         user: session || null,
         appName: 'Nzuko AI',
-        groupName: state.settings.approvedGroupName,
+        groupName: state?.settings?.approvedGroupName || '',
         auth: {
           configured: supabase.configured,
           providers: ['google'],
@@ -308,6 +364,11 @@ export default async function handler(request) {
       if (!user.userId || !user.email) {
         return sendJson(401, { error: 'The provider did not return a usable account profile.' });
       }
+
+      const scope = userScope(user);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, user);
+      await saveAppState(scope, state);
 
       const token = createSessionToken(user, adminSessionMaxAgeSeconds);
       return sendJson(200, {
@@ -331,9 +392,18 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/webhooks/waha') {
+      const scope = requestUrl.searchParams.get('scope') || 'shared';
+      const token = requestUrl.searchParams.get('token') || '';
+      const expectedToken = createHmac('sha256', process.env.ADMIN_SESSION_SECRET || 'nzuko-webhook-secret')
+        .update(scope)
+        .digest('hex');
+      if (!token || token !== expectedToken) {
+        return sendJson(401, { error: 'Invalid webhook token.' });
+      }
       const body = await readBody(request);
       const payload = body.payload || body;
-      const state = await loadAppState();
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, { userId: scope });
       const approvedGroupId = state.settings.approvedGroupId;
       const chatId = approvedGroupChatId(payload);
       state.webhookStats.received += 1;
@@ -346,6 +416,7 @@ export default async function handler(request) {
           payload,
           requestUrl,
           settings: state.settings,
+          scope,
         });
       } else {
         state.webhookStats.ignored += 1;
@@ -355,17 +426,20 @@ export default async function handler(request) {
           : 'Webhook did not include a group chat id.';
       }
 
-      await saveAppState(state);
+      await saveAppState(scope, state);
       return sendJson(200, { ok: true });
     }
 
     if (request.method === 'GET' && pathname === '/api/status') {
-      const state = await loadAppState();
-      const capturedCount = await countCapturedMessages({ groupId: state.settings.approvedGroupId });
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
+      const capturedCount = await countCapturedMessages(scope, { groupId: state.settings.approvedGroupId });
       return sendJson(200, {
         app: 'Nzuko AI',
         connector: state.settings.connectorMode,
         settings: publicSettings(state.settings),
+        userScoped: true,
         draftReady: Boolean(state.currentDraft),
         auditCount: state.auditLog.length,
         capturedCount,
@@ -380,7 +454,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/groups') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       if (state.settings.connectorMode === 'waha') {
         const groups = await listGroupsFromWaha({
           baseUrl: state.settings.wahaBaseUrl,
@@ -393,7 +469,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/status') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -403,7 +481,10 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/start') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
+      await ensureUserWahaSession({ settings: state.settings, requestUrl, session });
       const status = await startWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -413,32 +494,22 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/webhook') {
-      const state = await loadAppState();
-      const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha`;
-      let status;
-      try {
-        status = await configureWahaWebhook({
-          baseUrl: state.settings.wahaBaseUrl,
-          session: state.settings.wahaSession,
-          apiKey: state.settings.wahaApiKey,
-          webhookUrl,
-        });
-      } catch (error) {
-        if (!String(error.message || '').includes('404')) {
-          throw error;
-        }
-        status = await createWahaSession({
-          baseUrl: state.settings.wahaBaseUrl,
-          session: state.settings.wahaSession,
-          apiKey: state.settings.wahaApiKey,
-          webhookUrl,
-        });
-      }
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
+      const webhookUrl = await ensureUserWahaSession({ settings: state.settings, requestUrl, session });
+      const status = await getWahaStatus({
+        baseUrl: state.settings.wahaBaseUrl,
+        session: state.settings.wahaSession,
+        apiKey: state.settings.wahaApiKey,
+      });
       return sendJson(200, { webhookUrl, status });
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/qr') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       const qr = await getWahaQr({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -453,28 +524,27 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/settings') {
       const body = await readBody(request);
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
       state.settings = {
-        ...state.settings,
+        ...managedSettingsForUser(state.settings, session),
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
         retentionDays: Number(body.retentionDays || state.settings.retentionDays),
-        connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',
-        wahaBaseUrl: body.wahaBaseUrl || state.settings.wahaBaseUrl,
-        wahaPublicUrl: body.wahaPublicUrl || state.settings.wahaPublicUrl,
-        wahaSession: body.wahaSession || state.settings.wahaSession,
-        wahaApiKey: body.wahaApiKey ?? state.settings.wahaApiKey,
+        connectorMode: managedWahaBaseUrl ? 'waha' : body.connectorMode === 'waha' ? 'waha' : 'mock',
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage
           : state.settings.transcribeLanguage,
       };
-      await saveAppState(state);
+      await saveAppState(scope, state);
       return sendJson(200, { settings: publicSettings(state.settings) });
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       if (!state.settings.consentConfirmed) {
         return sendJson(403, { error: 'Confirm group/admin consent before pulling WhatsApp group messages.' });
       }
@@ -498,15 +568,15 @@ export default async function handler(request) {
           downloadMedia: true,
         });
         for (const message of messages) {
-          await captureMappedWahaMessage({ message, requestUrl, settings: state.settings });
+          await captureMappedWahaMessage({ message, requestUrl, settings: state.settings, scope });
         }
-        messages = await loadCapturedMessages({
+        messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
           limit: Number(body.limit || 100),
         });
       } catch (error) {
         warning = `WAHA history pull failed, so showing live-captured messages only: ${error.message}`;
-        messages = await loadCapturedMessages({
+        messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
           limit: Number(body.limit || 100),
         });
@@ -521,8 +591,10 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/captured') {
-      const state = await loadAppState();
-      const messages = await loadCapturedMessages({
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
+      const messages = await loadCapturedMessages(scope, {
         groupId: state.settings.approvedGroupId,
         from: requestUrl.searchParams.get('from'),
         to: requestUrl.searchParams.get('to'),
@@ -533,13 +605,15 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/messages/range') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       const range = selectedDateRange({
         preset: requestUrl.searchParams.get('preset'),
         from: requestUrl.searchParams.get('from'),
         to: requestUrl.searchParams.get('to'),
       });
-      const messages = await loadCapturedMessages({
+      const messages = await loadCapturedMessages(scope, {
         groupId: state.settings.approvedGroupId,
         from: range.from,
         to: range.to,
@@ -550,7 +624,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull-today') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       if (!state.settings.consentConfirmed) {
         return sendJson(403, { error: 'Confirm group/admin consent before pulling WhatsApp group messages.' });
       }
@@ -565,9 +641,9 @@ export default async function handler(request) {
       try {
         messages = await pullWahaMessagesForRange({ settings: state.settings, range, limit: 1000 });
         for (const message of messages) {
-          await captureMappedWahaMessage({ message, requestUrl, settings: state.settings });
+          await captureMappedWahaMessage({ message, requestUrl, settings: state.settings, scope });
         }
-        messages = await loadCapturedMessages({
+        messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
           from: range.from,
           to: range.to,
@@ -576,7 +652,7 @@ export default async function handler(request) {
       } catch (error) {
         historyAvailable = false;
         warning = `WAHA could not return today's WhatsApp history: ${error.message}`;
-        messages = await loadCapturedMessages({
+        messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
           from: range.from,
           to: range.to,
@@ -596,14 +672,16 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/recap/generate') {
       const body = await readBody(request);
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       let chatText = body.chatText;
       let voiceNotes = body.voiceNotes;
       let sourceMessages = [];
       let range = null;
       if (body.useStoredRange) {
         range = selectedDateRange(body.range || {});
-        sourceMessages = await loadCapturedMessages({
+        sourceMessages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
           from: range.from,
           to: range.to,
@@ -626,12 +704,14 @@ export default async function handler(request) {
         range,
         source: body.useStoredRange ? 'stored-messages' : 'manual-input',
       };
-      await saveAppState(state);
+      await saveAppState(scope, state);
       return sendJson(200, { draft: state.currentDraft });
     }
 
     if (request.method === 'POST' && pathname === '/api/recap/approve') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
+      state.settings = managedSettingsForUser(state.settings, session);
       if (!state.currentDraft) {
         return sendJson(400, { error: 'No recap draft is ready.' });
       }
@@ -664,19 +744,21 @@ export default async function handler(request) {
       };
       state.auditLog.unshift(auditEntry);
       state.currentDraft = null;
-      await saveAppState(state);
+      await saveAppState(scope, state);
       return sendJson(200, { auditEntry });
     }
 
     if (request.method === 'GET' && pathname === '/api/audit') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
       return sendJson(200, { auditLog: state.auditLog });
     }
 
     if (request.method === 'POST' && pathname === '/api/purge') {
-      const state = await loadAppState();
+      const scope = userScope(session);
+      const state = await loadAppState(scope);
       state.currentDraft = null;
-      await saveAppState(state);
+      await saveAppState(scope, state);
       return sendJson(200, { ok: true, message: 'Raw draft data cleared. Approved audit log retained.' });
     }
 

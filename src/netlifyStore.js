@@ -1,12 +1,48 @@
 import { getStore } from '@netlify/blobs';
 import { mockGroups } from './connectors/mockWhatsApp.js';
 
-const stateKey = 'app-state';
-const messagesKey = 'captured-messages';
 const usersKey = 'users';
+const sharedStateKey = 'app-state';
+const sharedMessagesKey = 'captured-messages';
 
 function blobStore() {
   return getStore({ name: 'nzuko-ai', consistency: 'strong' });
+}
+
+function normaliseScope(value = '') {
+  const scoped = String(value || '').trim();
+  return scoped
+    ? scoped.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 120)
+    : 'shared';
+}
+
+function stateKeyFor(scope) {
+  return scope === 'shared' ? sharedStateKey : `users/${scope}/app-state`;
+}
+
+function messagesKeyFor(scope) {
+  return scope === 'shared' ? sharedMessagesKey : `users/${scope}/captured-messages`;
+}
+
+function resolveScopeAndState(scopeOrState, maybeState) {
+  if (maybeState === undefined) {
+    return { scope: 'shared', state: scopeOrState };
+  }
+  return { scope: scopeOrState, state: maybeState };
+}
+
+function resolveScopeAndMessage(scopeOrMessage, maybeMessage) {
+  if (maybeMessage === undefined) {
+    return { scope: 'shared', message: scopeOrMessage };
+  }
+  return { scope: scopeOrMessage, message: maybeMessage };
+}
+
+function resolveScopeAndQuery(scopeOrQuery, maybeQuery) {
+  if (maybeQuery === undefined && (typeof scopeOrQuery === 'object' || scopeOrQuery === undefined)) {
+    return { scope: 'shared', query: scopeOrQuery || {} };
+  }
+  return { scope: scopeOrQuery, query: maybeQuery || {} };
 }
 
 function normaliseTimestamp(value) {
@@ -85,47 +121,51 @@ async function saveJson(key, value) {
   return value;
 }
 
-export async function loadAppState() {
-  const stored = await loadJson(stateKey, null);
+export async function loadAppState(scope = 'shared') {
+  const stored = await loadJson(stateKeyFor(normaliseScope(scope)), null);
   return mergeState(stored || {});
 }
 
-export async function saveAppState(state) {
-  return saveJson(stateKey, mergeState(state));
+export async function saveAppState(scope = 'shared', state) {
+  const resolved = resolveScopeAndState(scope, state);
+  return saveJson(stateKeyFor(normaliseScope(resolved.scope)), mergeState(resolved.state));
 }
 
-export async function mutateAppState(mutator) {
-  const current = await loadAppState();
+export async function mutateAppState(scope = 'shared', mutator) {
+  const current = await loadAppState(scope);
   const next = (await mutator(current)) || current;
-  return saveAppState(next);
+  return saveAppState(scope, next);
 }
 
-async function loadMessagesRaw() {
-  const stored = await loadJson(messagesKey, []);
+async function loadMessagesRaw(scope = 'shared') {
+  const stored = await loadJson(messagesKeyFor(normaliseScope(scope)), []);
   return Array.isArray(stored) ? stored : [];
 }
 
-async function saveMessagesRaw(messages) {
-  return saveJson(messagesKey, messages);
+async function saveMessagesRaw(scope = 'shared', messages) {
+  return saveJson(messagesKeyFor(normaliseScope(scope)), messages);
 }
 
-export async function saveCapturedMessage(message) {
-  const messages = await loadMessagesRaw();
+export async function saveCapturedMessage(scope = 'shared', message) {
+  const resolved = resolveScopeAndMessage(scope, message);
+  const messages = await loadMessagesRaw(resolved.scope);
   const stored = {
-    ...message,
-    timestamp: timestampMs(message),
-    receivedAt: message.receivedAt || new Date().toISOString(),
+    ...resolved.message,
+    timestamp: timestampMs(resolved.message),
+    receivedAt: resolved.message.receivedAt || new Date().toISOString(),
   };
   const nextMessages = messages.filter((item) => item.id !== stored.id);
   nextMessages.unshift(stored);
-  await saveMessagesRaw(nextMessages.slice(0, 10_000));
+  await saveMessagesRaw(resolved.scope, nextMessages.slice(0, 10_000));
   return stored;
 }
 
-export async function loadCapturedMessages({ groupId, from, to, limit = 500 } = {}) {
+export async function loadCapturedMessages(scopeOrQuery = 'shared', maybeQuery) {
+  const resolved = resolveScopeAndQuery(scopeOrQuery, maybeQuery);
+  const { groupId, from, to, limit = 500 } = resolved.query;
   const fromMs = from ? new Date(from).getTime() : null;
   const toMs = to ? new Date(to).getTime() : null;
-  const messages = await loadMessagesRaw();
+  const messages = await loadMessagesRaw(resolved.scope);
   return messages
     .filter((message) => !groupId || message.groupId === groupId)
     .filter((message) => {
@@ -138,8 +178,10 @@ export async function loadCapturedMessages({ groupId, from, to, limit = 500 } = 
     .slice(0, limit);
 }
 
-export async function countCapturedMessages({ groupId } = {}) {
-  const messages = await loadMessagesRaw();
+export async function countCapturedMessages(scopeOrQuery = 'shared', maybeQuery) {
+  const resolved = resolveScopeAndQuery(scopeOrQuery, maybeQuery);
+  const { groupId } = resolved.query;
+  const messages = await loadMessagesRaw(resolved.scope);
   return messages.filter((message) => !groupId || message.groupId === groupId).length;
 }
 

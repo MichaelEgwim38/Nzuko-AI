@@ -12,13 +12,15 @@ export default async function handler(request) {
   }
 
   const body = await request.text();
-  const payload = body ? JSON.parse(body).payload : null;
+  const parsed = body ? JSON.parse(body) : {};
+  const payload = parsed.payload || null;
+  const scope = parsed.scope || 'shared';
   if (!payload) {
     return new Response('', { status: 202 });
   }
 
   try {
-    const state = await loadAppState();
+    const state = await loadAppState(scope);
     const settings = state.settings;
     const transcribed = await transcribeVoiceNote({
       payload,
@@ -27,13 +29,13 @@ export default async function handler(request) {
       openaiApiKey: process.env.OPENAI_API_KEY,
       transcribeLanguage: settings.transcribeLanguage,
     });
-    await saveCapturedMessage({
+    await saveCapturedMessage(scope, {
       ...transcribed,
       groupId: payload.groupId || settings.approvedGroupId,
     });
   } catch (error) {
-    const state = await loadAppState();
-    await saveCapturedMessage({
+    const state = await loadAppState(scope);
+    await saveCapturedMessage(scope, {
       id: payload.id?._serialized || payload.id || `voice-${Date.now()}`,
       groupId: payload.groupId || state.settings.approvedGroupId,
       from: payload.fromMe ? 'Assistant account' : payload.author || payload.participant || payload.from || 'Group member',

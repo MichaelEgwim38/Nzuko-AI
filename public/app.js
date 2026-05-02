@@ -4,6 +4,13 @@ const $ = (selector) => document.querySelector(selector);
 let currentApprovedGroupId = '';
 let supabaseClient = null;
 let authConfig = null;
+let managedWahaWorkspace = false;
+
+function applyManagedWorkspaceUi() {
+  document.querySelectorAll('[data-managed-hidden="true"]').forEach((node) => {
+    node.classList.toggle('managed-hidden', managedWahaWorkspace);
+  });
+}
 
 function syncLanguageOptions(options = [], selected = 'auto') {
   const select = $('#transcribe-language');
@@ -147,6 +154,8 @@ async function startApp() {
 
 async function loadStatus() {
   const status = await api('/api/status');
+  managedWahaWorkspace = Boolean(status.userScoped);
+  applyManagedWorkspaceUi();
   currentApprovedGroupId = status.settings.approvedGroupId || '';
   $('#connector').textContent = status.connector;
   $('#posting-mode').textContent = status.settings.postingMode;
@@ -156,11 +165,19 @@ async function loadStatus() {
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
+  $('#waha-base-url').readOnly = managedWahaWorkspace;
+  $('#waha-session').readOnly = managedWahaWorkspace;
+  $('#waha-api-key').disabled = managedWahaWorkspace;
   syncLanguageOptions(status.transcription?.languageOptions || [], status.settings.transcribeLanguage || status.transcription?.language || 'auto');
   $('#waha-api-key').placeholder = status.settings.wahaApiKey ? 'API key configured' : 'Only if WAHA requires X-Api-Key';
   if (status.transcription && !status.transcription.openaiKeyConfigured) {
     $('#waha-status').textContent = 'WAHA is connected. Add OPENAI_API_KEY to .env before real voice-note transcription will run.';
+  } else if (managedWahaWorkspace) {
+    $('#waha-status').textContent = 'Your WhatsApp connection is isolated to your account. Start your own session, scan your own QR, then load only your groups.';
   }
+  $('#approve-status').textContent = managedWahaWorkspace
+    ? 'Review the recap, then approve it when you are ready to post or export it.'
+    : 'Posting uses the currently selected connector mode.';
 }
 
 async function loadSample() {
@@ -174,15 +191,17 @@ function settingsPayload(extra = {}) {
     approvedGroupName: $('#group-name').value.trim(),
     consentConfirmed: $('#consent-confirmed').checked,
     connectorMode: $('#connector-mode').value,
-    wahaBaseUrl: $('#waha-base-url').value.trim(),
-    wahaSession: $('#waha-session').value.trim(),
     transcribeLanguage: $('#transcribe-language').value,
     retentionDays: 14,
     ...extra,
   };
-  const apiKey = $('#waha-api-key').value;
-  if (apiKey) {
-    payload.wahaApiKey = apiKey;
+  if (!managedWahaWorkspace) {
+    payload.wahaBaseUrl = $('#waha-base-url').value.trim();
+    payload.wahaSession = $('#waha-session').value.trim();
+    const apiKey = $('#waha-api-key').value;
+    if (apiKey) {
+      payload.wahaApiKey = apiKey;
+    }
   }
   return payload;
 }
@@ -193,7 +212,7 @@ async function saveSettings() {
     body: JSON.stringify(settingsPayload()),
   });
   $('#settings-status').textContent = payload.settings.consentConfirmed
-    ? 'Consent settings saved. Recaps can be approved in the selected connector mode.'
+    ? 'Workspace settings saved. Recaps can be approved after you select a WhatsApp group.'
     : 'Consent must be confirmed before approving a recap.';
   await loadStatus();
 }
@@ -202,9 +221,9 @@ async function checkWaha() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/status');
-    $('#waha-status').textContent = `WAHA session status: ${payload.status.status || 'reachable'}.`;
+    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'reachable'}.`;
   } catch (error) {
-    $('#waha-status').textContent = `WAHA check failed: ${error.message}`;
+    $('#waha-status').textContent = `WhatsApp check failed: ${error.message}`;
   }
 }
 
@@ -212,9 +231,9 @@ async function startWaha() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/start', { method: 'POST', body: '{}' });
-    $('#waha-status').textContent = `WAHA session status: ${payload.status.status || 'starting'}.`;
+    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'starting'}.`;
   } catch (error) {
-    $('#waha-status').textContent = `WAHA start failed: ${error.message}`;
+    $('#waha-status').textContent = `WhatsApp start failed: ${error.message}`;
   }
 }
 
@@ -227,7 +246,7 @@ async function showQr() {
       return;
     }
     $('#qr-box').innerHTML = `
-      <strong>Scan with the approved WhatsApp account.</strong>
+      <strong>Scan with your WhatsApp account.</strong>
       <img alt="WAHA WhatsApp QR code" src="data:${payload.qr.mimetype};base64,${payload.qr.data}" />
     `;
     $('#waha-status').textContent = 'QR loaded. It expires quickly, so scan it now from WhatsApp Linked Devices.';
@@ -241,7 +260,7 @@ async function loadGroups() {
     await saveSettings();
     const payload = await api('/api/groups');
     if (!payload.groups.length) {
-      $('#group-list').textContent = 'No groups found. Confirm the WAHA session is working and the account belongs to the approved group.';
+      $('#group-list').textContent = 'No groups found yet. Confirm the WhatsApp session is working, then try again.';
       return;
     }
 
@@ -265,7 +284,7 @@ async function loadGroups() {
       `;
       })
       .join('');
-    $('#waha-status').textContent = `Loaded ${payload.groups.length} group chat(s) from ${payload.connector}. Choose only the admin-approved group.`;
+    $('#waha-status').textContent = `Loaded ${payload.groups.length} group chat(s) from ${payload.connector}. Choose the one group you want Nzuko AI to summarize.`;
   } catch (error) {
     $('#waha-status').textContent = `Group load failed: ${error.message}`;
   }
@@ -291,7 +310,7 @@ async function chooseGroup(event) {
     option.querySelector('em').textContent = selected ? 'Selected' : 'Select group';
   });
   collapseGroupList(payload.settings);
-  $('#waha-status').textContent = `Approved group selected: ${payload.settings.approvedGroupName}.`;
+  $('#waha-status').textContent = `Selected group: ${payload.settings.approvedGroupName}.`;
 }
 
 function collapseGroupList(settings) {
@@ -305,7 +324,7 @@ function collapseGroupList(settings) {
         <strong>Selected group</strong>
         <small>${escapeHtml(settings.approvedGroupName)} &middot; ${escapeHtml(settings.approvedGroupId)}</small>
       </span>
-      <button id="change-group" type="button" class="button secondary">Change</button>
+      <button id="change-group" type="button" class="button secondary">Choose another group</button>
     </div>
   `;
   $('#change-group').addEventListener('click', loadGroups);

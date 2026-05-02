@@ -184,7 +184,7 @@ export async function configureWahaWebhook({ baseUrl, session, apiKey, webhookUr
     noweb: {
       store: {
         enabled: true,
-        fullSync: false,
+        fullSync: true,
       },
     },
     client: {
@@ -220,7 +220,7 @@ export async function createWahaSession({ baseUrl, session, apiKey, webhookUrl }
         noweb: {
           store: {
             enabled: true,
-            fullSync: false,
+            fullSync: true,
           },
         },
         client: {

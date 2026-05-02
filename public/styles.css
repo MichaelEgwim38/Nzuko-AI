@@ -731,6 +731,10 @@ textarea {
   margin-top: 18px;
 }
 
+.managed-hidden {
+  display: none !important;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
@@ -1059,6 +1063,12 @@ textarea {
   font-weight: 800;
 }
 
+.connect-copy,
+.workspace-intro-copy {
+  max-width: 760px;
+  line-height: 1.65;
+}
+
 .hint {
   margin: 12px 0 0;
   line-height: 1.45;
@@ -1307,7 +1317,6 @@ pre {
 
   .login-aside {
     padding: 0 4px;
-    order: -1;
   }
 
   .login-aside h2 {
@@ -1335,7 +1344,9 @@ pre {
 
   .app-topbar {
     padding: 12px 14px;
-    gap: 8px;
+    gap: 10px;
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .app-brand .brand-lockup-icon {
@@ -1352,8 +1363,7 @@ pre {
   }
 
   .app-brand .brand-lockup-tagline {
-    font-size: 7px;
-    letter-spacing: 0.08em;
+    display: none;
   }
 
   .app-topbar .button {
@@ -1361,6 +1371,7 @@ pre {
     flex: 0 0 auto;
     padding: 8px 10px;
     font-size: 13px;
+    margin-left: auto;
   }
 
   .hero,
@@ -1378,6 +1389,12 @@ pre {
 
   .dashboard-steps-strip {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-intro-copy,
+  .connect-copy {
+    font-size: 14px;
+    line-height: 1.55;
   }
 
   .lead {
