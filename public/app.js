@@ -154,7 +154,7 @@ async function startApp() {
 
 async function loadStatus() {
   const status = await api('/api/status');
-  managedWahaWorkspace = Boolean(status.userScoped);
+  managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
   currentApprovedGroupId = status.settings.approvedGroupId || '';
   $('#connector').textContent = status.connector;
@@ -173,7 +173,7 @@ async function loadStatus() {
   if (status.transcription && !status.transcription.openaiKeyConfigured) {
     $('#waha-status').textContent = 'WAHA is connected. Add OPENAI_API_KEY to .env before real voice-note transcription will run.';
   } else if (managedWahaWorkspace) {
-    $('#waha-status').textContent = 'Your WhatsApp connection is isolated to your account. Start your own session, scan your own QR, then load only your groups.';
+    $('#waha-status').textContent = 'This workspace uses one shared WhatsApp connection. If you need to switch people, end the current session and let the next user scan the new QR.';
   }
   $('#approve-status').textContent = managedWahaWorkspace
     ? 'Review the recap, then approve it when you are ready to post or export it.'
@@ -260,7 +260,7 @@ async function loadGroups() {
     await saveSettings();
     const payload = await api('/api/groups');
     if (!payload.groups.length) {
-      $('#group-list').textContent = 'No groups found yet. Confirm the WhatsApp session is working, then try again.';
+      $('#group-list').textContent = 'No groups found yet. Confirm the shared WhatsApp session is working, then try again.';
       return;
     }
 
@@ -284,7 +284,7 @@ async function loadGroups() {
       `;
       })
       .join('');
-    $('#waha-status').textContent = `Loaded ${payload.groups.length} group chat(s) from ${payload.connector}. Choose the one group you want Nzuko AI to summarize.`;
+    $('#waha-status').textContent = `Loaded ${payload.groups.length} group chat(s) from ${payload.connector}. Choose the one group the current shared WhatsApp session should summarize.`;
   } catch (error) {
     $('#waha-status').textContent = `Group load failed: ${error.message}`;
   }

@@ -226,7 +226,7 @@
                   </div>
                   <button id="load-sample" class="button secondary">Load demo sample</button>
                 </div>
-                <p class="workspace-intro-copy">Each signed-in user gets a separate WhatsApp connection. Scan your own QR, load only your own groups, then choose the one group you want Nzuko AI to watch and summarize.</p>
+                <p class="workspace-intro-copy">This workspace uses one shared WhatsApp connection at a time. Start the session, let the active user scan the QR, then choose the one group Nzuko AI should watch and summarize.</p>
                 <label>
                   Selected WhatsApp group
                   <input id="group-name" placeholder="Shows after you load and choose one of your WhatsApp groups" />
@@ -250,11 +250,11 @@
                 <div class="section-heading">
                   <div>
                     <p class="eyebrow">WhatsApp connection</p>
-                    <h2>Connect your own WhatsApp account</h2>
+                    <h2>Connect the active WhatsApp account</h2>
                   </div>
                   <button id="check-waha" class="button secondary">Check WAHA</button>
                 </div>
-                <p class="hint connect-copy">Start your private WhatsApp session, scan the QR from WhatsApp Linked Devices, then load only your own groups. Nzuko AI handles the server connection behind the scenes.</p>
+                <p class="hint connect-copy">Start the shared WhatsApp session, scan the QR from the phone that should be active right now, then load that account&apos;s groups. Nzuko AI handles the server connection behind the scenes.</p>
                 <div class="field-grid managed-field-grid" data-managed-hidden="true">
                   <label class="managed-field" data-managed-hidden="true">
                     WAHA URL
@@ -278,12 +278,12 @@
                   <button id="configure-webhook" class="button secondary">Enable live capture</button>
                 </div>
                 <div id="qr-box" class="qr-box">Start the session, then show the QR and scan it from WhatsApp Linked Devices.</div>
-                <p class="hint">Once connected, only your own WhatsApp session and your own selected group will be used in this workspace.</p>
+                <p class="hint">Only one WhatsApp account is active at a time. To switch people, end the session and let the next user scan the new QR.</p>
                 <div class="link-row managed-field" data-managed-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
                 <div id="group-list" class="group-list">No WAHA groups loaded yet.</div>
-                <p class="hint" id="waha-status">Start your private WhatsApp session, scan the QR, and load only your own groups.</p>
+                <p class="hint" id="waha-status">Start the shared WhatsApp session, scan the QR from the active phone, and load that account&apos;s groups.</p>
               </section>
 
               <section class="panel" id="messages">
@@ -367,11 +367,11 @@
                   <li>Private chats stay out of scope.</li>
                   <li>Voice notes are transcribed only with group consent.</li>
                   <li>Raw drafts can be cleared while approved minutes stay in your audit log.</li>
-                  <li>Every signed-in user has an isolated WhatsApp session and review flow.</li>
+                  <li>Only one shared WhatsApp session is active at a time in this workspace.</li>
                 </ul>
                 <ol class="setup-steps">
                   <li>Sign in with your own Google account.</li>
-                  <li>Start your WhatsApp session and scan your QR.</li>
+                  <li>Start the shared WhatsApp session and scan the QR from the phone that should be active now.</li>
                   <li>Choose the one group you want Nzuko AI to summarize.</li>
                   <li>Review the draft minutes before approving them.</li>
                   <li>Ask for corrections in the group within the review window.</li>

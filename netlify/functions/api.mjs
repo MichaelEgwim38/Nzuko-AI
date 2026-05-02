@@ -28,33 +28,21 @@ const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECON
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
 const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$/, '');
 const managedWahaApiKey = String(process.env.WAHA_API_KEY || '');
+const sharedWorkspaceScope = 'shared';
 
-function userScope(session = {}) {
-  return String(session.userId || session.email || 'shared').trim().toLowerCase();
-}
-
-function deriveWahaSessionName(session = {}) {
-  const base = String(session.userId || session.email || 'shared-user')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-  return `user-${base || 'shared-user'}`;
-}
-
-function managedSettingsForUser(settings = {}, session = {}) {
+function managedSettings(settings = {}) {
   return {
     ...settings,
     connectorMode: managedWahaBaseUrl ? 'waha' : settings.connectorMode,
     wahaBaseUrl: managedWahaBaseUrl || settings.wahaBaseUrl,
     wahaApiKey: managedWahaApiKey || settings.wahaApiKey,
-    wahaSession: deriveWahaSessionName(session),
+    wahaSession: process.env.WAHA_SESSION || settings.wahaSession || 'default',
   };
 }
 
-function webhookTokenForUser(session = {}) {
+function webhookToken() {
   return createHmac('sha256', process.env.ADMIN_SESSION_SECRET || 'nzuko-webhook-secret')
-    .update(userScope(session))
+    .update(sharedWorkspaceScope)
     .digest('hex');
 }
 
@@ -246,8 +234,8 @@ async function pullWahaMessagesForRange({ settings, range, limit = 1000 }) {
   }
 }
 
-async function ensureUserWahaSession({ settings, requestUrl, session }) {
-  const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha?scope=${encodeURIComponent(userScope(session))}&token=${encodeURIComponent(webhookTokenForUser(session))}`;
+async function ensureManagedWahaSession({ settings, requestUrl }) {
+  const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha?token=${encodeURIComponent(webhookToken())}`;
   try {
     await configureWahaWebhook({
       baseUrl: settings.wahaBaseUrl,
@@ -337,7 +325,7 @@ export default async function handler(request) {
   try {
     if (request.method === 'GET' && pathname === '/api/auth/status') {
       const session = readUserSession(request);
-      const state = session ? await loadAppState(userScope(session)) : null;
+      const state = session ? await loadAppState(sharedWorkspaceScope) : null;
       const supabase = supabaseAuthConfig();
       return sendJson(200, {
         authenticated: Boolean(session),
@@ -365,10 +353,9 @@ export default async function handler(request) {
         return sendJson(401, { error: 'The provider did not return a usable account profile.' });
       }
 
-      const scope = userScope(user);
-      const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, user);
-      await saveAppState(scope, state);
+      const state = await loadAppState(sharedWorkspaceScope);
+      state.settings = managedSettings(state.settings);
+      await saveAppState(sharedWorkspaceScope, state);
 
       const token = createSessionToken(user, adminSessionMaxAgeSeconds);
       return sendJson(200, {
@@ -392,18 +379,16 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/webhooks/waha') {
-      const scope = requestUrl.searchParams.get('scope') || 'shared';
+      const scope = sharedWorkspaceScope;
       const token = requestUrl.searchParams.get('token') || '';
-      const expectedToken = createHmac('sha256', process.env.ADMIN_SESSION_SECRET || 'nzuko-webhook-secret')
-        .update(scope)
-        .digest('hex');
+      const expectedToken = webhookToken();
       if (!token || token !== expectedToken) {
         return sendJson(401, { error: 'Invalid webhook token.' });
       }
       const body = await readBody(request);
       const payload = body.payload || body;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, { userId: scope });
+      state.settings = managedSettings(state.settings);
       const approvedGroupId = state.settings.approvedGroupId;
       const chatId = approvedGroupChatId(payload);
       state.webhookStats.received += 1;
@@ -431,15 +416,16 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/status') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       const capturedCount = await countCapturedMessages(scope, { groupId: state.settings.approvedGroupId });
       return sendJson(200, {
         app: 'Nzuko AI',
         connector: state.settings.connectorMode,
         settings: publicSettings(state.settings),
-        userScoped: true,
+        userScoped: false,
+        managedWahaConnection: Boolean(managedWahaBaseUrl),
         draftReady: Boolean(state.currentDraft),
         auditCount: state.auditLog.length,
         capturedCount,
@@ -454,9 +440,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/groups') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       if (state.settings.connectorMode === 'waha') {
         const groups = await listGroupsFromWaha({
           baseUrl: state.settings.wahaBaseUrl,
@@ -469,9 +455,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/status') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -481,10 +467,10 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/start') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
-      await ensureUserWahaSession({ settings: state.settings, requestUrl, session });
+      state.settings = managedSettings(state.settings);
+      await ensureManagedWahaSession({ settings: state.settings, requestUrl });
       const status = await startWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -494,10 +480,10 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/webhook') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
-      const webhookUrl = await ensureUserWahaSession({ settings: state.settings, requestUrl, session });
+      state.settings = managedSettings(state.settings);
+      const webhookUrl = await ensureManagedWahaSession({ settings: state.settings, requestUrl });
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -507,9 +493,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/qr') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       const qr = await getWahaQr({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -524,10 +510,10 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/settings') {
       const body = await readBody(request);
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
       state.settings = {
-        ...managedSettingsForUser(state.settings, session),
+        ...managedSettings(state.settings),
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
@@ -542,9 +528,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       if (!state.settings.consentConfirmed) {
         return sendJson(403, { error: 'Confirm group/admin consent before pulling WhatsApp group messages.' });
       }
@@ -591,9 +577,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/captured') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       const messages = await loadCapturedMessages(scope, {
         groupId: state.settings.approvedGroupId,
         from: requestUrl.searchParams.get('from'),
@@ -605,9 +591,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/messages/range') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       const range = selectedDateRange({
         preset: requestUrl.searchParams.get('preset'),
         from: requestUrl.searchParams.get('from'),
@@ -624,9 +610,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull-today') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       if (!state.settings.consentConfirmed) {
         return sendJson(403, { error: 'Confirm group/admin consent before pulling WhatsApp group messages.' });
       }
@@ -672,9 +658,9 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/recap/generate') {
       const body = await readBody(request);
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       let chatText = body.chatText;
       let voiceNotes = body.voiceNotes;
       let sourceMessages = [];
@@ -709,9 +695,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/recap/approve') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
-      state.settings = managedSettingsForUser(state.settings, session);
+      state.settings = managedSettings(state.settings);
       if (!state.currentDraft) {
         return sendJson(400, { error: 'No recap draft is ready.' });
       }
@@ -749,13 +735,13 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/audit') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
       return sendJson(200, { auditLog: state.auditLog });
     }
 
     if (request.method === 'POST' && pathname === '/api/purge') {
-      const scope = userScope(session);
+      const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
       state.currentDraft = null;
       await saveAppState(scope, state);
