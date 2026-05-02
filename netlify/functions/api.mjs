@@ -107,7 +107,7 @@ async function loadOrCreateUserAccess(user = {}) {
       trialRecapsUsed: 0,
       trialVoiceNotesUsed: 0,
       subscriptionStatus: 'trial',
-      planName: 'Starter trial',
+      planName: 'Early access',
     };
     users.push(record);
     changed = true;
@@ -147,7 +147,7 @@ function trialStatus(record = {}) {
 
   return {
     subscriptionStatus: record.subscriptionStatus || 'trial',
-    planName: record.planName || 'Starter trial',
+    planName: record.planName || 'Early access',
     trialDays,
     trialEndsAt: record.trialEndsAt,
     daysRemaining,
@@ -226,10 +226,10 @@ async function touchSharedOwnerActivity(state, user) {
 
 function ensureTrialAllowed(trial, feature = 'use Nzuko AI') {
   if (!trial.canUseApp) {
-    throw new Error('Your free trial has ended. Subscribe to continue using Nzuko AI.');
+    throw new Error('Your early-access limit has ended. Contact Nzuko AI if you still need testing access.');
   }
   if (feature === 'recap' && !trial.isSubscribed && trial.recapRemaining <= 0) {
-    throw new Error('You have reached your trial recap limit. Subscribe to continue generating recaps.');
+    throw new Error('You have reached your early-access recap limit. Contact Nzuko AI if you need more test access.');
   }
 }
 

@@ -67,13 +67,13 @@ function renderWorkspaceStatus(status = {}) {
   if (trialSummary) {
     if (trial.isSubscribed) {
       trialSummary.hidden = false;
-      trialSummary.textContent = `${trial.planName || 'Active plan'} is active.`;
+      trialSummary.textContent = `${trial.planName || 'Access'} is active.`;
     } else if (trial.canUseApp) {
       trialSummary.hidden = false;
-      trialSummary.textContent = `Free trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left · ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
+      trialSummary.textContent = `Early access: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left · ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
     } else {
       trialSummary.hidden = false;
-      trialSummary.textContent = 'Your free trial has ended. Subscribe to continue using Nzuko AI.';
+      trialSummary.textContent = 'Your early-access limit has ended. Contact Nzuko AI if you still need testing access.';
     }
   }
 
