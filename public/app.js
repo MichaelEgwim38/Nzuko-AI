@@ -6,6 +6,24 @@ let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
 
+function firstNameFromUser(user = {}) {
+  const fullName = String(user.displayName || user.name || user.email || '').trim();
+  if (!fullName) return 'there';
+  return fullName.split(/\s+/)[0];
+}
+
+function applyWelcomeUser(user = {}) {
+  const firstName = firstNameFromUser(user);
+  const heading = $('#welcome-heading');
+  const kicker = $('#welcome-kicker');
+  if (heading) {
+    heading.textContent = `Welcome back, ${firstName}`;
+  }
+  if (kicker) {
+    kicker.textContent = 'Your WhatsApp meeting workspace';
+  }
+}
+
 function applyManagedWorkspaceUi() {
   document.querySelectorAll('[data-managed-hidden="true"]').forEach((node) => {
     node.classList.toggle('managed-hidden', managedWahaWorkspace);
@@ -157,9 +175,6 @@ async function loadStatus() {
   managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
   currentApprovedGroupId = status.settings.approvedGroupId || '';
-  $('#connector').textContent = status.connector;
-  $('#posting-mode').textContent = status.settings.postingMode;
-  $('#audit-count').textContent = String(status.auditCount + status.capturedCount);
   $('#group-name').value = status.settings.approvedGroupName || '';
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
@@ -178,12 +193,6 @@ async function loadStatus() {
   $('#approve-status').textContent = managedWahaWorkspace
     ? 'Review the recap, then approve it when you are ready to post or export it.'
     : 'Posting uses the currently selected connector mode.';
-}
-
-async function loadSample() {
-  const sample = await api('/api/sample');
-  $('#chat-text').value = sample.chatText;
-  $('#voice-notes').value = sample.voiceNotes;
 }
 
 function settingsPayload(extra = {}) {
@@ -493,7 +502,6 @@ async function loadAudit() {
     .join('');
 }
 
-$('#load-sample').addEventListener('click', loadSample);
 $('#save-settings').addEventListener('click', saveSettings);
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
@@ -518,12 +526,15 @@ clearDraftFields();
 const auth = await api('/api/auth/status');
 authConfig = auth.auth || null;
 if (auth.authenticated) {
+  applyWelcomeUser(auth.user || {});
   showApp();
   await startApp();
 } else {
   try {
     const connected = await completeSocialSession();
     if (connected) {
+      const refreshedAuth = await api('/api/auth/status');
+      applyWelcomeUser(refreshedAuth.user || {});
       showApp();
       await startApp();
     } else if (!authConfig?.configured) {

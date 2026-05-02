@@ -590,7 +590,7 @@ textarea {
 .dashboard-main {
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 14px;
 }
 
 .dashboard-rail {
@@ -619,12 +619,14 @@ textarea {
 
 .dashboard-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
-  gap: 26px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
 }
 
 .dashboard-hero-copy {
   min-width: 0;
+  max-width: 720px;
 }
 
 .dashboard-hero-actions {
@@ -760,7 +762,7 @@ h2 {
 }
 
 .lead {
-  max-width: 690px;
+  max-width: 620px;
   color: #5b6a61;
   font-size: 18px;
   line-height: 1.65;
@@ -920,11 +922,16 @@ label,
 
 .workspace-stack {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .rail-card {
   padding: 20px;
+}
+
+.dashboard-rail .rail-card {
+  position: sticky;
+  top: 92px;
 }
 
 .rail-link {

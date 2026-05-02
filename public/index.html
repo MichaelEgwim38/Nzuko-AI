@@ -136,116 +136,14 @@
           <section class="dashboard-main">
             <section class="hero dashboard-hero" id="overview">
               <div class="dashboard-hero-copy">
-                <p class="eyebrow">Welcome back</p>
-                <h1>Nzuko AI</h1>
+                <p class="eyebrow" id="welcome-kicker">Welcome back</p>
+                <h1 id="welcome-heading">Nzuko AI</h1>
                 <p class="lead">We capture decisions, action items, and voice-note summaries from your WhatsApp meetings so your community stays aligned and nothing gets missed.</p>
-                <div class="dashboard-hero-actions">
-                  <a class="button" href="#connect">Connect WhatsApp group</a>
-                  <a class="button secondary light-secondary" href="#messages">Upload voice note</a>
-                </div>
-              </div>
-
-              <div class="dashboard-hero-visual" aria-hidden="true">
-                <div class="hero-visual-card">
-                  <div class="hero-visual-wave"></div>
-                  <div class="hero-visual-badges">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="status-grid dashboard-status-grid">
-                <div>
-                  <span>Connector</span>
-                  <strong id="connector">Loading</strong>
-                  <small>Connection status</small>
-                </div>
-                <div>
-                  <span>Audit log</span>
-                  <strong id="audit-count">0</strong>
-                  <small>Approved entries</small>
-                </div>
-                <div>
-                  <span>Posting</span>
-                  <strong id="posting-mode">Review first</strong>
-                  <small>Current mode</small>
-                </div>
-                <div>
-                  <span>Active groups</span>
-                  <strong>1</strong>
-                  <small>Approved scope</small>
-                </div>
               </div>
               <button id="logout" class="button secondary logout-button" type="button">Log out</button>
             </section>
 
-            <section class="panel chart-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">Meetings over time</p>
-                  <h2>Activity trend</h2>
-                </div>
-                <span class="chart-range">Last 7 days</span>
-              </div>
-              <svg class="trend-chart" viewBox="0 0 760 220" aria-hidden="true">
-                <defs>
-                  <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stop-color="rgba(111, 174, 69, 0.22)"/>
-                    <stop offset="100%" stop-color="rgba(111, 174, 69, 0)"/>
-                  </linearGradient>
-                </defs>
-                <path class="trend-area" d="M20 170 C80 150, 120 110, 180 120 S300 155, 360 132 S470 92, 540 114 S650 122, 720 88 L720 210 L20 210 Z"></path>
-                <path class="trend-line" d="M20 170 C80 150, 120 110, 180 120 S300 155, 360 132 S470 92, 540 114 S650 122, 720 88"></path>
-                <circle cx="720" cy="88" r="6"></circle>
-              </svg>
-            </section>
-
-            <section class="dashboard-steps-strip">
-              <div>
-                <strong>1</strong>
-                <span>Connect your WhatsApp</span>
-              </div>
-              <div>
-                <strong>2</strong>
-                <span>Choose your group</span>
-              </div>
-              <div>
-                <strong>3</strong>
-                <span>Review the recap</span>
-              </div>
-            </section>
-
             <div class="workspace-stack">
-              <section class="panel workspace-intro-panel">
-                <div class="section-heading">
-                  <div>
-                    <p class="eyebrow">Your workspace</p>
-                    <h2>Connect once, then work from one chosen group</h2>
-                  </div>
-                  <button id="load-sample" class="button secondary">Load demo sample</button>
-                </div>
-                <p class="workspace-intro-copy">This workspace uses one shared WhatsApp connection at a time. Start the session, let the active user scan the QR, then choose the one group Nzuko AI should watch and summarize.</p>
-                <label>
-                  Selected WhatsApp group
-                  <input id="group-name" placeholder="Shows after you load and choose one of your WhatsApp groups" />
-                </label>
-                <label class="managed-field" data-managed-hidden="true">
-                  Connector mode
-                  <select id="connector-mode">
-                    <option value="mock">Mock demo</option>
-                    <option value="waha">WAHA linked device</option>
-                  </select>
-                </label>
-                <label class="check-row">
-                  <input id="consent-confirmed" type="checkbox" />
-                  <span>I have permission to summarize this group and I will review drafts before posting.</span>
-                </label>
-                <button id="save-settings" class="button">Save workspace settings</button>
-                <p class="hint" id="settings-status">Confirm consent and select one group before approving a recap.</p>
-              </section>
-
               <section class="panel" id="connect">
                 <div class="section-heading">
                   <div>
@@ -255,6 +153,17 @@
                   <button id="check-waha" class="button secondary">Check WAHA</button>
                 </div>
                 <p class="hint connect-copy">Start the shared WhatsApp session, scan the QR from the phone that should be active right now, then load that account&apos;s groups. Nzuko AI handles the server connection behind the scenes.</p>
+                <label>
+                  Selected WhatsApp group
+                  <input id="group-name" placeholder="Shows after you load and choose one of the available WhatsApp groups" />
+                </label>
+                <label class="managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
+                  Connector mode
+                  <select id="connector-mode">
+                    <option value="mock">Mock demo</option>
+                    <option value="waha">WAHA linked device</option>
+                  </select>
+                </label>
                 <div class="field-grid managed-field-grid managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <label class="managed-field managed-hidden" data-managed-hidden="true">
                     WAHA URL
@@ -284,6 +193,12 @@
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
                 <div id="group-list" class="group-list">No WAHA groups loaded yet.</div>
+                <label class="check-row">
+                  <input id="consent-confirmed" type="checkbox" />
+                  <span>I have permission to summarize this group and I will review drafts before posting.</span>
+                </label>
+                <button id="save-settings" class="button">Save workspace settings</button>
+                <p class="hint" id="settings-status">Confirm consent and select one group before approving a recap.</p>
                 <p class="hint" id="waha-status">Start the shared WhatsApp session, scan the QR from the active phone, and load that account&apos;s groups.</p>
               </section>
 
@@ -360,24 +275,6 @@
                 <p class="hint" id="approve-status">Review the recap, then approve it when you are ready to post or export it.</p>
               </section>
 
-              <section class="panel" id="privacy">
-                <p class="eyebrow">Workspace safeguards</p>
-                <h2>How Nzuko AI keeps your workspace focused</h2>
-                <ul class="rules">
-                  <li>Only the group you select is processed.</li>
-                  <li>Private chats stay out of scope.</li>
-                  <li>Voice notes are transcribed only with group consent.</li>
-                  <li>Raw drafts can be cleared while approved minutes stay in your audit log.</li>
-                  <li>Only one shared WhatsApp session is active at a time in this workspace.</li>
-                </ul>
-                <ol class="setup-steps">
-                  <li>Sign in with your own Google account.</li>
-                  <li>Start the shared WhatsApp session and scan the QR from the phone that should be active now.</li>
-                  <li>Choose the one group you want Nzuko AI to summarize.</li>
-                  <li>Review the draft minutes before approving them.</li>
-                  <li>Ask for corrections in the group within the review window.</li>
-                </ol>
-              </section>
             </div>
           </section>
 
@@ -391,22 +288,6 @@
                 <a class="rail-link" href="#review">View all</a>
               </div>
               <div id="audit-log" class="audit-log">No approved recaps yet.</div>
-            </section>
-
-            <section class="panel rail-card">
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">Integrations</p>
-                  <h2>Connected tools</h2>
-                </div>
-                <a class="rail-link" href="#connect">Manage all</a>
-              </div>
-              <div class="integration-list">
-                <div><strong>WhatsApp</strong><span>Connected</span></div>
-                <div><strong>Google Drive</strong><span>Ready</span></div>
-                <div><strong>Voice notes</strong><span>Monitored</span></div>
-                <div><strong>Posting</strong><span>Review first</span></div>
-              </div>
             </section>
           </aside>
         </div>
