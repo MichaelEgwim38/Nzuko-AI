@@ -237,6 +237,27 @@ async function startWaha() {
   }
 }
 
+async function switchWahaUser() {
+  try {
+    const payload = await api('/api/waha/logout', { method: 'POST', body: '{}' });
+    currentApprovedGroupId = '';
+    $('#group-name').value = '';
+    $('#group-list').textContent = 'No WAHA groups loaded yet.';
+    $('#qr-box').textContent = 'Session ended. Start the session again, show the QR, and let the next person scan from WhatsApp Linked Devices.';
+    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR.`;
+    await api('/api/settings', {
+      method: 'POST',
+      body: JSON.stringify(settingsPayload({
+        approvedGroupId: '',
+        approvedGroupName: '',
+      })),
+    });
+    await loadStatus();
+  } catch (error) {
+    $('#waha-status').textContent = `WhatsApp switch failed: ${error.message}`;
+  }
+}
+
 async function showQr() {
   try {
     await saveSettings();
@@ -477,6 +498,7 @@ $('#save-settings').addEventListener('click', saveSettings);
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
+$('#switch-waha-user').addEventListener('click', switchWahaUser);
 $('#load-groups').addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
 $('#pull-waha').addEventListener('click', pullWahaMessages);

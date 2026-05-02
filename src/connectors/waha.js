@@ -42,6 +42,14 @@ export async function startWahaSession({ baseUrl, session, apiKey }) {
   return parseWahaResponse(response);
 }
 
+export async function logoutWahaSession({ baseUrl, session, apiKey }) {
+  const response = await fetch(`${normaliseBaseUrl(baseUrl)}/api/sessions/${encodeURIComponent(session)}/logout`, {
+    method: 'POST',
+    headers: wahaHeaders(apiKey),
+  });
+  return parseWahaResponse(response);
+}
+
 export async function getWahaQr({ baseUrl, session, apiKey }) {
   const response = await fetch(`${normaliseBaseUrl(baseUrl)}/api/${encodeURIComponent(session)}/auth/qr`, {
     headers: {

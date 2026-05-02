@@ -20,6 +20,7 @@ import {
   getWahaQr,
   getWahaStatus,
   listGroupsFromWaha,
+  logoutWahaSession,
   postRecapToWaha,
   startWahaSession,
 } from '../../src/connectors/waha.js';
@@ -472,6 +473,18 @@ export default async function handler(request) {
       state.settings = managedSettings(state.settings);
       await ensureManagedWahaSession({ settings: state.settings, requestUrl });
       const status = await startWahaSession({
+        baseUrl: state.settings.wahaBaseUrl,
+        session: state.settings.wahaSession,
+        apiKey: state.settings.wahaApiKey,
+      });
+      return sendJson(200, { status });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/waha/logout') {
+      const scope = sharedWorkspaceScope;
+      const state = await loadAppState(scope);
+      state.settings = managedSettings(state.settings);
+      const status = await logoutWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
         apiKey: state.settings.wahaApiKey,
