@@ -77,7 +77,16 @@ function trialEndIso(startedAt) {
 }
 
 function sessionOwnerName(user = {}) {
-  return String(user.displayName || user.name || user.email || 'Workspace member').trim();
+  const displaySource = String(user.displayName || user.name || '').trim();
+  if (displaySource) {
+    return displaySource.split(/\s+/)[0];
+  }
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email) return 'Workspace member';
+  const localPart = email.split('@')[0] || '';
+  const candidate = localPart.split(/[._-]+/).find(Boolean) || localPart;
+  if (!candidate) return 'Workspace member';
+  return candidate.charAt(0).toUpperCase() + candidate.slice(1);
 }
 
 async function loadOrCreateUserAccess(user = {}) {

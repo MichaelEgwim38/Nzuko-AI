@@ -8,20 +8,39 @@ let managedWahaWorkspace = false;
 let latestStatus = null;
 
 function firstNameFromUser(user = {}) {
-  const fullName = String(user.displayName || user.name || user.email || '').trim();
-  if (!fullName) return 'there';
-  return fullName.split(/\s+/)[0];
+  const displaySource = String(user.displayName || user.name || '').trim();
+  if (displaySource) {
+    return displaySource.split(/\s+/)[0];
+  }
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email) return 'there';
+  const localPart = email.split('@')[0] || '';
+  const candidate = localPart.split(/[._-]+/).find(Boolean) || localPart;
+  if (!candidate) return 'there';
+  return candidate.charAt(0).toUpperCase() + candidate.slice(1);
 }
 
 function applyWelcomeUser(user = {}) {
   const firstName = firstNameFromUser(user);
   const heading = $('#welcome-heading');
   const kicker = $('#welcome-kicker');
+  const sidebarName = $('#sidebar-account-name');
+  const sidebarRole = $('#sidebar-account-role');
+  const sidebarBadge = $('#sidebar-account-badge');
   if (heading) {
     heading.textContent = `Welcome back, ${firstName}`;
   }
   if (kicker) {
     kicker.textContent = 'Your WhatsApp meeting workspace';
+  }
+  if (sidebarName) {
+    sidebarName.textContent = firstName;
+  }
+  if (sidebarRole) {
+    sidebarRole.textContent = 'Your workspace';
+  }
+  if (sidebarBadge) {
+    sidebarBadge.textContent = firstName.charAt(0).toUpperCase();
   }
 }
 
