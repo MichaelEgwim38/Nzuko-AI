@@ -487,6 +487,14 @@ textarea {
   backdrop-filter: none;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .compact-button {
   padding: 8px 12px;
 }
@@ -719,22 +727,6 @@ textarea {
   border: 1px solid rgba(207, 222, 207, 0.95);
 }
 
-.hero-actions {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-  max-width: min(100%, 420px);
-}
-
-.logout-button {
-  position: static;
-  display: none;
-}
-
 .hero::after {
   content: none;
 }
@@ -824,15 +816,15 @@ h2 {
 }
 
 .upgrade-button {
-  background: linear-gradient(135deg, #ff7a18, #ff4d6d);
-  color: #ffffff;
-  box-shadow: 0 14px 28px rgba(255, 77, 109, 0.24);
+  background: linear-gradient(135deg, #f7c948, #f08c00);
+  color: #1f1402;
+  box-shadow: 0 14px 28px rgba(240, 140, 0, 0.28);
 }
 
 .upgrade-button:hover,
 .upgrade-button:focus-visible {
   transform: translateY(-1px);
-  box-shadow: 0 18px 30px rgba(255, 77, 109, 0.28);
+  box-shadow: 0 18px 30px rgba(240, 140, 0, 0.34);
 }
 
 .upgrade-cta {
@@ -1684,7 +1676,7 @@ pre {
     flex: 0 0 auto;
     padding: 8px 10px;
     font-size: 13px;
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .hero,
@@ -1698,12 +1690,6 @@ pre {
 
   .dashboard-hero {
     grid-template-columns: 1fr;
-  }
-
-  .hero-actions {
-    position: static;
-    margin-top: 18px;
-    flex-wrap: wrap;
   }
 
   .dashboard-hero-actions {
@@ -1785,10 +1771,6 @@ pre {
 
   .audit-entry {
     padding: 12px;
-  }
-
-  .logout-button {
-    display: none;
   }
 
   .quick-guide-grid {

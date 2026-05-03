@@ -103,7 +103,18 @@
               <div class="brand-lockup-tagline">MEETING MINUTES. <span>COMMUNITY.</span> CLARITY.</div>
             </div>
           </div>
-          <button id="back-to-login" class="button secondary compact-button" type="button">Log out</button>
+          <div class="topbar-actions">
+            <a
+              id="upgrade-link"
+              class="button compact-button upgrade-button"
+              href="https://buy.stripe.com/test_28E14pfxJ2sV7d2gJO2sM00"
+              target="_blank"
+              rel="noreferrer"
+              hidden
+            >Upgrade now</a>
+            <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
+            <button id="logout" class="button secondary compact-button" type="button">Log out</button>
+          </div>
         </nav>
 
         <div class="dashboard-layout">
@@ -141,18 +152,6 @@
                 <p id="payment-notice" class="status-banner secondary" hidden></p>
                 <p id="upgrade-note" class="status-banner secondary upgrade-note" hidden>Reserve your paid workspace now. We&apos;ll activate your full setup within 7 days. Payment currently opens in Stripe test mode while billing automation is being finalized.</p>
                 <p id="workspace-notice" class="status-banner secondary" hidden></p>
-              </div>
-              <div class="hero-actions">
-                <a
-                  id="upgrade-link"
-                  class="button compact-button upgrade-button"
-                  href="https://buy.stripe.com/test_28E14pfxJ2sV7d2gJO2sM00"
-                  target="_blank"
-                  rel="noreferrer"
-                  hidden
-                >Upgrade now</a>
-                <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
-                <button id="logout" class="button secondary logout-button" type="button">Log out</button>
               </div>
             </section>
 
