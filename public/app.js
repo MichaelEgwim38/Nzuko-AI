@@ -139,7 +139,7 @@ function renderWorkspaceStatus(status = {}) {
     } else if (sharedSession.isExpired) {
       notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
-      notice = 'No active shared WhatsApp connection right now. Start a session to connect your account.';
+      notice = 'No active shared WhatsApp connection right now. Open Nzuko AI on another screen, then start a session to connect your account.';
     }
     workspaceNotice.hidden = !notice;
     workspaceNotice.textContent = notice;
@@ -389,8 +389,8 @@ async function switchWahaUser() {
     currentApprovedGroupId = '';
     $('#group-name').value = '';
     $('#group-list').textContent = 'No WAHA groups loaded yet.';
-    $('#qr-box').textContent = 'Session ended. Start the session again, show the QR, and let the next person scan from WhatsApp Linked Devices.';
-    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR.`;
+    $('#qr-box').textContent = 'Session ended. Start the session again, show the QR on the shared screen, and let the next person scan from WhatsApp Linked Devices.';
+    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR from another screen.`;
     await api('/api/settings', {
       method: 'POST',
       body: JSON.stringify(settingsPayload({
@@ -409,14 +409,14 @@ async function showQr() {
     await saveSettings();
     const payload = await api('/api/waha/qr');
     if (!payload.qr?.data || !payload.qr?.mimetype) {
-      $('#qr-box').textContent = 'QR is not available yet. Start or restart the session and try again.';
+      $('#qr-box').textContent = 'QR is not available yet. Start or restart the session on another screen and try again.';
       return;
     }
     $('#qr-box').innerHTML = `
-      <strong>Scan with your WhatsApp account.</strong>
+      <strong>Open this QR on another screen and scan it with your WhatsApp account.</strong>
       <img alt="WAHA WhatsApp QR code" src="data:${payload.qr.mimetype};base64,${payload.qr.data}" />
     `;
-    $('#waha-status').textContent = 'QR loaded. It expires quickly, so scan it now from WhatsApp Linked Devices.';
+    $('#waha-status').textContent = 'QR loaded. It expires quickly, so scan it now from WhatsApp Linked Devices on your phone while this QR stays open on another screen.';
   } catch (error) {
     $('#qr-box').textContent = `QR failed: ${error.message}`;
   }

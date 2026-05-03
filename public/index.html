@@ -168,7 +168,7 @@
                   </div>
                   <button id="check-waha" class="button secondary">Check WAHA</button>
                 </div>
-                <p class="hint connect-copy">Start the shared WhatsApp session, scan the QR from the phone that should be active right now, then load that account&apos;s groups. Nzuko AI handles the server connection behind the scenes.</p>
+                <p class="hint connect-copy">Start the shared WhatsApp session, open Nzuko AI on a laptop, tablet, or other second screen, then scan the QR from the phone that should be active right now. Nzuko AI handles the server connection behind the scenes.</p>
                 <label>
                   Selected WhatsApp group
                   <input id="group-name" placeholder="Shows after you load and choose one of the available WhatsApp groups" />
@@ -203,8 +203,8 @@
                   <button id="pull-today" class="button">Pull today&apos;s messages</button>
                   <button id="configure-webhook" class="button secondary">Enable live capture</button>
                 </div>
-                <div id="qr-box" class="qr-box">Start the session, then show the QR and scan it from WhatsApp Linked Devices.</div>
-                <p class="hint">Only one WhatsApp account is active at a time. To switch people, end the session and let the next user scan the new QR.</p>
+                <div id="qr-box" class="qr-box">Start the session, then show the QR on this screen and scan it from WhatsApp Linked Devices on your phone.</div>
+                <p class="hint">A second screen is required for QR linking. If you only have one phone, open Nzuko AI on a laptop, tablet, or another device first. Only one WhatsApp account is active at a time. To switch people, end the session and let the next user scan the new QR.</p>
                 <div class="link-row managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
@@ -215,7 +215,7 @@
                 </label>
                 <button id="save-settings" class="button">Save workspace settings</button>
                 <p class="hint" id="settings-status">Confirm consent and select one group before approving a recap.</p>
-                <p class="hint" id="waha-status">Start the shared WhatsApp session, scan the QR from the active phone, and load that account&apos;s groups.</p>
+                <p class="hint" id="waha-status">Start the shared WhatsApp session on another screen, scan the QR from the active phone, and load that account&apos;s groups.</p>
               </section>
 
               <section class="panel" id="messages">
@@ -345,10 +345,11 @@
             <ol>
               <li>Sign in to Nzuko AI.</li>
               <li>Click Start session.</li>
-              <li>Click Show QR.</li>
+              <li>Click Show QR on a laptop, tablet, or other second screen.</li>
               <li>Open WhatsApp on your phone and go to Linked Devices.</li>
-              <li>Scan the QR code.</li>
+              <li>Scan the QR code from that other screen.</li>
             </ol>
+            <p class="hint">If you only have one phone, you will need another screen before WhatsApp can connect.</p>
           </section>
           <section>
             <h3>Load your group</h3>
@@ -364,7 +365,7 @@
             <ol>
               <li>Click Disconnect and switch WhatsApp.</li>
               <li>Start a new session.</li>
-              <li>Show the QR again.</li>
+              <li>Show the QR again on the shared screen.</li>
               <li>The next person scans with their own WhatsApp.</li>
             </ol>
             <p class="hint">Only one WhatsApp account can be connected at a time in the current setup.</p>

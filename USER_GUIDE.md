@@ -13,6 +13,7 @@ Nzuko AI helps the Umuokoroji Family WhatsApp Group capture decisions, action it
 1. Open the Nzuko AI web link shared by the operator.
 2. Enter the private admin passcode.
 3. You will enter the dashboard.
+4. When connecting WhatsApp, open Nzuko AI on a laptop, tablet, or another second screen so your phone can scan the QR code.
 
 ## What The Admin Does
 
@@ -64,6 +65,8 @@ Nzuko AI helps the Umuokoroji Family WhatsApp Group capture decisions, action it
 ## Current Limitation
 
 If the app is running from a laptop with a temporary tunnel, the link may stop working if the laptop sleeps, restarts, loses internet, or the tunnel expires.
+
+WhatsApp QR linking also requires a second screen. A user cannot scan the QR code with the same phone that is displaying Nzuko AI.
 
 ## Estimated Cost Per Use
 

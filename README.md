@@ -69,7 +69,7 @@ For a nontechnical admin, Nzuko AI should be delivered as a hosted pilot:
 2. The admin opens one secure web link.
 3. The admin confirms group consent.
 4. The admin enters the private `ADMIN_PASSCODE`.
-5. The admin scans a WhatsApp Linked Devices QR with the approved account.
+5. The admin opens Nzuko AI on a laptop, tablet, or other second screen and scans the WhatsApp Linked Devices QR with the approved account from their phone.
 6. The admin selects only the approved group.
 7. The admin reviews each draft before posting.
 
@@ -103,7 +103,7 @@ If WhatsApp delivers a voice note in an unsupported audio format such as OGG/Opu
 ## Next Integration Step
 
 1. Run WAHA separately.
-2. Scan QR with the approved assistant/admin WhatsApp account.
+2. Open the QR on another screen and scan it with the approved assistant/admin WhatsApp account.
 3. Select only the approved group.
 4. Stream group messages into this app.
 5. Send approved recap text back through WAHA.
