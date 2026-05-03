@@ -135,9 +135,9 @@ function renderWorkspaceStatus(status = {}) {
     } else if (sharedSession.hasOwner && sharedSession.isCurrentUserOwner) {
       notice = 'You are using the active shared WhatsApp connection right now.';
     } else if (sharedSession.hasOwner) {
-      notice = 'Another WhatsApp account is currently connected. Switch WhatsApp user to connect your own account.';
+      notice = 'Another WhatsApp account is currently connected. Click Disconnect and switch WhatsApp to connect your own account.';
     } else if (sharedSession.isExpired) {
-      notice = 'The current WhatsApp connection appears inactive. You can switch and connect your own account.';
+      notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
       notice = 'No WhatsApp account is connected yet. Start a session to connect your account.';
     }
