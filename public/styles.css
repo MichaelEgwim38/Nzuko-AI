@@ -1254,6 +1254,37 @@ pre {
   color: var(--ink);
 }
 
+.billing-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.billing-user-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfcfc;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.billing-user-card strong,
+.billing-user-card small {
+  display: block;
+}
+
+.billing-user-card small {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.billing-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 760px) {
   body {
     background: linear-gradient(180deg, #f7fbf5, var(--bg));

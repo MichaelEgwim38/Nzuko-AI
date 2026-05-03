@@ -94,6 +94,19 @@ function defaultSharedSession() {
   };
 }
 
+function defaultBillingState() {
+  return {
+    pendingActivations: {},
+    lastStripeEventId: '',
+    lastStripeEventType: '',
+    lastStripeEventAt: null,
+  };
+}
+
+function defaultUsageEvents() {
+  return [];
+}
+
 export function createDefaultState() {
   return {
     settings: defaultSettings(),
@@ -101,6 +114,8 @@ export function createDefaultState() {
     auditLog: [],
     webhookStats: defaultWebhookStats(),
     sharedSession: defaultSharedSession(),
+    billing: defaultBillingState(),
+    usageEvents: defaultUsageEvents(),
   };
 }
 
@@ -122,6 +137,15 @@ function mergeState(stored = {}) {
       ...defaults.sharedSession,
       ...(stored.sharedSession || {}),
     },
+    billing: {
+      ...defaults.billing,
+      ...(stored.billing || {}),
+      pendingActivations: {
+        ...defaults.billing.pendingActivations,
+        ...((stored.billing && stored.billing.pendingActivations) || {}),
+      },
+    },
+    usageEvents: Array.isArray(stored.usageEvents) ? stored.usageEvents : [],
   };
 }
 

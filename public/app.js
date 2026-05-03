@@ -6,6 +6,8 @@ let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
 let latestStatus = null;
+let paymentQueryState = null;
+let adminBillingLoaded = false;
 
 function firstNameFromUser(user = {}) {
   const displaySource = String(user.displayName || user.name || '').trim();
@@ -57,18 +59,35 @@ function setButtonDisabled(id, disabled) {
   }
 }
 
+function readPaymentQueryState() {
+  const url = new URL(window.location.href);
+  const payment = url.searchParams.get('payment');
+  if (!payment) return null;
+  url.searchParams.delete('payment');
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+  return payment;
+}
+
 function renderWorkspaceStatus(status = {}) {
   latestStatus = status;
   const trial = status.trial || {};
   const sharedSession = status.sharedSession || {};
+  const billing = status.billing || {};
+  const admin = status.admin || {};
   const trialSummary = $('#trial-summary');
+  const paymentNotice = $('#payment-notice');
   const upgradeCta = $('#upgrade-cta');
+  const upgradeLink = $('#upgrade-link');
   const workspaceNotice = $('#workspace-notice');
+  const adminBillingPanel = $('#admin-billing-panel');
 
   if (trialSummary) {
     if (trial.isSubscribed) {
       trialSummary.hidden = false;
       trialSummary.textContent = `${trial.planName || 'Paid access'} is active.`;
+    } else if (trial.isPendingActivation) {
+      trialSummary.hidden = false;
+      trialSummary.textContent = `Payment received. Your paid workspace is reserved and will be activated within ${billing.activationWindowDays || 7} days.`;
     } else if (trial.canUseApp) {
       trialSummary.hidden = false;
       trialSummary.textContent = `Trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left - ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
@@ -78,8 +97,35 @@ function renderWorkspaceStatus(status = {}) {
     }
   }
 
+  if (upgradeLink && billing.upgradeUrl) {
+    upgradeLink.href = billing.upgradeUrl;
+  }
+
   if (upgradeCta) {
-    upgradeCta.hidden = Boolean(trial.isSubscribed);
+    upgradeCta.hidden = Boolean(trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl);
+  }
+
+  if (paymentNotice) {
+    let message = '';
+    if (paymentQueryState === 'success') {
+      message = `Payment received. Your paid workspace has been reserved and will be activated within ${billing.activationWindowDays || 7} days.`;
+    } else if (paymentQueryState === 'cancel') {
+      message = 'Your reservation was not completed. You can keep using your trial while development continues.';
+    } else if (trial.isPendingActivation) {
+      message = `Your payment is recorded. We will activate your paid workspace within ${billing.activationWindowDays || 7} days.`;
+    } else if (trial.isSubscribed) {
+      message = `Paid access is active${billing.activatedAt ? ` since ${new Date(billing.activatedAt).toLocaleString()}` : ''}.`;
+    }
+    paymentNotice.hidden = !message;
+    paymentNotice.textContent = message;
+  }
+
+  if (adminBillingPanel) {
+    const shouldShowAdmin = Boolean(admin.isAdmin);
+    adminBillingPanel.hidden = !shouldShowAdmin;
+    if (!shouldShowAdmin) {
+      adminBillingLoaded = false;
+    }
   }
 
   if (workspaceNotice) {
@@ -235,6 +281,7 @@ async function logout() {
     // Still return the browser to the login screen if the session already expired.
   }
   clearDraftFields();
+  adminBillingLoaded = false;
   window.scrollTo({ top: 0, behavior: 'instant' });
   showLogin('Choose a sign-in option to continue.');
 }
@@ -248,6 +295,7 @@ async function startApp() {
     });
   }
   await loadAudit();
+  await loadAdminBilling();
 }
 
 async function loadStatus() {
@@ -586,6 +634,118 @@ async function loadAudit() {
     .join('');
 }
 
+function billingBadge(entry = {}) {
+  const trial = entry.trial || {};
+  const billing = entry.billing || {};
+  if (billing.isSubscribed) return 'Paid';
+  if (billing.isPendingActivation) return 'Pending activation';
+  if (!trial.canUseApp) return 'Trial ended';
+  return `Trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left`;
+}
+
+function renderAdminBilling(payload = {}) {
+  const status = $('#billing-admin-status');
+  const list = $('#billing-admin-list');
+  if (!status || !list) return;
+
+  const pendingCount = Array.isArray(payload.pendingActivations) ? payload.pendingActivations.length : 0;
+  status.textContent = pendingCount
+    ? `${pendingCount} payment reservation${pendingCount === 1 ? '' : 's'} waiting for activation.`
+    : 'No pending payment reservations right now.';
+
+  const sections = [];
+
+  if (pendingCount) {
+    sections.push(`
+      <div class="billing-section">
+        <strong>Pending reservations</strong>
+        ${payload.pendingActivations.map((entry) => `
+          <article class="billing-user-card">
+            <div>
+              <strong>${escapeHtml(entry.email)}</strong>
+              <small>${escapeHtml(entry.planName || 'Nzuko AI Starter')} · queued ${new Date(entry.queuedAt).toLocaleString()}</small>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    `);
+  }
+
+  sections.push(`
+    <div class="billing-section">
+      <strong>Workspace users</strong>
+      ${(payload.users || []).map((entry) => `
+        <article class="billing-user-card">
+          <div>
+            <strong>${escapeHtml(entry.displayName || entry.email || 'Workspace member')}</strong>
+            <small>${escapeHtml(entry.email || '')}</small>
+            <small>${escapeHtml(billingBadge(entry))}</small>
+          </div>
+          <div class="billing-user-actions">
+            <button class="button" data-billing-action="activate" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Activate</button>
+            <button class="button secondary" data-billing-action="reset" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Reset trial</button>
+          </div>
+        </article>
+      `).join('')}
+    </div>
+  `);
+
+  if (Array.isArray(payload.recentUsageEvents) && payload.recentUsageEvents.length) {
+    sections.push(`
+      <div class="billing-section">
+        <strong>Recent workspace activity</strong>
+        ${payload.recentUsageEvents.slice(0, 8).map((entry) => `
+          <article class="audit-entry">
+            <strong>${escapeHtml(entry.summary || entry.type || 'Activity')}</strong>
+            <p>${escapeHtml(new Date(entry.createdAt).toLocaleString())}</p>
+          </article>
+        `).join('')}
+      </div>
+    `);
+  }
+
+  list.innerHTML = sections.join('');
+}
+
+async function loadAdminBilling(force = false) {
+  if (!latestStatus?.admin?.isAdmin) return;
+  if (adminBillingLoaded && !force) return;
+  try {
+    const payload = await api('/api/admin/billing');
+    renderAdminBilling(payload);
+    adminBillingLoaded = true;
+  } catch (error) {
+    const status = $('#billing-admin-status');
+    if (status) {
+      status.textContent = `Billing controls are temporarily unavailable: ${error.message}`;
+    }
+  }
+}
+
+async function handleBillingAdminAction(event) {
+  const button = event.target.closest('[data-billing-action]');
+  if (!button) return;
+  const action = button.dataset.billingAction;
+  const payload = {
+    userId: button.dataset.userId,
+    email: button.dataset.email,
+  };
+  if (action === 'activate') {
+    await api('/api/admin/billing/activate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } else if (action === 'reset') {
+    await api('/api/admin/billing/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } else {
+    return;
+  }
+  await Promise.all([loadStatus(), loadAdminBilling(true)]);
+}
+
 $('#save-settings').addEventListener('click', saveSettings);
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
@@ -605,8 +765,11 @@ $('#continue-google').addEventListener('click', continueWithGoogle);
 $('#sign-in-link').addEventListener('click', continueWithGoogle);
 $('#logout').addEventListener('click', logout);
 $('#back-to-login').addEventListener('click', logout);
+$('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
+$('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 
 clearDraftFields();
+paymentQueryState = readPaymentQueryState();
 const auth = await api('/api/auth/status');
 authConfig = auth.auth || null;
 if (auth.authenticated) {
