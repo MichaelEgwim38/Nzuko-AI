@@ -194,12 +194,9 @@
                 </label>
                 <div class="button-row">
                   <button id="start-waha" class="button">Start session</button>
-                  <button id="show-qr" class="button secondary">Show QR</button>
+                  <button id="show-qr" class="button secondary">Get QR code</button>
                   <button id="switch-waha-user" class="button secondary">Disconnect and switch WhatsApp</button>
                   <button id="load-groups" class="button">Load WhatsApp groups</button>
-                  <button id="pull-waha" class="button secondary">Pull recent messages</button>
-                  <button id="pull-today" class="button">Pull today&apos;s messages</button>
-                  <button id="configure-webhook" class="button secondary">Enable live capture</button>
                 </div>
                 <div id="qr-box" class="qr-box">Start the session, then show the QR on this screen and scan it from WhatsApp Linked Devices on your phone.</div>
                 <p class="hint">A second screen is required for QR linking. If you only have one phone, open Nzuko AI on a laptop, tablet, or another device first. Only one WhatsApp account is active at a time. To switch people, end the session and let the next user scan the new QR.</p>
@@ -266,11 +263,18 @@
                     </label>
                   </div>
                   <div class="button-row">
-                    <button id="load-range" class="button secondary">Load stored period</button>
+                    <button id="load-period-messages" class="button secondary">Get messages for this period</button>
                     <button id="generate-range" class="button">Generate period recap</button>
                   </div>
                   <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
                 </div>
+                <details class="advanced-tools">
+                  <summary>Advanced capture tools</summary>
+                  <p class="hint">Use live capture only if you want Nzuko AI to keep watching for new messages after setup.</p>
+                  <div class="button-row advanced-button-row">
+                    <button id="configure-webhook" class="button secondary" type="button">Enable live capture</button>
+                  </div>
+                </details>
                 <div class="button-row">
                   <button id="generate" class="button">Generate recap</button>
                   <button id="purge" class="button secondary">Clear raw draft</button>
@@ -356,18 +360,19 @@
             <ol>
               <li>Sign in to Nzuko AI.</li>
               <li>Click Start session.</li>
-              <li>Click Show QR on a laptop, tablet, or other second screen.</li>
+              <li>Get the QR code.</li>
               <li>Open WhatsApp on your phone and go to Linked Devices.</li>
-              <li>Scan the QR code from that other screen.</li>
+              <li>Scan the QR.</li>
             </ol>
-            <p class="hint">If you only have one phone, you will need another screen before WhatsApp can connect.</p>
           </section>
           <section>
             <h3>Load your group</h3>
             <ol>
               <li>Click Load WhatsApp groups.</li>
               <li>Choose the group you want to use.</li>
-              <li>Click Pull recent messages or Pull today's messages.</li>
+              <li>Choose the summary period you want to use.</li>
+              <li>Get messages for that period.</li>
+              <li>Generate the recap.</li>
               <li>Select voice-note language before generating a recap.</li>
             </ol>
           </section>

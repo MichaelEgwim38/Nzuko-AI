@@ -1415,6 +1415,29 @@ pre {
   padding-top: 2px;
 }
 
+.advanced-tools {
+  margin-top: 18px;
+  border: 1px solid rgba(207, 222, 207, 0.95);
+  border-radius: 16px;
+  background: #fbfcfa;
+  padding: 14px;
+}
+
+.advanced-tools summary {
+  cursor: pointer;
+  color: #244329;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.advanced-tools[open] summary {
+  margin-bottom: 10px;
+}
+
+.advanced-button-row {
+  margin-top: 12px;
+}
+
 .audit-entry strong {
   color: var(--ink);
 }
@@ -1731,7 +1754,7 @@ pre {
 
   .button-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 

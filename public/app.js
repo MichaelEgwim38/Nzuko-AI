@@ -143,7 +143,7 @@ function renderWorkspaceStatus(status = {}) {
     } else if (sharedSession.isExpired) {
       notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
-      notice = 'No active shared WhatsApp connection right now. Open Nzuko AI on another screen, then start a session to connect your account.';
+      notice = 'No active WhatsApp connection. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
     }
     workspaceNotice.hidden = !notice;
     workspaceNotice.textContent = notice;
@@ -155,7 +155,7 @@ function renderWorkspaceStatus(status = {}) {
 
   ['save-settings', 'check-waha', 'switch-waha-user'].forEach((id) => setButtonDisabled(id, !canUseApp));
   ['start-waha', 'show-qr'].forEach((id) => setButtonDisabled(id, !canClaimSession));
-  ['load-groups', 'pull-waha', 'pull-today', 'configure-webhook', 'load-range', 'generate-range', 'generate', 'approve', 'purge'].forEach((id) =>
+  ['load-groups', 'configure-webhook', 'load-period-messages', 'generate-range', 'generate', 'approve', 'purge'].forEach((id) =>
     setButtonDisabled(id, !canOperateLive)
   );
 }
@@ -651,6 +651,15 @@ async function loadStoredRange() {
   }
 }
 
+async function loadPeriodMessages() {
+  const preset = $('#summary-preset').value;
+  if (preset === 'today') {
+    await pullTodayMessages();
+    return;
+  }
+  await loadStoredRange();
+}
+
 async function generateRangeRecap() {
   try {
     const payload = await api('/api/recap/generate', {
@@ -830,10 +839,8 @@ $('#show-qr').addEventListener('click', showQr);
 $('#switch-waha-user').addEventListener('click', switchWahaUser);
 $('#load-groups').addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
-$('#pull-waha').addEventListener('click', pullWahaMessages);
-$('#pull-today').addEventListener('click', pullTodayMessages);
 $('#configure-webhook').addEventListener('click', configureWebhook);
-$('#load-range').addEventListener('click', loadStoredRange);
+$('#load-period-messages').addEventListener('click', loadPeriodMessages);
 $('#generate-range').addEventListener('click', generateRangeRecap);
 $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
