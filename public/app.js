@@ -8,6 +8,10 @@ let managedWahaWorkspace = false;
 let latestStatus = null;
 let paymentQueryState = null;
 let adminBillingLoaded = false;
+let auditEntriesCache = [];
+let recentUsageEventsCache = [];
+let showAllAudit = false;
+let showAllAdminActivity = false;
 
 function firstNameFromUser(user = {}) {
   const displaySource = String(user.displayName || user.name || '').trim();
@@ -172,6 +176,96 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+  return date.toLocaleString();
+}
+
+function setToggleState(buttonId, hidden, expanded) {
+  const button = $(`#${buttonId}`);
+  if (!button) return;
+  button.hidden = hidden;
+  if (!hidden) {
+    button.textContent = expanded ? 'Show latest' : 'Show all';
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+}
+
+function renderAuditFeed() {
+  const summary = $('#audit-summary');
+  const container = $('#audit-log');
+  if (!summary || !container) return;
+
+  const total = auditEntriesCache.length;
+  const defaultVisibleCount = 4;
+  const visibleEntries = showAllAudit ? auditEntriesCache : auditEntriesCache.slice(0, defaultVisibleCount);
+
+  setToggleState('toggle-audit-feed', total <= defaultVisibleCount, showAllAudit);
+
+  if (!total) {
+    summary.textContent = 'Latest approved recaps will appear here.';
+    container.textContent = 'No approved recaps yet.';
+    return;
+  }
+
+  summary.textContent = showAllAudit
+    ? `Showing all ${total} approved recap${total === 1 ? '' : 's'}.`
+    : `Showing the latest ${visibleEntries.length} of ${total} approved recap${total === 1 ? '' : 's'}.`;
+
+  container.innerHTML = visibleEntries
+    .map((entry) => `
+      <article class="activity-item">
+        <div class="activity-item-header">
+          <div class="activity-item-copy">
+            <strong>${escapeHtml(entry.groupName)}</strong>
+            <p>${entry.recap.decisions.length} decision item(s), ${entry.recap.actions.length} action item(s).</p>
+          </div>
+          <time datetime="${escapeHtml(entry.approvedAt)}">${escapeHtml(formatDateTime(entry.approvedAt))}</time>
+        </div>
+      </article>
+    `)
+    .join('');
+}
+
+function renderAdminActivityFeed() {
+  const summary = $('#admin-activity-summary');
+  const container = $('#admin-activity-log');
+  if (!summary || !container) return;
+
+  const total = recentUsageEventsCache.length;
+  const defaultVisibleCount = 5;
+  const visibleEntries = showAllAdminActivity ? recentUsageEventsCache : recentUsageEventsCache.slice(0, defaultVisibleCount);
+
+  setToggleState('toggle-admin-activity', total <= defaultVisibleCount, showAllAdminActivity);
+
+  if (!total) {
+    summary.textContent = 'Latest workspace changes will appear here.';
+    container.textContent = 'No recent workspace activity.';
+    return;
+  }
+
+  summary.textContent = showAllAdminActivity
+    ? `Showing all ${total} workspace event${total === 1 ? '' : 's'}.`
+    : `Showing the latest ${visibleEntries.length} of ${total} workspace event${total === 1 ? '' : 's'}.`;
+
+  container.innerHTML = visibleEntries
+    .map((entry) => `
+      <article class="activity-item">
+        <div class="activity-item-header">
+          <div class="activity-item-copy">
+            <strong>${escapeHtml(entry.summary || entry.type || 'Activity')}</strong>
+          </div>
+          <time datetime="${escapeHtml(entry.createdAt || '')}">${escapeHtml(formatDateTime(entry.createdAt))}</time>
+        </div>
+      </article>
+    `)
+    .join('');
 }
 
 function setQuickGuideOpen(isOpen) {
@@ -625,20 +719,8 @@ async function purgeDraft() {
 
 async function loadAudit() {
   const payload = await api('/api/audit');
-  if (!payload.auditLog.length) {
-    $('#audit-log').textContent = 'No approved recaps yet.';
-    return;
-  }
-
-  $('#audit-log').innerHTML = payload.auditLog
-    .map((entry) => `
-      <article class="audit-entry">
-        <strong>${escapeHtml(entry.groupName)}</strong>
-        <p>${escapeHtml(entry.approvedAt)}</p>
-        <p>${entry.recap.decisions.length} decision item(s), ${entry.recap.actions.length} action item(s).</p>
-      </article>
-    `)
-    .join('');
+  auditEntriesCache = Array.isArray(payload.auditLog) ? payload.auditLog : [];
+  renderAuditFeed();
 }
 
 function billingBadge(entry = {}) {
@@ -670,7 +752,7 @@ function renderAdminBilling(payload = {}) {
           <article class="billing-user-card">
             <div>
               <strong>${escapeHtml(entry.email)}</strong>
-              <small>${escapeHtml(entry.planName || 'Nzuko AI Starter')} · queued ${new Date(entry.queuedAt).toLocaleString()}</small>
+              <small>${escapeHtml(entry.planName || 'Nzuko AI Starter')} · queued ${escapeHtml(formatDateTime(entry.queuedAt))}</small>
             </div>
           </article>
         `).join('')}
@@ -697,21 +779,9 @@ function renderAdminBilling(payload = {}) {
     </div>
   `);
 
-  if (Array.isArray(payload.recentUsageEvents) && payload.recentUsageEvents.length) {
-    sections.push(`
-      <div class="billing-section">
-        <strong>Recent workspace activity</strong>
-        ${payload.recentUsageEvents.slice(0, 8).map((entry) => `
-          <article class="audit-entry">
-            <strong>${escapeHtml(entry.summary || entry.type || 'Activity')}</strong>
-            <p>${escapeHtml(new Date(entry.createdAt).toLocaleString())}</p>
-          </article>
-        `).join('')}
-      </div>
-    `);
-  }
-
   list.innerHTML = sections.join('');
+  recentUsageEventsCache = Array.isArray(payload.recentUsageEvents) ? payload.recentUsageEvents : [];
+  renderAdminActivityFeed();
 }
 
 async function loadAdminBilling(force = false) {
@@ -777,6 +847,14 @@ $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
+$('#toggle-audit-feed')?.addEventListener('click', () => {
+  showAllAudit = !showAllAudit;
+  renderAuditFeed();
+});
+$('#toggle-admin-activity')?.addEventListener('click', () => {
+  showAllAdminActivity = !showAllAdminActivity;
+  renderAdminActivityFeed();
+});
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {

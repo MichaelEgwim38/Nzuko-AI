@@ -110,12 +110,10 @@
           <aside class="dashboard-sidebar">
             <nav class="sidebar-nav" aria-label="Primary dashboard sections">
               <a class="sidebar-link active" href="#overview">Dashboard</a>
-              <a class="sidebar-link" href="#connect">Groups</a>
-              <a class="sidebar-link" href="#messages">Meetings</a>
-              <a class="sidebar-link" href="#review">Action items</a>
-              <a class="sidebar-link" href="#privacy">Decisions</a>
-              <a class="sidebar-link" href="#audit">Recent activity</a>
               <a class="sidebar-link" href="#connect">Connection</a>
+              <a class="sidebar-link" href="#messages">Messages</a>
+              <a class="sidebar-link" href="#review">Review</a>
+              <a class="sidebar-link" href="#audit">Activity</a>
             </nav>
 
             <section class="sidebar-card">
@@ -296,14 +294,15 @@
 
           <aside class="dashboard-rail">
             <section class="panel rail-card" id="audit">
-              <div class="section-heading">
+              <div class="section-heading activity-heading">
                 <div>
                   <p class="eyebrow">Recent activity</p>
                   <h2>Audit stream</h2>
                 </div>
-                <a class="rail-link" href="#review">View all</a>
+                <button id="toggle-audit-feed" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
               </div>
-              <div id="audit-log" class="audit-log">No approved recaps yet.</div>
+              <p id="audit-summary" class="hint activity-summary">Latest approved recaps will appear here.</p>
+              <div id="audit-log" class="activity-log">No approved recaps yet.</div>
             </section>
 
             <section class="panel rail-card" id="admin-billing-panel" hidden>
@@ -315,7 +314,18 @@
                 <button id="refresh-billing" class="button secondary">Refresh</button>
               </div>
               <p id="billing-admin-status" class="hint">Review paid, pending, and trial users here.</p>
-              <div id="billing-admin-list" class="audit-log">No billing records yet.</div>
+              <div id="billing-admin-list" class="billing-sections">No billing records yet.</div>
+              <section class="activity-subpanel" aria-label="Recent workspace activity">
+                <div class="section-heading activity-heading">
+                  <div>
+                    <p class="eyebrow">Workspace activity</p>
+                    <h3>Latest events</h3>
+                  </div>
+                  <button id="toggle-admin-activity" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
+                </div>
+                <p id="admin-activity-summary" class="hint activity-summary">Latest workspace changes will appear here.</p>
+                <div id="admin-activity-log" class="activity-log">No recent workspace activity.</div>
+              </section>
             </section>
           </aside>
         </div>
@@ -324,6 +334,7 @@
           <a href="#connect">Connect</a>
           <a href="#messages">Messages</a>
           <a href="#review">Review</a>
+          <a href="#audit">Activity</a>
         </nav>
       </div>
     </main>
