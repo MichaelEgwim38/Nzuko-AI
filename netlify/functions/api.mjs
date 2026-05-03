@@ -1158,12 +1158,7 @@ export default async function handler(request) {
       state.settings.approvedGroupId = '';
       state.settings.approvedGroupName = '';
       state.currentDraft = null;
-      state.sharedSession = {
-        ownerUserId: String(session.userId || ''),
-        ownerName: sessionOwnerName(session),
-        claimedAt: nowIso(),
-        lastActivityAt: nowIso(),
-      };
+      clearSharedOwner(state);
       logUsageEvent(state, {
         type: 'waha.session_switched',
         actorUserId: session.userId || '',

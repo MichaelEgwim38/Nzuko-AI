@@ -139,7 +139,7 @@ function renderWorkspaceStatus(status = {}) {
     } else if (sharedSession.isExpired) {
       notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
-      notice = 'No WhatsApp account is connected yet. Start a session to connect your account.';
+      notice = 'No active shared WhatsApp connection right now. Start a session to connect your account.';
     }
     workspaceNotice.hidden = !notice;
     workspaceNotice.textContent = notice;
