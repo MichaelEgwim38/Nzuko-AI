@@ -174,6 +174,13 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function setQuickGuideOpen(isOpen) {
+  const modal = $('#quick-guide-modal');
+  if (!modal) return;
+  modal.hidden = !isOpen;
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { 'content-type': 'application/json' },
@@ -765,8 +772,17 @@ $('#continue-google').addEventListener('click', continueWithGoogle);
 $('#sign-in-link').addEventListener('click', continueWithGoogle);
 $('#logout').addEventListener('click', logout);
 $('#back-to-login').addEventListener('click', logout);
+$('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true));
+$('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false));
+$('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    setQuickGuideOpen(false);
+  }
+});
 
 clearDraftFields();
 paymentQueryState = readPaymentQueryState();

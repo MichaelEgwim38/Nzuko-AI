@@ -153,7 +153,10 @@
                 </div>
                 <p id="workspace-notice" class="status-banner secondary" hidden></p>
               </div>
-              <button id="logout" class="button secondary logout-button" type="button">Log out</button>
+              <div class="hero-actions">
+                <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
+                <button id="logout" class="button secondary logout-button" type="button">Log out</button>
+              </div>
             </section>
 
             <div class="workspace-stack">
@@ -324,6 +327,58 @@
         </nav>
       </div>
     </main>
+
+    <div id="quick-guide-modal" class="quick-guide-modal" hidden>
+      <div id="quick-guide-backdrop" class="quick-guide-backdrop"></div>
+      <section class="quick-guide-panel" role="dialog" aria-modal="true" aria-labelledby="quick-guide-title">
+        <div class="quick-guide-header">
+          <div>
+            <p class="eyebrow">RohariGroup LTD presents</p>
+            <h2 id="quick-guide-title">Nzuko AI Quick guide</h2>
+          </div>
+          <button id="close-quick-guide" class="button secondary compact-button" type="button">Close</button>
+        </div>
+        <p class="hint quick-guide-copy">Use this quick guide whenever you need help connecting WhatsApp, choosing a group, or preparing a recap.</p>
+        <div class="quick-guide-grid">
+          <section>
+            <h3>Start here</h3>
+            <ol>
+              <li>Sign in to Nzuko AI.</li>
+              <li>Click Start session.</li>
+              <li>Click Show QR.</li>
+              <li>Open WhatsApp on your phone and go to Linked Devices.</li>
+              <li>Scan the QR code.</li>
+            </ol>
+          </section>
+          <section>
+            <h3>Load your group</h3>
+            <ol>
+              <li>Click Load WhatsApp groups.</li>
+              <li>Choose the group you want to use.</li>
+              <li>Click Pull recent messages or Pull today's messages.</li>
+              <li>Select voice-note language before generating a recap.</li>
+            </ol>
+          </section>
+          <section>
+            <h3>When switching users</h3>
+            <ol>
+              <li>Click Switch WhatsApp user.</li>
+              <li>Start a new session.</li>
+              <li>Show the QR again.</li>
+              <li>The next person scans with their own WhatsApp.</li>
+            </ol>
+            <p class="hint">Only one WhatsApp account can be connected at a time in the current setup.</p>
+          </section>
+          <section>
+            <h3>Support</h3>
+            <p><strong>Organization:</strong> RohariGroup LTD</p>
+            <p><strong>Phone:</strong> 07308050013</p>
+            <p><strong>Email:</strong> info@roharigroup.com</p>
+            <p><strong>Website:</strong> www.roharigroup.com</p>
+          </section>
+        </div>
+      </section>
+    </div>
     <script src="/app.js" type="module"></script>
   </body>
 </html>

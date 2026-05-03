@@ -713,10 +713,16 @@ textarea {
   border: 1px solid rgba(207, 222, 207, 0.95);
 }
 
-.logout-button {
+.hero-actions {
   position: absolute;
   top: 24px;
   right: 24px;
+  display: flex;
+  gap: 10px;
+}
+
+.logout-button {
+  position: static;
   display: none;
 }
 
@@ -798,6 +804,78 @@ h2 {
 .upgrade-cta .hint {
   margin: 0;
   max-width: 560px;
+}
+
+.quick-guide-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.quick-guide-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 16, 13, 0.52);
+  backdrop-filter: blur(4px);
+}
+
+.quick-guide-panel {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  border: 1px solid rgba(207, 222, 207, 0.95);
+  border-radius: 28px;
+  background: #f8fbf6;
+  box-shadow: 0 28px 60px rgba(12, 18, 14, 0.24);
+  padding: 24px;
+}
+
+.quick-guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.quick-guide-copy {
+  margin-top: 12px;
+}
+
+.quick-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.quick-guide-grid section {
+  border: 1px solid rgba(207, 222, 207, 0.95);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 18px;
+}
+
+.quick-guide-grid h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.quick-guide-grid ol {
+  margin: 0;
+  padding-left: 18px;
+  color: #415146;
+  line-height: 1.7;
+}
+
+.quick-guide-grid p {
+  margin: 0 0 8px;
+  color: #415146;
+  line-height: 1.6;
 }
 
 .hero-pillars {
@@ -1453,6 +1531,12 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .hero-actions {
+    position: static;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
   .dashboard-hero-actions {
     flex-direction: column;
   }
@@ -1532,6 +1616,10 @@ pre {
 
   .logout-button {
     display: none;
+  }
+
+  .quick-guide-grid {
+    grid-template-columns: 1fr;
   }
 
   h1 {
