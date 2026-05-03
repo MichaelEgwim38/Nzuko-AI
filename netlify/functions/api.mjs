@@ -1207,6 +1207,7 @@ export default async function handler(request) {
       const body = await readBody(request);
       const scope = sharedWorkspaceScope;
       const state = await loadAppState(scope);
+      const previousSettings = { ...state.settings };
       state.settings = {
         ...managedSettings(state.settings),
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
@@ -1218,6 +1219,21 @@ export default async function handler(request) {
           ? body.transcribeLanguage
           : state.settings.transcribeLanguage,
       };
+      if (Boolean(previousSettings.consentConfirmed) !== Boolean(state.settings.consentConfirmed)) {
+        logUsageEvent(state, {
+          type: 'workspace.consent_updated',
+          actorUserId: session.userId || '',
+          actorName: sessionOwnerName(session),
+          actorEmail: session.email || '',
+          summary: state.settings.consentConfirmed
+            ? `${sessionOwnerName(session)} confirmed permission to summarize the selected WhatsApp group.`
+            : `${sessionOwnerName(session)} cleared the permission-to-summarize confirmation.`,
+          details: {
+            approvedGroupId: state.settings.approvedGroupId || '',
+            approvedGroupName: state.settings.approvedGroupName || '',
+          },
+        });
+      }
       await saveAppState(scope, state);
       return sendJson(200, { settings: publicSettings(state.settings) });
     }

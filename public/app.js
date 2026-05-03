@@ -12,6 +12,7 @@ let auditEntriesCache = [];
 let recentUsageEventsCache = [];
 let showAllAudit = false;
 let showAllAdminActivity = false;
+let upgradeNoteDismissTimeout = null;
 
 function firstNameFromUser(user = {}) {
   const displaySource = String(user.displayName || user.name || '').trim();
@@ -63,6 +64,13 @@ function setButtonDisabled(id, disabled) {
   }
 }
 
+function setHintMessage(id, message = '') {
+  const node = $(`#${id}`);
+  if (!node) return;
+  node.hidden = !message;
+  node.textContent = message;
+}
+
 function readPaymentQueryState() {
   const url = new URL(window.location.href);
   const payment = url.searchParams.get('payment');
@@ -80,10 +88,11 @@ function renderWorkspaceStatus(status = {}) {
   const admin = status.admin || {};
   const trialSummary = $('#trial-summary');
   const paymentNotice = $('#payment-notice');
-  const upgradeCta = $('#upgrade-cta');
   const upgradeLink = $('#upgrade-link');
+  const upgradeNote = $('#upgrade-note');
   const workspaceNotice = $('#workspace-notice');
   const adminBillingPanel = $('#admin-billing-panel');
+  const checkWahaButton = $('#check-waha');
 
   if (trialSummary) {
     if (trial.isSubscribed) {
@@ -105,8 +114,12 @@ function renderWorkspaceStatus(status = {}) {
     upgradeLink.href = billing.upgradeUrl;
   }
 
-  if (upgradeCta) {
-    upgradeCta.hidden = Boolean(trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl);
+  if (upgradeLink) {
+    upgradeLink.hidden = Boolean(trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl);
+  }
+
+  if (upgradeNote && (trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl)) {
+    upgradeNote.hidden = true;
   }
 
   if (paymentNotice) {
@@ -132,8 +145,13 @@ function renderWorkspaceStatus(status = {}) {
     }
   }
 
+  if (checkWahaButton) {
+    checkWahaButton.hidden = !admin.isAdmin;
+  }
+
   if (workspaceNotice) {
     let notice = '';
+    let shouldBlink = false;
     if (!managedWahaWorkspace) {
       notice = '';
     } else if (sharedSession.hasOwner && sharedSession.isCurrentUserOwner) {
@@ -144,9 +162,11 @@ function renderWorkspaceStatus(status = {}) {
       notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
       notice = 'No active WhatsApp connection. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
+      shouldBlink = true;
     }
     workspaceNotice.hidden = !notice;
     workspaceNotice.textContent = notice;
+    workspaceNotice.classList.toggle('blinking-status', shouldBlink);
   }
 
   const canUseApp = Boolean(trial.canUseApp);
@@ -273,6 +293,18 @@ function setQuickGuideOpen(isOpen) {
   if (!modal) return;
   modal.hidden = !isOpen;
   document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function showUpgradeNote() {
+  const upgradeNote = $('#upgrade-note');
+  if (!upgradeNote) return;
+  upgradeNote.hidden = false;
+  if (upgradeNoteDismissTimeout) {
+    clearTimeout(upgradeNoteDismissTimeout);
+  }
+  upgradeNoteDismissTimeout = setTimeout(() => {
+    upgradeNote.hidden = true;
+  }, 6000);
 }
 
 async function api(path, options = {}) {
@@ -416,9 +448,9 @@ async function loadStatus() {
   syncLanguageOptions(status.transcription?.languageOptions || [], status.settings.transcribeLanguage || status.transcription?.language || 'auto');
   $('#waha-api-key').placeholder = status.settings.wahaApiKey ? 'API key configured' : 'Only if WAHA requires X-Api-Key';
   if (status.transcription && !status.transcription.openaiKeyConfigured) {
-    $('#waha-status').textContent = 'WAHA is connected. Add OPENAI_API_KEY to .env before real voice-note transcription will run.';
-  } else if (managedWahaWorkspace) {
-    $('#waha-status').textContent = 'This workspace uses one shared WhatsApp connection. If you need to switch people, end the current session and let the next user scan the new QR.';
+    setHintMessage('waha-status', 'WAHA is connected. Add OPENAI_API_KEY before real voice-note transcription will run.');
+  } else {
+    setHintMessage('waha-status', '');
   }
   $('#approve-status').textContent = managedWahaWorkspace
     ? 'Review the recap, then approve it when you are ready to post or export it.'
@@ -450,9 +482,9 @@ async function saveSettings() {
     method: 'POST',
     body: JSON.stringify(settingsPayload()),
   });
-  $('#settings-status').textContent = payload.settings.consentConfirmed
+  setHintMessage('settings-status', payload.settings.consentConfirmed
     ? 'Workspace settings saved. Recaps can be approved after you select a WhatsApp group.'
-    : 'Consent must be confirmed before approving a recap.';
+    : 'Consent must be confirmed before approving a recap.');
   await loadStatus();
 }
 
@@ -460,9 +492,9 @@ async function checkWaha() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/status');
-    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'reachable'}.`;
+    setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'reachable'}.`);
   } catch (error) {
-    $('#waha-status').textContent = `WhatsApp check failed: ${error.message}`;
+    setHintMessage('waha-status', `WhatsApp check failed: ${error.message}`);
   }
 }
 
@@ -471,9 +503,9 @@ async function startWaha() {
     await saveSettings();
     const payload = await api('/api/waha/start', { method: 'POST', body: '{}' });
     await loadStatus();
-    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'starting'}.`;
+    setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'starting'}.`);
   } catch (error) {
-    $('#waha-status').textContent = `WhatsApp start failed: ${error.message}`;
+    setHintMessage('waha-status', `WhatsApp start failed: ${error.message}`);
   }
 }
 
@@ -482,9 +514,9 @@ async function switchWahaUser() {
     const payload = await api('/api/waha/logout', { method: 'POST', body: '{}' });
     currentApprovedGroupId = '';
     $('#group-name').value = '';
-    $('#group-list').textContent = 'No WAHA groups loaded yet.';
+    $('#group-list').textContent = 'WhatsApp group not loaded yet.';
     $('#qr-box').textContent = 'Session ended. Start the session again, show the QR on the shared screen, and let the next person scan from WhatsApp Linked Devices.';
-    $('#waha-status').textContent = `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR from another screen.`;
+    setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR from another screen.`);
     await api('/api/settings', {
       method: 'POST',
       body: JSON.stringify(settingsPayload({
@@ -493,8 +525,9 @@ async function switchWahaUser() {
       })),
     });
     await loadStatus();
+    setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR from another screen.`);
   } catch (error) {
-    $('#waha-status').textContent = `WhatsApp switch failed: ${error.message}`;
+    setHintMessage('waha-status', `WhatsApp switch failed: ${error.message}`);
   }
 }
 
@@ -510,7 +543,7 @@ async function showQr() {
       <strong>Open this QR on another screen and scan it with your WhatsApp account.</strong>
       <img alt="WAHA WhatsApp QR code" src="data:${payload.qr.mimetype};base64,${payload.qr.data}" />
     `;
-    $('#waha-status').textContent = 'QR loaded. It expires quickly, so scan it now from WhatsApp Linked Devices on your phone while this QR stays open on another screen.';
+    setHintMessage('waha-status', 'QR loaded. Scan it now with WhatsApp Linked Devices while the QR stays open.');
   } catch (error) {
     $('#qr-box').textContent = `QR failed: ${error.message}`;
   }
@@ -521,7 +554,7 @@ async function loadGroups() {
     await saveSettings();
     const payload = await api('/api/groups');
     if (!payload.groups.length) {
-      $('#group-list').textContent = 'No groups found yet. Confirm the shared WhatsApp session is working, then try again.';
+      $('#group-list').textContent = 'No WhatsApp group found yet. Confirm the session is working, then try again.';
       return;
     }
 
@@ -545,9 +578,9 @@ async function loadGroups() {
       `;
       })
       .join('');
-    $('#waha-status').textContent = `Loaded ${payload.groups.length} group chat(s) from ${payload.connector}. Choose the one group the current shared WhatsApp session should summarize.`;
+    setHintMessage('waha-status', `Loaded ${payload.groups.length} WhatsApp group chat(s). Choose the one group you want to summarize.`);
   } catch (error) {
-    $('#waha-status').textContent = `Group load failed: ${error.message}`;
+    setHintMessage('waha-status', `Group load failed: ${error.message}`);
   }
 }
 
@@ -571,7 +604,7 @@ async function chooseGroup(event) {
     option.querySelector('em').textContent = selected ? 'Selected' : 'Select group';
   });
   collapseGroupList(payload.settings);
-  $('#waha-status').textContent = `Selected group: ${payload.settings.approvedGroupName}.`;
+  setHintMessage('waha-status', `Selected group: ${payload.settings.approvedGroupName}.`);
 }
 
 function collapseGroupList(settings) {
@@ -597,11 +630,11 @@ async function pullWahaMessages() {
     const payload = await api('/api/waha/pull', { method: 'POST', body: JSON.stringify({ limit: 100 }) });
     $('#chat-text').value = payload.chatText;
     $('#voice-notes').value = payload.voiceNotes || '';
-    $('#waha-status').textContent = payload.warning
+    setHintMessage('waha-status', payload.warning
       ? `${payload.warning}. History is not available from WAHA right now; live capture only shows new messages received after the app is running. Captured now: ${payload.messages.length}.`
-      : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`;
+      : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`);
   } catch (error) {
-    $('#waha-status').textContent = `Pull failed: ${error.message}`;
+    setHintMessage('waha-status', `Pull failed: ${error.message}`);
   }
 }
 
@@ -612,12 +645,12 @@ async function pullTodayMessages() {
     $('#chat-text').value = payload.chatText;
     $('#voice-notes').value = payload.voiceNotes || '';
     $('#summary-preset').value = 'today';
-    $('#waha-status').textContent = payload.historyAvailable
+    setHintMessage('waha-status', payload.historyAvailable
       ? `Pulled ${payload.messages.length} WhatsApp message(s) from today and saved them. Voice-note transcription may finish shortly after this load.`
-      : `WAHA cannot read today's earlier WhatsApp history in the current session. Loaded ${payload.messages.length} locally stored message(s) from today. Next fix: re-scan the NOWEB QR or import an exported chat.`;
+      : `WAHA cannot read today's earlier WhatsApp history in the current session. Loaded ${payload.messages.length} locally stored message(s) from today. Next fix: re-scan the NOWEB QR or import an exported chat.`);
     $('#range-status').textContent = `Today period loaded: ${payload.messages.length} stored message(s).`;
   } catch (error) {
-    $('#waha-status').textContent = `Today's pull failed: ${error.message}`;
+    setHintMessage('waha-status', `Today's pull failed: ${error.message}`);
   }
 }
 
@@ -689,9 +722,9 @@ async function configureWebhook() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/webhook', { method: 'POST', body: '{}' });
-    $('#waha-status').textContent = `Live capture enabled for the selected group. Webhook: ${payload.webhookUrl}`;
+    setHintMessage('waha-status', `Live capture enabled for the selected group.`);
   } catch (error) {
-    $('#waha-status').textContent = `Live capture setup failed: ${error.message}`;
+    setHintMessage('waha-status', `Live capture setup failed: ${error.message}`);
   }
 }
 
@@ -854,6 +887,7 @@ $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
+$('#upgrade-link')?.addEventListener('click', showUpgradeNote);
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;
   renderAuditFeed();
