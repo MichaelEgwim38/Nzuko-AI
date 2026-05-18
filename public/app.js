@@ -10,8 +10,10 @@ let paymentQueryState = null;
 let adminBillingLoaded = false;
 let auditEntriesCache = [];
 let recentUsageEventsCache = [];
+let billingEntriesCache = [];
 let showAllAudit = false;
 let showAllAdminActivity = false;
+let showAllBilling = false;
 let upgradeNoteDismissTimeout = null;
 
 function firstNameFromUser(user = {}) {
@@ -89,6 +91,7 @@ function renderWorkspaceStatus(status = {}) {
   const trialSummary = $('#trial-summary');
   const paymentNotice = $('#payment-notice');
   const manageBillingButton = $('#manage-billing');
+  const heroManageBillingButton = $('#hero-manage-billing');
   const upgradeNote = $('#upgrade-note');
   const workspaceNotice = $('#workspace-notice');
   const adminBillingPanel = $('#admin-billing-panel');
@@ -112,6 +115,9 @@ function renderWorkspaceStatus(status = {}) {
 
   if (manageBillingButton) {
     manageBillingButton.hidden = !trial.isSubscribed;
+  }
+  if (heroManageBillingButton) {
+    heroManageBillingButton.hidden = !trial.isSubscribed;
   }
 
   if (upgradeNote && trial.isSubscribed) {
@@ -177,13 +183,17 @@ function renderWorkspaceStatus(status = {}) {
 function renderBillingPlans(status = {}) {
   const trial = status.trial || {};
   const billing = status.billing || {};
-  const container = $('#plan-cards');
-  const summary = $('#billing-plan-status');
+  const container = $('#pricing-plan-cards');
+  const summary = $('#pricing-plan-status');
   const manageButton = $('#manage-billing');
+  const heroManageButton = $('#hero-manage-billing');
   const plans = Array.isArray(billing.plans) ? billing.plans : [];
 
   if (manageButton) {
     manageButton.hidden = !billing.customerPortalAvailable;
+  }
+  if (heroManageButton) {
+    heroManageButton.hidden = !billing.customerPortalAvailable;
   }
 
   if (!container || !summary) return;
@@ -349,8 +359,62 @@ function renderAdminActivityFeed() {
     .join('');
 }
 
+function renderBillingFeed() {
+  const summary = $('#billing-admin-status');
+  const container = $('#billing-admin-list');
+  if (!summary || !container) return;
+
+  const total = billingEntriesCache.length;
+  const defaultVisibleCount = 4;
+  const visibleEntries = showAllBilling ? billingEntriesCache : billingEntriesCache.slice(0, defaultVisibleCount);
+
+  setToggleState('toggle-billing-feed', total <= defaultVisibleCount, showAllBilling);
+
+  if (!total) {
+    summary.textContent = 'Review paid, pending, and trial users here.';
+    container.textContent = 'No billing records yet.';
+    return;
+  }
+
+  summary.textContent = showAllBilling
+    ? `Showing all ${total} billing record${total === 1 ? '' : 's'}.`
+    : `Showing the latest ${visibleEntries.length} of ${total} billing record${total === 1 ? '' : 's'}.`;
+
+  container.innerHTML = visibleEntries
+    .map((entry) => {
+      const actions = entry.email || entry.userId
+        ? `
+          <div class="billing-entry-actions">
+            <button class="button compact-button" data-billing-action="activate" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Activate</button>
+            <button class="button secondary compact-button" data-billing-action="reset" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Reset trial</button>
+          </div>
+        `
+        : '';
+      return `
+        <article class="activity-item billing-activity-item">
+          <div class="activity-item-header">
+            <div class="activity-item-copy">
+              <strong>${escapeHtml(entry.title || 'Billing record')}</strong>
+              <p>${escapeHtml(entry.details || '')}</p>
+            </div>
+            ${entry.when ? `<time datetime="${escapeHtml(entry.when)}">${escapeHtml(formatDateTime(entry.when))}</time>` : ''}
+          </div>
+          ${actions}
+        </article>
+      `;
+    })
+    .join('');
+}
+
 function setQuickGuideOpen(isOpen) {
   const modal = $('#quick-guide-modal');
+  if (!modal) return;
+  modal.hidden = !isOpen;
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function setPricingOpen(isOpen) {
+  const modal = $('#pricing-modal');
   if (!modal) return;
   modal.hidden = !isOpen;
   document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -370,6 +434,7 @@ function showUpgradeNote() {
 
 async function startCheckout(planId) {
   showUpgradeNote();
+  setPricingOpen(false);
   const payload = await api('/api/billing/checkout', {
     method: 'POST',
     body: JSON.stringify({ planId }),
@@ -379,6 +444,7 @@ async function startCheckout(planId) {
 
 async function openBillingPortal() {
   showUpgradeNote();
+  setPricingOpen(false);
   const payload = await api('/api/billing/portal', {
     method: 'POST',
     body: '{}',
@@ -869,7 +935,29 @@ function billingBadge(entry = {}) {
   return `Trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left`;
 }
 
+function renderLatestAdminBilling(payload = {}) {
+  const pendingEntries = (payload.pendingActivations || []).map((entry) => ({
+    title: entry.email || 'Pending reservation',
+    details: `${entry.planName || 'Nzuko AI Starter'} queued for activation.`,
+    when: entry.queuedAt || '',
+    userId: '',
+    email: '',
+  }));
+  const userEntries = (payload.users || []).map((entry) => ({
+    title: entry.displayName || entry.email || 'Workspace member',
+    details: `${entry.email || 'No email recorded'} - ${billingBadge(entry)}`,
+    when: entry.billing?.lastPaymentAt || entry.trial?.trialEndsAt || '',
+    userId: entry.userId || '',
+    email: entry.email || '',
+  }));
+  billingEntriesCache = [...pendingEntries, ...userEntries];
+  renderBillingFeed();
+  recentUsageEventsCache = Array.isArray(payload.recentUsageEvents) ? payload.recentUsageEvents : [];
+  renderAdminActivityFeed();
+}
+
 function renderAdminBilling(payload = {}) {
+  return renderLatestAdminBilling(payload);
   const status = $('#billing-admin-status');
   const list = $('#billing-admin-list');
   if (!status || !list) return;
@@ -926,7 +1014,7 @@ async function loadAdminBilling(force = false) {
   if (adminBillingLoaded && !force) return;
   try {
     const payload = await api('/api/admin/billing');
-    renderAdminBilling(payload);
+    renderLatestAdminBilling(payload);
     adminBillingLoaded = true;
   } catch (error) {
     const status = $('#billing-admin-status');
@@ -980,13 +1068,21 @@ $('#back-to-login')?.addEventListener('click', logout);
 $('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true));
 $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
+$('#open-pricing')?.addEventListener('click', () => setPricingOpen(true));
+$('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
+$('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
-$('#plan-cards')?.addEventListener('click', handlePlanAction);
+$('#hero-manage-billing')?.addEventListener('click', openBillingPortal);
+$('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;
   renderAuditFeed();
+});
+$('#toggle-billing-feed')?.addEventListener('click', () => {
+  showAllBilling = !showAllBilling;
+  renderBillingFeed();
 });
 $('#toggle-admin-activity')?.addEventListener('click', () => {
   showAllAdminActivity = !showAllAdminActivity;
@@ -996,6 +1092,7 @@ $('#toggle-admin-activity')?.addEventListener('click', () => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     setQuickGuideOpen(false);
+    setPricingOpen(false);
   }
 });
 

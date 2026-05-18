@@ -143,21 +143,14 @@
                 <p id="payment-notice" class="status-banner secondary" hidden></p>
                 <p id="upgrade-note" class="status-banner secondary upgrade-note" hidden>You&apos;ll be redirected to Stripe to start or manage your subscription.</p>
                 <p id="workspace-notice" class="status-banner secondary" hidden></p>
+                <div class="dashboard-hero-actions">
+                  <button id="open-pricing" class="button light-secondary" type="button">Pricing</button>
+                  <button id="hero-manage-billing" class="button" type="button" hidden>Manage billing</button>
+                </div>
               </div>
             </section>
 
             <div class="workspace-stack">
-              <section class="panel billing-plan-panel" id="billing-overview">
-                <div class="section-heading">
-                  <div>
-                    <p class="eyebrow">Plans</p>
-                    <h2>Choose the right plan for your workspace</h2>
-                  </div>
-                </div>
-                <p id="billing-plan-status" class="hint">Start with a free trial, then choose Starter or Pro in Stripe.</p>
-                <div id="plan-cards" class="plan-grid">Plans are loading.</div>
-              </section>
-
               <section class="panel" id="connect">
                 <div class="section-heading">
                   <div>
@@ -310,15 +303,18 @@
             </section>
 
             <section class="panel rail-card" id="admin-billing-panel" hidden>
-              <div class="section-heading">
+              <div class="section-heading activity-heading">
                 <div>
                   <p class="eyebrow">Admin billing</p>
                   <h2>Workspace access</h2>
                 </div>
-                <button id="refresh-billing" class="button secondary">Refresh</button>
+                <div class="section-actions">
+                  <button id="refresh-billing" class="button secondary compact-button">Refresh</button>
+                  <button id="toggle-billing-feed" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
+                </div>
               </div>
-              <p id="billing-admin-status" class="hint">Review paid, pending, and trial users here.</p>
-              <div id="billing-admin-list" class="billing-sections">No billing records yet.</div>
+              <p id="billing-admin-status" class="hint activity-summary">Review paid, pending, and trial users here.</p>
+              <div id="billing-admin-list" class="activity-log">No billing records yet.</div>
               <section class="activity-subpanel" aria-label="Recent workspace activity">
                 <div class="section-heading activity-heading">
                   <div>
@@ -394,6 +390,21 @@
             <p><strong>Website:</strong> www.roharigroup.com</p>
           </section>
         </div>
+      </section>
+    </div>
+
+    <div id="pricing-modal" class="quick-guide-modal" hidden>
+      <div id="pricing-backdrop" class="quick-guide-backdrop"></div>
+      <section class="quick-guide-panel pricing-panel" role="dialog" aria-modal="true" aria-labelledby="pricing-title">
+        <div class="quick-guide-header pricing-header">
+          <div>
+            <p class="eyebrow">Plans</p>
+            <h2 id="pricing-title">Choose the right Nzuko AI plan</h2>
+          </div>
+          <button id="close-pricing" class="button secondary compact-button" type="button">Close</button>
+        </div>
+        <p id="pricing-plan-status" class="hint quick-guide-copy">Start with a free trial, then choose Starter or Pro in Stripe.</p>
+        <div id="pricing-plan-cards" class="plan-grid">Plans are loading.</div>
       </section>
     </div>
     <script src="/app.js" type="module"></script>

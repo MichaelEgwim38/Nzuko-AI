@@ -868,6 +868,14 @@ h2 {
   padding: 24px;
 }
 
+.pricing-panel {
+  width: min(980px, 100%);
+}
+
+.pricing-header {
+  margin-bottom: 8px;
+}
+
 .quick-guide-header {
   display: flex;
   justify-content: space-between;
@@ -1089,6 +1097,13 @@ label,
   min-height: auto;
   width: auto;
   white-space: nowrap;
+}
+
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .rail-link {
@@ -1520,6 +1535,16 @@ pre {
   gap: 8px;
 }
 
+.billing-activity-item {
+  gap: 12px;
+}
+
+.billing-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .billing-plan-panel {
   display: grid;
   gap: 14px;
@@ -1757,6 +1782,12 @@ pre {
     margin-left: 0;
   }
 
+  .topbar-actions,
+  .section-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .hero,
   .panel {
     padding: 16px;
@@ -1772,6 +1803,11 @@ pre {
 
   .dashboard-hero-actions {
     flex-direction: column;
+  }
+
+  .dashboard-hero-actions .button,
+  .billing-entry-actions .button {
+    width: 100%;
   }
 
   .dashboard-steps-strip {
@@ -1855,6 +1891,12 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .quick-guide-panel,
+  .pricing-panel {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
   h1 {
     font-size: 31px;
   }
@@ -1897,6 +1939,11 @@ pre {
 
   .activity-item time {
     white-space: normal;
+  }
+
+  .billing-entry-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .mobile-quick-nav {
