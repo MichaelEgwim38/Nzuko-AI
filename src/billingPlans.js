@@ -2,9 +2,11 @@ const paidPlanDefinitions = [
   {
     id: 'starter',
     name: 'Starter',
-    priceLabel: '£15/month',
+    priceLabel: 'GBP 15/month',
     amountCents: 1500,
     summary: 'Best for one community group getting started with AI minutes.',
+    monthlyRecapLimit: 30,
+    monthlyVoiceNoteLimit: 40,
     features: [
       '1 approved WhatsApp group',
       '30 recap drafts per month',
@@ -16,9 +18,11 @@ const paidPlanDefinitions = [
   {
     id: 'pro',
     name: 'Pro',
-    priceLabel: '£29/month',
+    priceLabel: 'GBP 29/month',
     amountCents: 2900,
     summary: 'More recap capacity for busier groups that rely on voice notes.',
+    monthlyRecapLimit: 100,
+    monthlyVoiceNoteLimit: 150,
     features: [
       '1 approved WhatsApp group',
       '100 recap drafts per month',

@@ -4,8 +4,8 @@ Use this checklist to turn the new self-serve billing flow on for Nzuko AI.
 
 ## What this enables
 
-- `Starter` plan at `£15/month`
-- `Pro` plan at `£29/month`
+- `Starter` plan at `GBP 15/month`
+- `Pro` plan at `GBP 29/month`
 - Stripe Checkout from the dashboard
 - Stripe Customer Portal for managing subscriptions
 - automatic subscription activation from Stripe webhooks
@@ -19,8 +19,8 @@ Create two recurring monthly prices in Stripe:
 
 Recommended prices:
 
-- `Starter`: `£15/month`
-- `Pro`: `£29/month`
+- `Starter`: `GBP 15/month`
+- `Pro`: `GBP 29/month`
 
 After creating them, copy the Stripe price ids:
 

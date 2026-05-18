@@ -39,6 +39,7 @@ const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
 const trialVoiceNoteLimit = Number(process.env.TRIAL_VOICE_NOTE_LIMIT || 3);
 const ownerTimeoutMinutes = Number(process.env.SHARED_SESSION_TIMEOUT_MINUTES || 45);
 const activationWindowDays = Number(process.env.PAID_ACTIVATION_WINDOW_DAYS || 7);
+const paidUsageWindowDays = Number(process.env.PAID_USAGE_WINDOW_DAYS || 30);
 const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 const adminEmails = new Set(
   `${process.env.ADMIN_EMAILS || ''},${process.env.ADMIN_EMAIL || ''}`
@@ -57,8 +58,16 @@ function managedSettings(settings = {}) {
   };
 }
 
+function requiredSecret(name) {
+  const value = String(process.env[name] || '').trim();
+  if (!value) {
+    throw httpError(500, `${name} is not configured.`);
+  }
+  return value;
+}
+
 function webhookToken() {
-  return createHmac('sha256', process.env.ADMIN_SESSION_SECRET || 'nzuko-webhook-secret')
+  return createHmac('sha256', requiredSecret('ADMIN_SESSION_SECRET'))
     .update(sharedWorkspaceScope)
     .digest('hex');
 }
@@ -80,6 +89,10 @@ function nowMs() {
 
 function ownerTimeoutMs() {
   return ownerTimeoutMinutes * 60 * 1000;
+}
+
+function paidUsageWindowMs() {
+  return paidUsageWindowDays * 24 * 60 * 60 * 1000;
 }
 
 function trialEndIso(startedAt) {
@@ -138,6 +151,9 @@ function resetUserTrial(record = {}) {
     lastPaymentAt: null,
     paymentReservationAt: null,
     paymentReservationSource: '',
+    usageWindowStartedAt: null,
+    paidRecapsUsed: 0,
+    paidVoiceNotesUsed: 0,
   };
 }
 
@@ -164,6 +180,9 @@ function ensureRecordDefaults(record = {}) {
     lastPaymentAt: record.lastPaymentAt || null,
     paymentReservationAt: record.paymentReservationAt || null,
     paymentReservationSource: record.paymentReservationSource || '',
+    usageWindowStartedAt: record.usageWindowStartedAt || record.activatedAt || record.lastPaymentAt || null,
+    paidRecapsUsed: Number(record.paidRecapsUsed || 0),
+    paidVoiceNotesUsed: Number(record.paidVoiceNotesUsed || 0),
   };
 }
 
@@ -343,6 +362,7 @@ function matchingStripeUser(users, object = {}, email = '') {
 function activatePaidUser(record, details = {}) {
   const activatedAt = details.activatedAt || nowIso();
   const planId = normalisePaidPlanId(details.planId || record.planId || defaultPaidPlan()?.id);
+  const previousSubscriptionEndsAt = record.subscriptionEndsAt || null;
   record.subscriptionStatus = 'active';
   record.planId = planId;
   record.planName = details.planName || planNameForId(planId);
@@ -356,6 +376,11 @@ function activatePaidUser(record, details = {}) {
   if (details.subscriptionEndsAt) {
     record.subscriptionEndsAt = details.subscriptionEndsAt;
   }
+  if (!record.usageWindowStartedAt || (details.subscriptionEndsAt && details.subscriptionEndsAt !== previousSubscriptionEndsAt)) {
+    record.usageWindowStartedAt = activatedAt;
+    record.paidRecapsUsed = 0;
+    record.paidVoiceNotesUsed = 0;
+  }
 }
 
 function markStripeEvent(state, event = {}) {
@@ -364,9 +389,111 @@ function markStripeEvent(state, event = {}) {
   state.billing.lastStripeEventAt = nowIso();
 }
 
+function activePaidPlan(record = {}) {
+  if (String(record.subscriptionStatus || '').toLowerCase() !== 'active') {
+    return null;
+  }
+  return paidPlanById(record.planId);
+}
+
+function normalisePaidUsageWindow(record, { resetAt } = {}) {
+  const paidPlan = activePaidPlan(record);
+  if (!paidPlan) {
+    return false;
+  }
+  const startedAt = new Date(record.usageWindowStartedAt || record.lastPaymentAt || record.activatedAt || 0).getTime();
+  const isExpired = !startedAt || Number.isNaN(startedAt) || nowMs() - startedAt >= paidUsageWindowMs();
+  if (!record.usageWindowStartedAt || isExpired || resetAt) {
+    record.usageWindowStartedAt = resetAt || record.lastPaymentAt || record.activatedAt || nowIso();
+    record.paidRecapsUsed = 0;
+    record.paidVoiceNotesUsed = 0;
+    return true;
+  }
+  return false;
+}
+
+function usageSummary(record = {}) {
+  const normalisedRecord = ensureRecordDefaults({ ...record });
+  const paidPlan = activePaidPlan(normalisedRecord);
+  if (paidPlan) {
+    normalisePaidUsageWindow(normalisedRecord);
+    const recapLimit = Number(paidPlan.monthlyRecapLimit || 0);
+    const voiceNoteLimit = Number(paidPlan.monthlyVoiceNoteLimit || 0);
+    const recapUsed = Number(normalisedRecord.paidRecapsUsed || 0);
+    const voiceNoteUsed = Number(normalisedRecord.paidVoiceNotesUsed || 0);
+    return {
+      mode: 'paid',
+      windowDays: paidUsageWindowDays,
+      windowStartedAt: normalisedRecord.usageWindowStartedAt || null,
+      recapLimit,
+      recapUsed,
+      recapRemaining: Math.max(0, recapLimit - recapUsed),
+      voiceNoteLimit,
+      voiceNoteUsed,
+      voiceNoteRemaining: Math.max(0, voiceNoteLimit - voiceNoteUsed),
+      planName: paidPlan.name,
+    };
+  }
+
+  const trial = trialStatus(normalisedRecord);
+  return {
+    mode: 'trial',
+    windowDays: trial.trialDays,
+    windowStartedAt: normalisedRecord.trialStartedAt || null,
+    recapLimit: trial.recapLimit,
+    recapUsed: trial.recapUsed,
+    recapRemaining: trial.recapRemaining,
+    voiceNoteLimit: trial.voiceNoteLimit,
+    voiceNoteUsed: trial.voiceNoteUsed,
+    voiceNoteRemaining: trial.voiceNoteRemaining,
+    planName: trial.planName,
+  };
+}
+
+function ensureUsageAllowed(record, feature, count = 1) {
+  const usage = usageSummary(record);
+  if (feature === 'recap' && usage.recapRemaining < count) {
+    throw httpError(
+      403,
+      usage.mode === 'paid'
+        ? `You have reached the ${usage.planName} recap limit for this billing period.`
+        : 'You have reached your trial recap limit. Upgrade now if you want your full workspace activated within 7 days.'
+    );
+  }
+  if (feature === 'voice-note' && usage.voiceNoteRemaining < count) {
+    throw httpError(
+      403,
+      usage.mode === 'paid'
+        ? `You have reached the ${usage.planName} voice-note transcription limit for this billing period.`
+        : 'You have reached your trial voice-note transcription limit. Upgrade now if you want your full workspace activated within 7 days.'
+    );
+  }
+}
+
+function recordUsage(record, feature, count = 1) {
+  if (activePaidPlan(record)) {
+    normalisePaidUsageWindow(record);
+    if (feature === 'recap') {
+      record.paidRecapsUsed = Number(record.paidRecapsUsed || 0) + count;
+    }
+    if (feature === 'voice-note') {
+      record.paidVoiceNotesUsed = Number(record.paidVoiceNotesUsed || 0) + count;
+    }
+    return;
+  }
+
+  if (feature === 'recap') {
+    record.trialRecapsUsed = Number(record.trialRecapsUsed || 0) + count;
+  }
+  if (feature === 'voice-note') {
+    record.trialVoiceNotesUsed = Number(record.trialVoiceNotesUsed || 0) + count;
+  }
+}
+
 function billingSummary(record = {}) {
   const normalisedRecord = ensureRecordDefaults(record);
   const paidPlan = normalisedRecord.planId === 'trial' ? null : paidPlanById(normalisedRecord.planId);
+  const usage = usageSummary(normalisedRecord);
   const plans = listPaidPlans().map((plan) => ({
     ...plan,
     isCurrent: Boolean(paidPlan?.id === plan.id),
@@ -387,6 +514,7 @@ function billingSummary(record = {}) {
     stripeWebhookConfigured: Boolean(stripeWebhookSecret),
     currentPlan: paidPlan,
     plans,
+    usage,
     customerPortalAvailable: Boolean(normalisedRecord.stripeCustomerId),
   };
 }
@@ -467,6 +595,22 @@ function trialStatus(record = {}) {
     isPendingActivation,
     isTrialActive,
     canUseApp: isSubscribed || isTrialActive,
+  };
+}
+
+async function loadWorkspaceOwnerAccess(state) {
+  const ownerUserId = String(state.sharedSession?.ownerUserId || '').trim();
+  if (!ownerUserId) {
+    return null;
+  }
+  const users = await loadUsers();
+  const record = users.find((entry) => String(entry.userId || '') === ownerUserId);
+  if (!record) {
+    return null;
+  }
+  return {
+    users,
+    record: ensureRecordDefaults(record),
   };
 }
 
@@ -803,6 +947,10 @@ async function enqueueVoiceNoteProcessing({ requestUrl, payload, scope }) {
   }
 }
 
+function countVoiceMessages(messages = []) {
+  return messages.filter((message) => isVoiceMedia(message)).length;
+}
+
 async function captureMappedWahaMessage({ message, requestUrl, settings, scope }) {
   const storedMessage = {
     ...message,
@@ -1109,6 +1257,14 @@ export default async function handler(request) {
       if (chatId === approvedGroupId) {
         state.webhookStats.matchedApprovedGroup += 1;
         state.webhookStats.lastMatchedAt = new Date().toISOString();
+        if (isVoiceMedia(payload)) {
+          const ownerAccess = await loadWorkspaceOwnerAccess(state);
+          if (ownerAccess) {
+            ensureUsageAllowed(ownerAccess.record, 'voice-note');
+            recordUsage(ownerAccess.record, 'voice-note');
+            await saveUserAccess(ownerAccess.users, ownerAccess.record);
+          }
+        }
         await captureApprovedWebhookPayload({
           payload,
           requestUrl,
@@ -1492,7 +1648,7 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/waha/pull') {
       const context = await loadSharedWorkspaceContext(session);
-      const { scope, state, trial, ownerSummary } = context;
+      const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       if (!state.settings.consentConfirmed) {
@@ -1517,6 +1673,12 @@ export default async function handler(request) {
           limit: Number(body.limit || 100),
           downloadMedia: true,
         });
+        const voiceMessageCount = countVoiceMessages(messages);
+        if (voiceMessageCount) {
+          ensureUsageAllowed(userRecord, 'voice-note', voiceMessageCount);
+          recordUsage(userRecord, 'voice-note', voiceMessageCount);
+          await saveUserAccess(users, userRecord);
+        }
         for (const message of messages) {
           await captureMappedWahaMessage({ message, requestUrl, settings: state.settings, scope });
         }
@@ -1585,7 +1747,7 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/waha/pull-today') {
       const context = await loadSharedWorkspaceContext(session);
-      const { scope, state, trial, ownerSummary } = context;
+      const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       if (!state.settings.consentConfirmed) {
@@ -1601,6 +1763,12 @@ export default async function handler(request) {
       let warning = '';
       try {
         messages = await pullWahaMessagesForRange({ settings: state.settings, range, limit: 1000 });
+        const voiceMessageCount = countVoiceMessages(messages);
+        if (voiceMessageCount) {
+          ensureUsageAllowed(userRecord, 'voice-note', voiceMessageCount);
+          recordUsage(userRecord, 'voice-note', voiceMessageCount);
+          await saveUserAccess(users, userRecord);
+        }
         for (const message of messages) {
           await captureMappedWahaMessage({ message, requestUrl, settings: state.settings, scope });
         }
@@ -1646,6 +1814,7 @@ export default async function handler(request) {
       const context = await loadSharedWorkspaceContext(session);
       const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial, 'recap');
+      ensureUsageAllowed(userRecord, 'recap');
       ensureSharedOwnerAllowed(ownerSummary, session);
       let chatText = body.chatText;
       let voiceNotes = body.voiceNotes;
@@ -1690,7 +1859,7 @@ export default async function handler(request) {
         },
       });
       await saveAppState(scope, state);
-      userRecord.trialRecapsUsed = Number(userRecord.trialRecapsUsed || 0) + 1;
+      recordUsage(userRecord, 'recap');
       await saveUserAccess(users, userRecord);
       await touchSharedOwnerActivity(state, session);
       return sendJson(200, { draft: state.currentDraft });

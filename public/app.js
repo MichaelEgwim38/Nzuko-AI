@@ -183,6 +183,7 @@ function renderBillingPlans(status = {}) {
   const summary = $('#pricing-plan-status');
   const manageButton = $('#manage-billing');
   const plans = Array.isArray(billing.plans) ? billing.plans : [];
+  const usage = billing.usage || {};
 
   if (manageButton) {
     manageButton.hidden = !billing.customerPortalAvailable;
@@ -201,7 +202,16 @@ function renderBillingPlans(status = {}) {
   if (!checkoutEnabled) {
     summary.textContent = 'Starter and Pro are defined locally. Add Stripe price ids and webhook settings before checkout can go live.';
   } else if (trial.isSubscribed) {
-    summary.textContent = `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
+    const usageNotes = [];
+    if (Number.isFinite(usage.recapRemaining) && Number.isFinite(usage.recapLimit)) {
+      usageNotes.push(`${usage.recapRemaining} of ${usage.recapLimit} recaps left`);
+    }
+    if (Number.isFinite(usage.voiceNoteRemaining) && Number.isFinite(usage.voiceNoteLimit)) {
+      usageNotes.push(`${usage.voiceNoteRemaining} of ${usage.voiceNoteLimit} voice notes left`);
+    }
+    summary.textContent = usageNotes.length
+      ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
+      : `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
   } else if (trial.canUseApp) {
     summary.textContent = `You are on the free trial. Choose Starter or Pro whenever you are ready to subscribe.`;
   } else {

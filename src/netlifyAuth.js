@@ -27,14 +27,22 @@ function hashSecret(value) {
 }
 
 export function passcodeMatches(value, expectedSecret) {
-  if (!expectedSecret) return true;
+  if (!expectedSecret) return false;
   const provided = hashSecret(value || '');
   const expected = hashSecret(expectedSecret);
   return provided.length === expected.length && timingSafeEqual(provided, expected);
 }
 
+function requiredSecret(name) {
+  const value = String(process.env[name] || '').trim();
+  if (!value) {
+    throw new Error(`${name} is not configured.`);
+  }
+  return value;
+}
+
 function sessionSecret() {
-  return process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSCODE || 'nzuko-local-session-secret';
+  return requiredSecret('ADMIN_SESSION_SECRET');
 }
 
 function signValue(value) {
@@ -96,5 +104,5 @@ export function normaliseEmail(value = '') {
 }
 
 export function backgroundTaskSecret() {
-  return process.env.BACKGROUND_TASK_SECRET || process.env.ADMIN_PASSCODE || 'nzuko-background-secret';
+  return requiredSecret('BACKGROUND_TASK_SECRET');
 }
