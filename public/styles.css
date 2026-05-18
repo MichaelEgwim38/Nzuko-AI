@@ -1520,6 +1520,84 @@ pre {
   gap: 8px;
 }
 
+.billing-plan-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.plan-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.plan-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fbfcfc;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.plan-card-current {
+  border-color: rgba(36, 93, 56, 0.26);
+  box-shadow: 0 12px 28px rgba(36, 93, 56, 0.08);
+}
+
+.plan-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-card-header h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+.plan-card-price {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plan-card-summary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.plan-feature-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink);
+  display: grid;
+  gap: 8px;
+}
+
+.plan-feature-list li {
+  line-height: 1.5;
+}
+
+.plan-badge {
+  align-items: center;
+  background: #f0f8ec;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  text-transform: uppercase;
+}
+
 @media (max-width: 760px) {
   body {
     background: linear-gradient(180deg, #f7fbf5, var(--bg));

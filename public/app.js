@@ -88,7 +88,7 @@ function renderWorkspaceStatus(status = {}) {
   const admin = status.admin || {};
   const trialSummary = $('#trial-summary');
   const paymentNotice = $('#payment-notice');
-  const upgradeLink = $('#upgrade-link');
+  const manageBillingButton = $('#manage-billing');
   const upgradeNote = $('#upgrade-note');
   const workspaceNotice = $('#workspace-notice');
   const adminBillingPanel = $('#admin-billing-panel');
@@ -97,7 +97,7 @@ function renderWorkspaceStatus(status = {}) {
   if (trialSummary) {
     if (trial.isSubscribed) {
       trialSummary.hidden = false;
-      trialSummary.textContent = `${trial.planName || 'Paid access'} is active.`;
+      trialSummary.textContent = `${billing.planName || trial.planName || 'Paid access'} is active.`;
     } else if (trial.isPendingActivation) {
       trialSummary.hidden = false;
       trialSummary.textContent = `Payment received. Your paid workspace is reserved and will be activated within ${billing.activationWindowDays || 7} days.`;
@@ -110,26 +110,20 @@ function renderWorkspaceStatus(status = {}) {
     }
   }
 
-  if (upgradeLink && billing.upgradeUrl) {
-    upgradeLink.href = billing.upgradeUrl;
+  if (manageBillingButton) {
+    manageBillingButton.hidden = !trial.isSubscribed;
   }
 
-  if (upgradeLink) {
-    upgradeLink.hidden = Boolean(trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl);
-  }
-
-  if (upgradeNote && (trial.isSubscribed || trial.isPendingActivation || !billing.upgradeUrl)) {
+  if (upgradeNote && trial.isSubscribed) {
     upgradeNote.hidden = true;
   }
 
   if (paymentNotice) {
     let message = '';
     if (paymentQueryState === 'success') {
-      message = `Payment received. Your paid workspace has been reserved and will be activated within ${billing.activationWindowDays || 7} days.`;
+      message = 'Payment received. Stripe will confirm your subscription and unlock paid access automatically.';
     } else if (paymentQueryState === 'cancel') {
-      message = 'Your reservation was not completed. You can keep using your trial while development continues.';
-    } else if (trial.isPendingActivation) {
-      message = `Your payment is recorded. We will activate your paid workspace within ${billing.activationWindowDays || 7} days.`;
+      message = 'Checkout was canceled. Your workspace is still on its current plan.';
     } else if (trial.isSubscribed) {
       message = `Paid access is active${billing.activatedAt ? ` since ${new Date(billing.activatedAt).toLocaleString()}` : ''}.`;
     }
@@ -178,6 +172,73 @@ function renderWorkspaceStatus(status = {}) {
   ['load-groups', 'configure-webhook', 'load-period-messages', 'generate-range', 'generate', 'approve', 'purge'].forEach((id) =>
     setButtonDisabled(id, !canOperateLive)
   );
+}
+
+function renderBillingPlans(status = {}) {
+  const trial = status.trial || {};
+  const billing = status.billing || {};
+  const container = $('#plan-cards');
+  const summary = $('#billing-plan-status');
+  const manageButton = $('#manage-billing');
+  const plans = Array.isArray(billing.plans) ? billing.plans : [];
+
+  if (manageButton) {
+    manageButton.hidden = !billing.customerPortalAvailable;
+  }
+
+  if (!container || !summary) return;
+
+  if (!plans.length) {
+    summary.textContent = 'Pricing plans will appear here after billing configuration is complete.';
+    container.textContent = 'Plans are not configured yet.';
+    return;
+  }
+
+  const checkoutEnabled = plans.some((plan) => plan.checkoutEnabled);
+
+  if (!checkoutEnabled) {
+    summary.textContent = 'Starter and Pro are defined locally. Add Stripe price ids and webhook settings before checkout can go live.';
+  } else if (trial.isSubscribed) {
+    summary.textContent = `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
+  } else if (trial.canUseApp) {
+    summary.textContent = `You are on the free trial. Choose Starter or Pro whenever you are ready to subscribe.`;
+  } else {
+    summary.textContent = 'Your trial has ended. Choose a paid plan in Stripe to keep using the workspace.';
+  }
+
+  container.innerHTML = plans
+    .map((plan) => {
+      const isCurrent = Boolean(plan.isCurrent && trial.isSubscribed);
+      const buttonLabel = isCurrent
+        ? 'Current plan'
+        : trial.isSubscribed
+          ? 'Manage in billing'
+          : `Choose ${plan.name}`;
+      return `
+        <article class="plan-card${isCurrent ? ' plan-card-current' : ''}">
+          <div class="plan-card-header">
+            <div>
+              <p class="plan-card-price">${escapeHtml(plan.priceLabel || '')}</p>
+              <h3>${escapeHtml(plan.name || '')}</h3>
+            </div>
+            ${isCurrent ? '<span class="plan-badge">Active</span>' : ''}
+          </div>
+          <p class="plan-card-summary">${escapeHtml(plan.summary || '')}</p>
+          <ul class="plan-feature-list">
+            ${(plan.features || []).map((feature) => `<li>${escapeHtml(feature)}</li>`).join('')}
+          </ul>
+          <button
+            class="button${isCurrent ? ' secondary' : ''}"
+            type="button"
+            data-plan-action="${trial.isSubscribed ? 'manage' : 'checkout'}"
+            data-plan-id="${escapeHtml(plan.id || '')}"
+            ${!trial.isSubscribed && !plan.checkoutEnabled ? 'disabled' : ''}
+            ${isCurrent ? 'disabled' : ''}
+          >${escapeHtml(buttonLabel)}</button>
+        </article>
+      `;
+    })
+    .join('');
 }
 
 function syncLanguageOptions(options = [], selected = 'auto') {
@@ -305,6 +366,37 @@ function showUpgradeNote() {
   upgradeNoteDismissTimeout = setTimeout(() => {
     upgradeNote.hidden = true;
   }, 6000);
+}
+
+async function startCheckout(planId) {
+  showUpgradeNote();
+  const payload = await api('/api/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ planId }),
+  });
+  window.location.href = payload.url;
+}
+
+async function openBillingPortal() {
+  showUpgradeNote();
+  const payload = await api('/api/billing/portal', {
+    method: 'POST',
+    body: '{}',
+  });
+  window.location.href = payload.url;
+}
+
+async function handlePlanAction(event) {
+  const button = event.target.closest('[data-plan-action]');
+  if (!button) return;
+  const action = button.dataset.planAction;
+  if (action === 'checkout') {
+    await startCheckout(button.dataset.planId);
+    return;
+  }
+  if (action === 'manage') {
+    await openBillingPortal();
+  }
 }
 
 async function api(path, options = {}) {
@@ -438,6 +530,7 @@ async function loadStatus() {
   managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
   renderWorkspaceStatus(status);
+  renderBillingPlans(status);
   currentApprovedGroupId = status.settings.approvedGroupId || '';
   $('#group-name').value = status.settings.approvedGroupName || '';
   $('#connector-mode').value = status.settings.connectorMode;
@@ -889,7 +982,8 @@ $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
-$('#upgrade-link')?.addEventListener('click', showUpgradeNote);
+$('#manage-billing')?.addEventListener('click', openBillingPortal);
+$('#plan-cards')?.addEventListener('click', handlePlanAction);
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;
   renderAuditFeed();

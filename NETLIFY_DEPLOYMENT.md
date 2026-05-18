@@ -49,6 +49,10 @@ Add these before production use:
 - `WAHA_API_KEY` if your WAHA server needs it
 - `OPENAI_API_KEY`
 - `PUBLIC_APP_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_STARTER_PRICE_ID`
+- `STRIPE_PRO_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
 
 Optional:
 
@@ -119,7 +123,32 @@ Then trigger a new deploy so webhook registration uses the final public URL.
   - choose approved group
   - enable live capture
 
-## 8. Voice-note behavior
+## 8. Stripe billing setup
+
+The app now expects Stripe for self-serve billing:
+
+1. Create two recurring monthly Stripe prices:
+   - `Starter` at `$15/month`
+   - `Pro` at `$29/month`
+2. Copy the Stripe price ids into:
+   - `STRIPE_STARTER_PRICE_ID`
+   - `STRIPE_PRO_PRICE_ID`
+3. Copy your Stripe secret key into:
+   - `STRIPE_SECRET_KEY`
+4. Create a Stripe webhook endpoint pointing to:
+   - `https://your-site-name.netlify.app/api/webhooks/stripe`
+5. Subscribe these events:
+   - `checkout.session.completed`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+6. Copy the webhook signing secret into:
+   - `STRIPE_WEBHOOK_SECRET`
+
+Use [STRIPE_SETUP.md](./STRIPE_SETUP.md) for the full checklist.
+
+## 9. Voice-note behavior
 
 - voice-note transcription runs in a background Netlify function
 - transcripts may appear shortly after capture instead of in the same request

@@ -11,6 +11,8 @@ import {
 } from '../../src/netlifyStore.js';
 import { backgroundTaskSecret, cookieFlags, createSessionToken, readUserSession } from '../../src/netlifyAuth.js';
 import { providerSessionUser, supabaseAuthConfig, verifySupabaseAccessToken } from '../../src/supabaseAuth.js';
+import { defaultPaidPlan, listPaidPlans, normalisePaidPlanId, paidPlanById, paidPlanByPriceId, planNameForId } from '../../src/billingPlans.js';
+import { createCustomerPortalSession, createSubscriptionCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from '../../src/connectors/mockWhatsApp.js';
@@ -37,9 +39,6 @@ const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
 const trialVoiceNoteLimit = Number(process.env.TRIAL_VOICE_NOTE_LIMIT || 3);
 const ownerTimeoutMinutes = Number(process.env.SHARED_SESSION_TIMEOUT_MINUTES || 45);
 const activationWindowDays = Number(process.env.PAID_ACTIVATION_WINDOW_DAYS || 7);
-const stripePaymentLinkUrl = String(
-  process.env.STRIPE_PAYMENT_LINK_URL || 'https://buy.stripe.com/test_28E14pfxJ2sV7d2gJO2sM00'
-).trim();
 const stripeWebhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 const adminEmails = new Set(
   `${process.env.ADMIN_EMAILS || ''},${process.env.ADMIN_EMAIL || ''}`
@@ -128,12 +127,14 @@ function resetUserTrial(record = {}) {
     trialRecapsUsed: 0,
     trialVoiceNotesUsed: 0,
     subscriptionStatus: 'trial',
+    planId: 'trial',
     planName: 'Starter trial',
     activatedAt: null,
     activatedBy: '',
     subscriptionEndsAt: null,
     stripeCustomerId: '',
     stripeSubscriptionId: '',
+    stripeCheckoutSessionId: '',
     lastPaymentAt: null,
     paymentReservationAt: null,
     paymentReservationSource: '',
@@ -141,19 +142,25 @@ function resetUserTrial(record = {}) {
 }
 
 function ensureRecordDefaults(record = {}) {
+  const nextSubscriptionStatus = record.subscriptionStatus || 'trial';
+  const nextPlanId = nextSubscriptionStatus === 'trial'
+    ? 'trial'
+    : (record.planId ? normalisePaidPlanId(record.planId) : defaultPaidPlan()?.id || 'starter');
   return {
     ...record,
     trialStartedAt: record.trialStartedAt || nowIso(),
     trialEndsAt: record.trialEndsAt || trialEndIso(record.trialStartedAt || nowIso()),
     trialRecapsUsed: Number(record.trialRecapsUsed || 0),
     trialVoiceNotesUsed: Number(record.trialVoiceNotesUsed || 0),
-    subscriptionStatus: record.subscriptionStatus || 'trial',
-    planName: record.planName || 'Starter trial',
+    subscriptionStatus: nextSubscriptionStatus,
+    planId: nextPlanId,
+    planName: record.planName || (nextPlanId === 'trial' ? 'Starter trial' : planNameForId(nextPlanId)),
     activatedAt: record.activatedAt || null,
     activatedBy: record.activatedBy || '',
     subscriptionEndsAt: record.subscriptionEndsAt || null,
     stripeCustomerId: record.stripeCustomerId || '',
     stripeSubscriptionId: record.stripeSubscriptionId || '',
+    stripeCheckoutSessionId: record.stripeCheckoutSessionId || '',
     lastPaymentAt: record.lastPaymentAt || null,
     paymentReservationAt: record.paymentReservationAt || null,
     paymentReservationSource: record.paymentReservationSource || '',
@@ -176,6 +183,7 @@ function queuePendingActivation(state, payload = {}) {
   if (!email) return;
   state.billing.pendingActivations[email] = {
     email,
+    planId: normalisePaidPlanId(payload.planId || defaultPaidPlan()?.id),
     planName: payload.planName || 'Nzuko AI Starter',
     source: payload.source || 'stripe',
     eventId: payload.eventId || '',
@@ -256,11 +264,98 @@ function stripeEventEmail(event = {}) {
 function stripeEventPlanName(event = {}) {
   const object = event.data?.object || {};
   return (
+    paidPlanById(object.metadata?.plan_id)?.name ||
+    paidPlanByPriceId(object.items?.data?.[0]?.price?.id)?.name ||
+    paidPlanByPriceId(object.lines?.data?.[0]?.price?.id)?.name ||
     object.metadata?.plan_name ||
     object.lines?.data?.[0]?.description ||
     object.display_items?.[0]?.custom?.name ||
     'Nzuko AI Starter'
   );
+}
+
+function unixToIso(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  return new Date(numeric * 1000).toISOString();
+}
+
+function stripeObjectCustomerId(object = {}) {
+  return String(object.customer || object.customer_id || '').trim();
+}
+
+function stripeObjectSubscriptionId(object = {}) {
+  if (String(object.object || '') === 'subscription') {
+    return String(object.id || '').trim();
+  }
+  return String(object.subscription || '').trim();
+}
+
+function stripeObjectCheckoutSessionId(object = {}) {
+  return String(object.id || '').trim();
+}
+
+function stripeEventPlanId(event = {}) {
+  const object = event.data?.object || {};
+  const candidatePlanId = String(
+    object.metadata?.plan_id ||
+    object.subscription_details?.metadata?.plan_id ||
+    object.items?.data?.[0]?.plan?.metadata?.plan_id ||
+    object.lines?.data?.[0]?.price?.metadata?.plan_id ||
+    ''
+  ).trim().toLowerCase();
+  if (paidPlanById(candidatePlanId)) {
+    return candidatePlanId;
+  }
+  return (
+    paidPlanByPriceId(object.items?.data?.[0]?.price?.id)?.id ||
+    paidPlanByPriceId(object.lines?.data?.[0]?.price?.id)?.id ||
+    defaultPaidPlan()?.id ||
+    'starter'
+  );
+}
+
+function stripeEventPeriod(event = {}) {
+  const object = event.data?.object || {};
+  return {
+    start:
+      unixToIso(object.current_period_start) ||
+      unixToIso(object.lines?.data?.[0]?.period?.start) ||
+      null,
+    end:
+      unixToIso(object.current_period_end) ||
+      unixToIso(object.lines?.data?.[0]?.period?.end) ||
+      null,
+  };
+}
+
+function matchingStripeUser(users, object = {}, email = '') {
+  const customerId = stripeObjectCustomerId(object);
+  const subscriptionId = stripeObjectSubscriptionId(object);
+  return (
+    users.find((entry) => subscriptionId && String(entry.stripeSubscriptionId || '') === subscriptionId) ||
+    users.find((entry) => customerId && String(entry.stripeCustomerId || '') === customerId) ||
+    users.find((entry) => email && normaliseEmail(entry.email) === normaliseEmail(email)) ||
+    null
+  );
+}
+
+function activatePaidUser(record, details = {}) {
+  const activatedAt = details.activatedAt || nowIso();
+  const planId = normalisePaidPlanId(details.planId || record.planId || defaultPaidPlan()?.id);
+  record.subscriptionStatus = 'active';
+  record.planId = planId;
+  record.planName = details.planName || planNameForId(planId);
+  record.activatedAt = record.activatedAt || activatedAt;
+  record.lastPaymentAt = activatedAt;
+  record.paymentReservationAt = null;
+  record.paymentReservationSource = '';
+  record.stripeCustomerId = details.customerId || record.stripeCustomerId || '';
+  record.stripeSubscriptionId = details.subscriptionId || record.stripeSubscriptionId || '';
+  record.stripeCheckoutSessionId = details.checkoutSessionId || record.stripeCheckoutSessionId || '';
+  if (details.subscriptionEndsAt) {
+    record.subscriptionEndsAt = details.subscriptionEndsAt;
+  }
 }
 
 function markStripeEvent(state, event = {}) {
@@ -270,19 +365,29 @@ function markStripeEvent(state, event = {}) {
 }
 
 function billingSummary(record = {}) {
+  const normalisedRecord = ensureRecordDefaults(record);
+  const paidPlan = normalisedRecord.planId === 'trial' ? null : paidPlanById(normalisedRecord.planId);
+  const plans = listPaidPlans().map((plan) => ({
+    ...plan,
+    isCurrent: Boolean(paidPlan?.id === plan.id),
+  }));
   return {
-    subscriptionStatus: record.subscriptionStatus || 'trial',
-    planName: record.planName || 'Starter trial',
-    isSubscribed: String(record.subscriptionStatus || '').toLowerCase() === 'active',
-    isPendingActivation: String(record.subscriptionStatus || '').toLowerCase() === 'pending_activation',
+    subscriptionStatus: normalisedRecord.subscriptionStatus || 'trial',
+    planId: normalisedRecord.planId || 'trial',
+    planName: normalisedRecord.planName || 'Starter trial',
+    isSubscribed: String(normalisedRecord.subscriptionStatus || '').toLowerCase() === 'active',
+    isPendingActivation: String(normalisedRecord.subscriptionStatus || '').toLowerCase() === 'pending_activation',
     activationWindowDays,
-    upgradeUrl: stripePaymentLinkUrl,
-    paymentMode: stripePaymentLinkUrl.includes('/test_') ? 'test' : 'live',
-    activatedAt: record.activatedAt || null,
-    subscriptionEndsAt: record.subscriptionEndsAt || null,
-    lastPaymentAt: record.lastPaymentAt || null,
-    paymentReservationAt: record.paymentReservationAt || null,
+    checkoutReady: plans.some((plan) => stripeCheckoutReady(plan)),
+    paymentMode: String(process.env.STRIPE_SECRET_KEY || '').includes('_test_') ? 'test' : 'live',
+    activatedAt: normalisedRecord.activatedAt || null,
+    subscriptionEndsAt: normalisedRecord.subscriptionEndsAt || null,
+    lastPaymentAt: normalisedRecord.lastPaymentAt || null,
+    paymentReservationAt: normalisedRecord.paymentReservationAt || null,
     stripeWebhookConfigured: Boolean(stripeWebhookSecret),
+    currentPlan: paidPlan,
+    plans,
+    customerPortalAvailable: Boolean(normalisedRecord.stripeCustomerId),
   };
 }
 
@@ -451,6 +556,7 @@ async function loadSharedWorkspaceContext(user) {
   const pendingActivation = pendingActivationRecord(state, record.email);
   if (pendingActivation && String(record.subscriptionStatus || '').toLowerCase() !== 'active') {
     record.subscriptionStatus = 'pending_activation';
+    record.planId = normalisePaidPlanId(pendingActivation.planId || defaultPaidPlan()?.id);
     record.planName = pendingActivation.planName || 'Nzuko AI Starter';
     record.paymentReservationAt = pendingActivation.queuedAt || nowIso();
     record.paymentReservationSource = pendingActivation.source || 'stripe';
@@ -820,56 +926,132 @@ export default async function handler(request) {
 
       const users = await loadUsers();
       const email = stripeEventEmail(event);
+      const planId = stripeEventPlanId(event);
       const planName = stripeEventPlanName(event);
       const eventType = String(event.type || '');
       const object = event.data?.object || {};
-      let matchingUser = email ? users.find((entry) => normaliseEmail(entry.email) === email) : null;
+      const stripePeriod = stripeEventPeriod(event);
+      const eventAt = unixToIso(event.created) || nowIso();
+      let matchingUser = matchingStripeUser(users, object, email);
+
+      const shouldCreateUser = [
+        'checkout.session.completed',
+        'invoice.paid',
+        'customer.subscription.updated',
+      ].includes(eventType);
+
+      if (!matchingUser && email && shouldCreateUser) {
+        matchingUser = ensureRecordDefaults({
+          userId: '',
+          email,
+          displayName: email.split('@')[0] || 'Workspace member',
+        });
+        users.push(matchingUser);
+      }
 
       if (eventType === 'checkout.session.completed' || eventType === 'invoice.paid') {
         if (!matchingUser && email) {
-          matchingUser = ensureRecordDefaults({
-            userId: '',
+          queuePendingActivation(state, {
             email,
-            displayName: email.split('@')[0] || 'Workspace member',
+            planId,
+            planName,
+            source: 'stripe',
+            eventId: event.id,
+            eventType,
+            customerId: stripeObjectCustomerId(object),
+            subscriptionId: stripeObjectSubscriptionId(object),
+            checkoutSessionId: stripeObjectCheckoutSessionId(object),
+            queuedAt: eventAt,
           });
-          users.push(matchingUser);
-        }
-        queuePendingActivation(state, {
-          email,
-          planName,
-          source: 'stripe',
-          eventId: event.id,
-          eventType,
-          customerId: object.customer || '',
-          subscriptionId: object.subscription || '',
-          checkoutSessionId: object.id || '',
-          queuedAt: nowIso(),
-        });
-        if (matchingUser) {
-          matchingUser.subscriptionStatus = 'pending_activation';
-          matchingUser.planName = planName;
-          matchingUser.paymentReservationAt = nowIso();
-          matchingUser.paymentReservationSource = 'stripe';
-          matchingUser.lastPaymentAt = nowIso();
-          matchingUser.stripeCustomerId = object.customer || matchingUser.stripeCustomerId || '';
-          matchingUser.stripeSubscriptionId = object.subscription || matchingUser.stripeSubscriptionId || '';
+        } else {
+          activatePaidUser(matchingUser, {
+            planId,
+            planName,
+            customerId: stripeObjectCustomerId(object),
+            subscriptionId: stripeObjectSubscriptionId(object),
+            checkoutSessionId: stripeObjectCheckoutSessionId(object),
+            subscriptionEndsAt: stripePeriod.end,
+            activatedAt: eventAt,
+          });
+          clearPendingActivation(state, matchingUser.email);
         }
         logUsageEvent(state, {
-          type: 'billing.payment_reserved',
+          type: 'billing.subscription_activated',
           actorUserId: matchingUser?.userId || '',
           actorName: matchingUser?.displayName || '',
           actorEmail: email,
-          summary: `Stripe payment recorded for ${email || 'unknown customer'}.`,
+          summary: `Stripe activated paid access for ${email || 'unknown customer'}.`,
           details: {
             eventType,
+            planId,
             planName,
-            customerId: object.customer || '',
-            subscriptionId: object.subscription || '',
+            customerId: stripeObjectCustomerId(object),
+            subscriptionId: stripeObjectSubscriptionId(object),
           },
         });
+      } else if (eventType === 'customer.subscription.updated' && matchingUser) {
+        const status = String(object.status || '').toLowerCase();
+        if (status === 'active' || status === 'trialing') {
+          activatePaidUser(matchingUser, {
+            planId,
+            planName,
+            customerId: stripeObjectCustomerId(object),
+            subscriptionId: stripeObjectSubscriptionId(object),
+            subscriptionEndsAt: stripePeriod.end,
+            activatedAt: eventAt,
+          });
+          clearPendingActivation(state, matchingUser.email);
+          logUsageEvent(state, {
+            type: 'billing.subscription_updated',
+            actorUserId: matchingUser.userId || '',
+            actorName: matchingUser.displayName || '',
+            actorEmail: matchingUser.email || '',
+            summary: `Subscription updated for ${matchingUser.email || 'workspace member'}.`,
+            details: {
+              eventType,
+              status,
+              planId,
+              planName,
+            },
+          });
+        } else if (status === 'past_due' || status === 'unpaid') {
+          matchingUser.subscriptionStatus = 'past_due';
+          matchingUser.subscriptionEndsAt = stripePeriod.end || matchingUser.subscriptionEndsAt;
+          logUsageEvent(state, {
+            type: 'billing.payment_failed',
+            actorUserId: matchingUser.userId || '',
+            actorName: matchingUser.displayName || '',
+            actorEmail: matchingUser.email || '',
+            summary: `Subscription payment issue for ${matchingUser.email || 'workspace member'}.`,
+            details: {
+              eventType,
+              status,
+              planId,
+              planName,
+            },
+          });
+        } else if (status === 'canceled' || status === 'incomplete_expired') {
+          matchingUser.subscriptionStatus = 'canceled';
+          matchingUser.subscriptionEndsAt = stripePeriod.end || eventAt;
+          clearPendingActivation(state, matchingUser.email);
+          logUsageEvent(state, {
+            type: 'billing.subscription_canceled',
+            actorUserId: matchingUser.userId || '',
+            actorName: matchingUser.displayName || '',
+            actorEmail: matchingUser.email || '',
+            summary: `Subscription canceled for ${matchingUser.email || 'workspace member'}.`,
+            details: {
+              eventType,
+              status,
+              planId,
+              planName,
+            },
+          });
+        }
       } else if (eventType === 'customer.subscription.deleted' && matchingUser) {
         matchingUser.subscriptionStatus = 'canceled';
-        matchingUser.subscriptionEndsAt = nowIso();
+        matchingUser.subscriptionEndsAt = stripePeriod.end || eventAt;
+        clearPendingActivation(state, matchingUser.email);
         logUsageEvent(state, {
           type: 'billing.subscription_canceled',
           actorUserId: matchingUser.userId || '',
@@ -883,6 +1065,7 @@ export default async function handler(request) {
         });
       } else if (eventType === 'invoice.payment_failed' && matchingUser) {
         matchingUser.subscriptionStatus = 'past_due';
+        matchingUser.subscriptionEndsAt = stripePeriod.end || matchingUser.subscriptionEndsAt;
         logUsageEvent(state, {
           type: 'billing.payment_failed',
           actorUserId: matchingUser.userId || '',
@@ -985,6 +1168,74 @@ export default async function handler(request) {
       });
     }
 
+    if (request.method === 'POST' && pathname === '/api/billing/checkout') {
+      const context = await loadSharedWorkspaceContext(session);
+      const { state, userRecord } = context;
+      const body = await readBody(request);
+      const plan = paidPlanById(body.planId || defaultPaidPlan()?.id);
+      if (!plan) {
+        return sendJson(400, { error: 'Choose a valid subscription plan first.' });
+      }
+      if (!stripeCheckoutReady(plan)) {
+        return sendJson(500, { error: `Stripe checkout is not configured for the ${plan.name} plan yet.` });
+      }
+      if (String(userRecord.subscriptionStatus || '').toLowerCase() === 'active' && userRecord.stripeCustomerId) {
+        return sendJson(400, { error: 'Your subscription is already active. Use Manage billing to change plans.' });
+      }
+
+      const checkout = await createSubscriptionCheckoutSession({
+        plan,
+        customerEmail: userRecord.email || session.email || '',
+        customerId: userRecord.stripeCustomerId || '',
+        publicAppUrl: publicAppUrl || requestUrl.origin,
+        userId: userRecord.userId || session.userId || '',
+      });
+
+      logUsageEvent(state, {
+        type: 'billing.checkout_started',
+        actorUserId: session.userId || '',
+        actorName: sessionOwnerName(session),
+        actorEmail: session.email || '',
+        summary: `${sessionOwnerName(session)} started Stripe checkout for ${plan.name}.`,
+        details: {
+          planId: plan.id,
+          planName: plan.name,
+          checkoutSessionId: checkout.id,
+        },
+      });
+      await saveAppState(sharedWorkspaceScope, state);
+      return sendJson(200, {
+        url: checkout.url,
+        plan: {
+          id: plan.id,
+          name: plan.name,
+        },
+      });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/billing/portal') {
+      const context = await loadSharedWorkspaceContext(session);
+      const { state, userRecord } = context;
+      if (!userRecord.stripeCustomerId) {
+        return sendJson(400, { error: 'No active Stripe customer was found for this workspace yet.' });
+      }
+
+      const portal = await createCustomerPortalSession({
+        customerId: userRecord.stripeCustomerId,
+        publicAppUrl: publicAppUrl || requestUrl.origin,
+      });
+
+      logUsageEvent(state, {
+        type: 'billing.portal_opened',
+        actorUserId: session.userId || '',
+        actorName: sessionOwnerName(session),
+        actorEmail: session.email || '',
+        summary: `${sessionOwnerName(session)} opened the Stripe customer portal.`,
+      });
+      await saveAppState(sharedWorkspaceScope, state);
+      return sendJson(200, { url: portal.url });
+    }
+
     if (request.method === 'GET' && pathname === '/api/admin/billing') {
       assertAdminUser(session);
       const state = await loadAppState(sharedWorkspaceScope);
@@ -1017,7 +1268,8 @@ export default async function handler(request) {
       }
       const state = await loadAppState(sharedWorkspaceScope);
       match.subscriptionStatus = 'active';
-      match.planName = String(body.planName || match.planName || 'Nzuko AI Starter').trim();
+      match.planId = normalisePaidPlanId(body.planId || match.planId || defaultPaidPlan()?.id);
+      match.planName = String(body.planName || match.planName || planNameForId(match.planId)).trim();
       match.activatedAt = nowIso();
       match.activatedBy = normaliseEmail(session.email);
       match.subscriptionEndsAt = body.subscriptionEndsAt ? String(body.subscriptionEndsAt) : match.subscriptionEndsAt;

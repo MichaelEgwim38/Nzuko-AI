@@ -102,14 +102,7 @@
             </div>
           </div>
           <div class="topbar-actions">
-            <a
-              id="upgrade-link"
-              class="button compact-button upgrade-button"
-              href="https://buy.stripe.com/test_28E14pfxJ2sV7d2gJO2sM00"
-              target="_blank"
-              rel="noreferrer"
-              hidden
-            >Upgrade now</a>
+            <button id="manage-billing" class="button compact-button upgrade-button" type="button" hidden>Manage billing</button>
             <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
             <button id="logout" class="button secondary compact-button" type="button">Log out</button>
           </div>
@@ -148,12 +141,23 @@
                 <p class="lead">We capture decisions, action items, and voice-note summaries from your WhatsApp meetings so your community stays aligned and nothing gets missed.</p>
                 <p id="trial-summary" class="status-banner" hidden></p>
                 <p id="payment-notice" class="status-banner secondary" hidden></p>
-                <p id="upgrade-note" class="status-banner secondary upgrade-note" hidden>Reserve your paid workspace now. We&apos;ll activate your full setup within 7 days. Payment currently opens in Stripe test mode while billing automation is being finalized.</p>
+                <p id="upgrade-note" class="status-banner secondary upgrade-note" hidden>You&apos;ll be redirected to Stripe to start or manage your subscription.</p>
                 <p id="workspace-notice" class="status-banner secondary" hidden></p>
               </div>
             </section>
 
             <div class="workspace-stack">
+              <section class="panel billing-plan-panel" id="billing-overview">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Plans</p>
+                    <h2>Choose the right plan for your workspace</h2>
+                  </div>
+                </div>
+                <p id="billing-plan-status" class="hint">Start with a free trial, then choose Starter or Pro in Stripe.</p>
+                <div id="plan-cards" class="plan-grid">Plans are loading.</div>
+              </section>
+
               <section class="panel" id="connect">
                 <div class="section-heading">
                   <div>

@@ -50,6 +50,10 @@ Required Netlify environment variables:
 - `WAHA_API_KEY` when your WAHA instance requires it
 - `OPENAI_API_KEY` for voice-note transcription and translation
 - `PUBLIC_APP_URL` for webhook registration in production
+- `STRIPE_SECRET_KEY`
+- `STRIPE_STARTER_PRICE_ID`
+- `STRIPE_PRO_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
 
 Authentication now uses provider-based login. Configure Google and Azure (Microsoft) inside Supabase Auth, then set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in Netlify so the browser can start the OAuth flow and the Netlify API can verify Supabase-issued access tokens.
 
@@ -114,6 +118,7 @@ Do not connect a personal account silently. Use only the group and account appro
 
 - [User Guide](./USER_GUIDE.md)
 - [Admin Handover](./ADMIN_README.md)
+- [Stripe Setup](./STRIPE_SETUP.md)
 - [Group Message](./GROUP_MESSAGE.md)
 
 ## Cost Notes
