@@ -45,7 +45,7 @@ textarea {
 }
 
 .dashboard-shell {
-  width: min(1440px, calc(100% - 24px));
+  width: min(1500px, calc(100% - 24px));
   padding: 18px 0 32px;
 }
 
@@ -58,8 +58,8 @@ textarea {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 280px;
-  gap: 24px;
+  grid-template-columns: 220px minmax(0, 1fr) 332px;
+  gap: 20px;
   padding: 22px;
 }
 
@@ -605,6 +605,12 @@ textarea {
   display: grid;
   align-content: start;
   gap: 18px;
+}
+
+.dashboard-rail .panel,
+.dashboard-rail .rail-card {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dashboard-rail h3 {
@@ -1295,12 +1301,14 @@ pre {
   display: grid;
   gap: 8px;
   padding: 13px 14px;
+  min-width: 0;
 }
 
 .activity-item-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -1312,6 +1320,7 @@ pre {
 .activity-item p,
 .activity-item time {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .activity-item strong {
@@ -1331,7 +1340,9 @@ pre {
   color: #7a887f;
   font-size: 12px;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: right;
+  max-width: 100%;
 }
 
 .activity-subpanel {
@@ -1543,6 +1554,11 @@ pre {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.billing-entry-actions .button {
+  min-width: 0;
+  flex: 1 1 118px;
 }
 
 .billing-plan-panel {

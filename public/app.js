@@ -91,7 +91,6 @@ function renderWorkspaceStatus(status = {}) {
   const trialSummary = $('#trial-summary');
   const paymentNotice = $('#payment-notice');
   const manageBillingButton = $('#manage-billing');
-  const heroManageBillingButton = $('#hero-manage-billing');
   const upgradeNote = $('#upgrade-note');
   const workspaceNotice = $('#workspace-notice');
   const adminBillingPanel = $('#admin-billing-panel');
@@ -115,9 +114,6 @@ function renderWorkspaceStatus(status = {}) {
 
   if (manageBillingButton) {
     manageBillingButton.hidden = !trial.isSubscribed;
-  }
-  if (heroManageBillingButton) {
-    heroManageBillingButton.hidden = !trial.isSubscribed;
   }
 
   if (upgradeNote && trial.isSubscribed) {
@@ -186,14 +182,10 @@ function renderBillingPlans(status = {}) {
   const container = $('#pricing-plan-cards');
   const summary = $('#pricing-plan-status');
   const manageButton = $('#manage-billing');
-  const heroManageButton = $('#hero-manage-billing');
   const plans = Array.isArray(billing.plans) ? billing.plans : [];
 
   if (manageButton) {
     manageButton.hidden = !billing.customerPortalAvailable;
-  }
-  if (heroManageButton) {
-    heroManageButton.hidden = !billing.customerPortalAvailable;
   }
 
   if (!container || !summary) return;
@@ -1074,7 +1066,6 @@ $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
-$('#hero-manage-billing')?.addEventListener('click', openBillingPortal);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;

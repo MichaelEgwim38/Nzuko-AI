@@ -2,7 +2,7 @@ const paidPlanDefinitions = [
   {
     id: 'starter',
     name: 'Starter',
-    priceLabel: '$15/month',
+    priceLabel: '£15/month',
     amountCents: 1500,
     summary: 'Best for one community group getting started with AI minutes.',
     features: [
@@ -16,7 +16,7 @@ const paidPlanDefinitions = [
   {
     id: 'pro',
     name: 'Pro',
-    priceLabel: '$29/month',
+    priceLabel: '£29/month',
     amountCents: 2900,
     summary: 'More recap capacity for busier groups that rely on voice notes.',
     features: [
