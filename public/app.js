@@ -323,8 +323,10 @@ async function api(path, options = {}) {
 function showLogin(message = '') {
   $('#login-screen').hidden = false;
   $('#app-shell').hidden = true;
-  if (message) {
-    $('#login-status').textContent = message;
+  const status = $('#login-status');
+  if (status) {
+    status.textContent = message;
+    status.hidden = !message;
   }
 }
 
