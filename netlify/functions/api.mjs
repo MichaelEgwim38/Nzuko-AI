@@ -2,12 +2,20 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { generateRecap } from '../../src/minutesAgent.js';
 import {
   countCapturedMessages,
+  defaultMembershipRecord,
+  defaultWorkspaceRecord,
+  legacyWorkspaceId,
   loadAppState,
   loadCapturedMessages,
+  loadMemberships,
   saveCapturedMessage,
   saveAppState,
   loadUsers,
+  loadWorkspaces,
+  saveMemberships,
+  saveWorkspaces,
   saveUsers,
+  workspaceScopeFor,
 } from '../../src/netlifyStore.js';
 import { backgroundTaskSecret, cookieFlags, createSessionToken, readUserSession } from '../../src/netlifyAuth.js';
 import { providerSessionUser, supabaseAuthConfig, verifySupabaseAccessToken } from '../../src/supabaseAuth.js';
@@ -33,7 +41,7 @@ const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECON
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
 const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$/, '');
 const managedWahaApiKey = String(process.env.WAHA_API_KEY || '');
-const sharedWorkspaceScope = 'shared';
+const legacySharedScope = 'shared';
 const trialDays = Number(process.env.TRIAL_DAYS || 3);
 const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
 const trialVoiceNoteLimit = Number(process.env.TRIAL_VOICE_NOTE_LIMIT || 3);
@@ -68,7 +76,7 @@ function requiredSecret(name) {
 
 function webhookToken() {
   return createHmac('sha256', requiredSecret('ADMIN_SESSION_SECRET'))
-    .update(sharedWorkspaceScope)
+    .update(legacySharedScope)
     .digest('hex');
 }
 
@@ -614,6 +622,55 @@ async function loadWorkspaceOwnerAccess(state) {
   };
 }
 
+async function resolveWorkspaceMembership(user = {}) {
+  const workspaces = await loadWorkspaces();
+  const memberships = await loadMemberships();
+  const sharedWorkspace =
+    workspaces.find((workspace) => workspace.id === legacyWorkspaceId()) ||
+    defaultWorkspaceRecord({ id: legacyWorkspaceId(), scope: legacySharedScope, legacyShared: true });
+  const userId = String(user.userId || '').trim();
+
+  let changed = false;
+  let workspace = sharedWorkspace;
+  let membership =
+    memberships.find((entry) => String(entry.userId || '').trim() === userId) ||
+    null;
+
+  if (membership) {
+    workspace =
+      workspaces.find((entry) => entry.id === membership.workspaceId) ||
+      sharedWorkspace;
+    if (workspace.id !== membership.workspaceId) {
+      membership.workspaceId = workspace.id;
+      membership.updatedAt = nowIso();
+      changed = true;
+    }
+  } else if (userId) {
+    membership = defaultMembershipRecord({
+      workspaceId: sharedWorkspace.id,
+      userId,
+      role: 'owner',
+    });
+    memberships.push(membership);
+    changed = true;
+  }
+
+  if (!workspaces.some((entry) => entry.id === sharedWorkspace.id)) {
+    workspaces.unshift(sharedWorkspace);
+    changed = true;
+  }
+
+  if (changed) {
+    await saveWorkspaces(workspaces);
+    await saveMemberships(memberships);
+  }
+
+  return {
+    workspace,
+    membership,
+  };
+}
+
 function ownerStateSummary(state, user = {}) {
   const sharedSession = state.sharedSession || {};
   const ownerUserId = String(sharedSession.ownerUserId || '');
@@ -642,17 +699,17 @@ function clearSharedOwner(state) {
   };
 }
 
-async function normaliseSharedOwner(state) {
+async function normaliseSharedOwner(scope, state) {
   const ownerSummary = ownerStateSummary(state);
   if (ownerSummary.isExpired) {
     clearSharedOwner(state);
-    await saveAppState(sharedWorkspaceScope, state);
+    await saveAppState(scope, state);
     return ownerStateSummary(state);
   }
   return ownerSummary;
 }
 
-async function claimSharedOwner(state, user) {
+async function claimSharedOwner(scope, state, user) {
   const timestamp = nowIso();
   state.sharedSession = {
     ownerUserId: String(user.userId || ''),
@@ -662,16 +719,16 @@ async function claimSharedOwner(state, user) {
       : timestamp,
     lastActivityAt: timestamp,
   };
-  await saveAppState(sharedWorkspaceScope, state);
+  await saveAppState(scope, state);
   return ownerStateSummary(state, user);
 }
 
-async function touchSharedOwnerActivity(state, user) {
+async function touchSharedOwnerActivity(scope, state, user) {
   if (String(state.sharedSession?.ownerUserId || '') !== String(user.userId || '')) {
     return ownerStateSummary(state, user);
   }
   state.sharedSession.lastActivityAt = nowIso();
-  await saveAppState(sharedWorkspaceScope, state);
+  await saveAppState(scope, state);
   return ownerStateSummary(state, user);
 }
 
@@ -692,10 +749,12 @@ function ensureSharedOwnerAllowed(ownerSummary, user, { allowTakeover = false } 
   throw httpError(403, 'Another WhatsApp account is currently connected. Switch WhatsApp user to connect your own account.');
 }
 
-async function loadSharedWorkspaceContext(user) {
-  const state = await loadAppState(sharedWorkspaceScope);
+async function loadWorkspaceContext(user) {
+  const { workspace, membership } = await resolveWorkspaceMembership(user);
+  const scope = workspaceScopeFor(workspace);
+  const state = await loadAppState(scope);
   state.settings = managedSettings(state.settings);
-  const ownerSummary = await normaliseSharedOwner(state);
+  const ownerSummary = await normaliseSharedOwner(scope, state);
   const { users, record } = await loadOrCreateUserAccess(user);
   const pendingActivation = pendingActivationRecord(state, record.email);
   if (pendingActivation && String(record.subscriptionStatus || '').toLowerCase() !== 'active') {
@@ -708,7 +767,9 @@ async function loadSharedWorkspaceContext(user) {
     await saveUserAccess(users, record);
   }
   return {
-    scope: sharedWorkspaceScope,
+    scope,
+    workspace,
+    membership,
     state,
     ownerSummary: ownerStateSummary(state, user),
     users,
@@ -1004,7 +1065,7 @@ export default async function handler(request) {
   try {
     if (request.method === 'GET' && pathname === '/api/auth/status') {
       const session = readUserSession(request);
-      const context = session ? await loadSharedWorkspaceContext(session) : null;
+      const context = session ? await loadWorkspaceContext(session) : null;
       const supabase = supabaseAuthConfig();
       return sendJson(200, {
         authenticated: Boolean(session),
@@ -1013,6 +1074,7 @@ export default async function handler(request) {
         groupName: context?.state?.settings?.approvedGroupName || '',
         trial: context?.trial || null,
         sharedSession: context?.ownerSummary || null,
+        workspace: context?.workspace || null,
         auth: {
           configured: supabase.configured,
           providers: ['google'],
@@ -1034,7 +1096,7 @@ export default async function handler(request) {
         return sendJson(401, { error: 'The provider did not return a usable account profile.' });
       }
 
-      const state = await loadAppState(sharedWorkspaceScope);
+      const state = await loadAppState(legacySharedScope);
       state.settings = managedSettings(state.settings);
       logUsageEvent(state, {
         type: 'auth.login',
@@ -1043,7 +1105,7 @@ export default async function handler(request) {
         actorEmail: user.email || '',
         summary: `${sessionOwnerName(user)} signed in.`,
       });
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(legacySharedScope, state);
 
       const token = createSessionToken(user, adminSessionMaxAgeSeconds);
       return sendJson(200, {
@@ -1065,7 +1127,7 @@ export default async function handler(request) {
       const rawBody = await readRawBody(request);
       verifyStripeWebhookSignature(rawBody, request.headers.get('stripe-signature') || '');
       const event = rawBody ? JSON.parse(rawBody) : {};
-      const state = await loadAppState(sharedWorkspaceScope);
+      const state = await loadAppState(legacySharedScope);
       state.settings = managedSettings(state.settings);
 
       if (event.id && event.id === state.billing.lastStripeEventId) {
@@ -1229,7 +1291,7 @@ export default async function handler(request) {
 
       markStripeEvent(state, event);
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(legacySharedScope, state);
       return sendJson(200, { ok: true });
     }
 
@@ -1239,7 +1301,7 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/webhooks/waha') {
-      const scope = sharedWorkspaceScope;
+      const scope = legacySharedScope;
       const token = requestUrl.searchParams.get('token') || '';
       const expectedToken = webhookToken();
       if (!token || token !== expectedToken) {
@@ -1296,14 +1358,15 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/status') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { scope, state, trial, ownerSummary } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary, workspace } = context;
       const capturedCount = await countCapturedMessages(scope, { groupId: state.settings.approvedGroupId });
       return sendJson(200, {
         app: 'Nzuko AI',
         connector: state.settings.connectorMode,
         settings: publicSettings(state.settings),
-        userScoped: false,
+        userScoped: !workspace?.legacyShared,
+        workspace,
         managedWahaConnection: Boolean(managedWahaBaseUrl),
         draftReady: Boolean(state.currentDraft),
         auditCount: state.auditLog.length,
@@ -1325,8 +1388,8 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/billing/checkout') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, userRecord } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, userRecord } = context;
       const body = await readBody(request);
       const plan = paidPlanById(body.planId || defaultPaidPlan()?.id);
       if (!plan) {
@@ -1359,7 +1422,7 @@ export default async function handler(request) {
           checkoutSessionId: checkout.id,
         },
       });
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, {
         url: checkout.url,
         plan: {
@@ -1370,8 +1433,8 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/billing/portal') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, userRecord } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, userRecord } = context;
       if (!userRecord.stripeCustomerId) {
         return sendJson(400, { error: 'No active Stripe customer was found for this workspace yet.' });
       }
@@ -1388,13 +1451,13 @@ export default async function handler(request) {
         actorEmail: session.email || '',
         summary: `${sessionOwnerName(session)} opened the Stripe customer portal.`,
       });
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, { url: portal.url });
     }
 
     if (request.method === 'GET' && pathname === '/api/admin/billing') {
       assertAdminUser(session);
-      const state = await loadAppState(sharedWorkspaceScope);
+      const state = await loadAppState(legacySharedScope);
       const users = (await loadUsers())
         .map((entry) => ensureRecordDefaults(entry))
         .sort((left, right) => new Date(right.lastPaymentAt || right.trialStartedAt || 0).getTime() - new Date(left.lastPaymentAt || left.trialStartedAt || 0).getTime());
@@ -1422,7 +1485,7 @@ export default async function handler(request) {
       if (!match) {
         return sendJson(404, { error: 'User not found for activation.' });
       }
-      const state = await loadAppState(sharedWorkspaceScope);
+      const state = await loadAppState(legacySharedScope);
       match.subscriptionStatus = 'active';
       match.planId = normalisePaidPlanId(body.planId || match.planId || defaultPaidPlan()?.id);
       match.planName = String(body.planName || match.planName || planNameForId(match.planId)).trim();
@@ -1442,7 +1505,7 @@ export default async function handler(request) {
         },
       });
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(legacySharedScope, state);
       return sendJson(200, {
         ok: true,
         user: {
@@ -1465,7 +1528,7 @@ export default async function handler(request) {
       if (!match) {
         return sendJson(404, { error: 'User not found for reset.' });
       }
-      const state = await loadAppState(sharedWorkspaceScope);
+      const state = await loadAppState(legacySharedScope);
       const resetRecord = resetUserTrial(match);
       Object.assign(match, resetRecord);
       clearPendingActivation(state, match.email);
@@ -1480,7 +1543,7 @@ export default async function handler(request) {
         },
       });
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(legacySharedScope, state);
       return sendJson(200, {
         ok: true,
         user: {
@@ -1494,11 +1557,11 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/groups') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, trial, ownerSummary } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
-      await touchSharedOwnerActivity(state, session);
+      await touchSharedOwnerActivity(scope, state, session);
       if (state.settings.connectorMode === 'waha') {
         const groups = await listGroupsFromWaha({
           baseUrl: state.settings.wahaBaseUrl,
@@ -1513,15 +1576,15 @@ export default async function handler(request) {
           summary: `${sessionOwnerName(session)} loaded WhatsApp groups.`,
           details: { count: groups.length },
         });
-        await saveAppState(sharedWorkspaceScope, state);
+        await saveAppState(scope, state);
         return sendJson(200, { connector: 'waha', groups });
       }
       return sendJson(200, { connector: 'mock', groups: mockGroups });
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/status') {
-      const scope = sharedWorkspaceScope;
-      const state = await loadAppState(scope);
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
       state.settings = managedSettings(state.settings);
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
@@ -1532,11 +1595,11 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/start') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, trial, ownerSummary } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
-      await claimSharedOwner(state, session);
+      await claimSharedOwner(scope, state, session);
       await ensureManagedWahaSession({ settings: state.settings, requestUrl });
       const status = await startWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
@@ -1550,13 +1613,13 @@ export default async function handler(request) {
         actorEmail: session.email || '',
         summary: `${sessionOwnerName(session)} started the shared WhatsApp session.`,
       });
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, { status });
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/logout') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, trial } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial } = context;
       ensureTrialAllowed(trial);
       const status = await logoutWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
@@ -1574,13 +1637,13 @@ export default async function handler(request) {
         actorEmail: session.email || '',
         summary: `${sessionOwnerName(session)} ended the shared WhatsApp session for a new user.`,
       });
-      await saveAppState(sharedWorkspaceScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, { status, sharedSession: ownerStateSummary(state, session) });
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/webhook') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, trial, ownerSummary } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       const webhookUrl = await ensureManagedWahaSession({ settings: state.settings, requestUrl });
@@ -1589,16 +1652,16 @@ export default async function handler(request) {
         session: state.settings.wahaSession,
         apiKey: state.settings.wahaApiKey,
       });
-      await touchSharedOwnerActivity(state, session);
+      await touchSharedOwnerActivity(scope, state, session);
       return sendJson(200, { webhookUrl, status });
     }
 
     if (request.method === 'GET' && pathname === '/api/waha/qr') {
-      const context = await loadSharedWorkspaceContext(session);
-      const { state, trial, ownerSummary } = context;
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
-      await claimSharedOwner(state, session);
+      await claimSharedOwner(scope, state, session);
       const qr = await getWahaQr({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -1613,8 +1676,8 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/settings') {
       const body = await readBody(request);
-      const scope = sharedWorkspaceScope;
-      const state = await loadAppState(scope);
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
       const previousSettings = { ...state.settings };
       state.settings = {
         ...managedSettings(state.settings),
@@ -1647,7 +1710,7 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull') {
-      const context = await loadSharedWorkspaceContext(session);
+      const context = await loadWorkspaceContext(session);
       const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
@@ -1702,8 +1765,8 @@ export default async function handler(request) {
         summary: `${sessionOwnerName(session)} pulled recent WhatsApp messages.`,
         details: { count: messages.length, warning },
       });
-      await saveAppState(sharedWorkspaceScope, state);
-      await touchSharedOwnerActivity(state, session);
+      await saveAppState(scope, state);
+      await touchSharedOwnerActivity(scope, state, session);
       return sendJson(200, {
         messages,
         chatText,
@@ -1713,8 +1776,8 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/captured') {
-      const scope = sharedWorkspaceScope;
-      const state = await loadAppState(scope);
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
       state.settings = managedSettings(state.settings);
       const messages = await loadCapturedMessages(scope, {
         groupId: state.settings.approvedGroupId,
@@ -1727,8 +1790,8 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/messages/range') {
-      const scope = sharedWorkspaceScope;
-      const state = await loadAppState(scope);
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
       state.settings = managedSettings(state.settings);
       const range = selectedDateRange({
         preset: requestUrl.searchParams.get('preset'),
@@ -1746,7 +1809,7 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull-today') {
-      const context = await loadSharedWorkspaceContext(session);
+      const context = await loadWorkspaceContext(session);
       const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
@@ -1797,8 +1860,8 @@ export default async function handler(request) {
         summary: `${sessionOwnerName(session)} loaded today's WhatsApp messages.`,
         details: { count: messages.length, historyAvailable },
       });
-      await saveAppState(sharedWorkspaceScope, state);
-      await touchSharedOwnerActivity(state, session);
+      await saveAppState(scope, state);
+      await touchSharedOwnerActivity(scope, state, session);
       return sendJson(200, {
         messages,
         chatText,
@@ -1811,7 +1874,7 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/recap/generate') {
       const body = await readBody(request);
-      const context = await loadSharedWorkspaceContext(session);
+      const context = await loadWorkspaceContext(session);
       const { scope, state, trial, ownerSummary, users, userRecord } = context;
       ensureTrialAllowed(trial, 'recap');
       ensureUsageAllowed(userRecord, 'recap');
@@ -1861,12 +1924,12 @@ export default async function handler(request) {
       await saveAppState(scope, state);
       recordUsage(userRecord, 'recap');
       await saveUserAccess(users, userRecord);
-      await touchSharedOwnerActivity(state, session);
+      await touchSharedOwnerActivity(scope, state, session);
       return sendJson(200, { draft: state.currentDraft });
     }
 
     if (request.method === 'POST' && pathname === '/api/recap/approve') {
-      const context = await loadSharedWorkspaceContext(session);
+      const context = await loadWorkspaceContext(session);
       const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
@@ -1916,18 +1979,18 @@ export default async function handler(request) {
         },
       });
       await saveAppState(scope, state);
-      await touchSharedOwnerActivity(state, session);
+      await touchSharedOwnerActivity(scope, state, session);
       return sendJson(200, { auditEntry });
     }
 
     if (request.method === 'GET' && pathname === '/api/audit') {
-      const scope = sharedWorkspaceScope;
-      const state = await loadAppState(scope);
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
       return sendJson(200, { auditLog: state.auditLog });
     }
 
     if (request.method === 'POST' && pathname === '/api/purge') {
-      const context = await loadSharedWorkspaceContext(session);
+      const context = await loadWorkspaceContext(session);
       const { scope, state } = context;
       if (state.currentDraft && String(state.currentDraft.ownerUserId || '') && String(state.currentDraft.ownerUserId) !== String(session.userId || '')) {
         return sendJson(403, { error: 'Only the user who generated this draft can clear it.' });

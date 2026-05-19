@@ -2,8 +2,11 @@ import { getStore } from '@netlify/blobs';
 import { mockGroups } from './connectors/mockWhatsApp.js';
 
 const usersKey = 'users';
+const workspacesKey = 'workspaces';
+const membershipsKey = 'memberships';
 const sharedStateKey = 'app-state';
 const sharedMessagesKey = 'captured-messages';
+const legacySharedWorkspaceId = 'shared';
 
 function blobStore() {
   return getStore({ name: 'nzuko-ai', consistency: 'strong' });
@@ -14,6 +17,13 @@ function normaliseScope(value = '') {
   return scoped
     ? scoped.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 120)
     : 'shared';
+}
+
+function normaliseWorkspaceId(value = '') {
+  const workspaceId = String(value || '').trim();
+  return workspaceId
+    ? workspaceId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 120)
+    : legacySharedWorkspaceId;
 }
 
 function stateKeyFor(scope) {
@@ -70,6 +80,35 @@ export function defaultSettings() {
     wahaSession: process.env.WAHA_SESSION || 'default',
     wahaApiKey: process.env.WAHA_API_KEY || '',
     transcribeLanguage: process.env.TRANSCRIBE_LANGUAGE || 'auto',
+  };
+}
+
+export function defaultWorkspaceRecord(workspace = {}) {
+  const id = normaliseWorkspaceId(workspace.id || workspace.workspaceId);
+  const legacyShared = id === legacySharedWorkspaceId;
+  return {
+    id,
+    name: String(workspace.name || workspace.workspaceName || (legacyShared ? 'Shared workspace' : 'Nzuko workspace')).trim(),
+    slug: String(workspace.slug || id).trim(),
+    scope: normaliseScope(workspace.scope || (legacyShared ? 'shared' : `workspace-${id}`)),
+    createdAt: workspace.createdAt || new Date().toISOString(),
+    updatedAt: workspace.updatedAt || workspace.createdAt || new Date().toISOString(),
+    ownerUserId: String(workspace.ownerUserId || '').trim(),
+    legacyShared,
+    archivedAt: workspace.archivedAt || null,
+  };
+}
+
+export function defaultMembershipRecord(membership = {}) {
+  const workspaceId = normaliseWorkspaceId(membership.workspaceId);
+  const userId = String(membership.userId || '').trim();
+  return {
+    id: String(membership.id || `${workspaceId}:${userId || 'member'}`).trim(),
+    workspaceId,
+    userId,
+    role: String(membership.role || 'owner').trim(),
+    createdAt: membership.createdAt || new Date().toISOString(),
+    updatedAt: membership.updatedAt || membership.createdAt || new Date().toISOString(),
   };
 }
 
@@ -230,4 +269,39 @@ export async function loadUsers() {
 
 export async function saveUsers(users) {
   return saveJson(usersKey, users);
+}
+
+export async function loadWorkspaces() {
+  const stored = await loadJson(workspacesKey, []);
+  const workspaces = Array.isArray(stored) ? stored.map(defaultWorkspaceRecord) : [];
+  if (!workspaces.some((workspace) => workspace.id === legacySharedWorkspaceId)) {
+    workspaces.unshift(defaultWorkspaceRecord({ id: legacySharedWorkspaceId, legacyShared: true }));
+  }
+  return workspaces;
+}
+
+export async function saveWorkspaces(workspaces) {
+  const next = Array.isArray(workspaces) ? workspaces.map(defaultWorkspaceRecord) : [];
+  if (!next.some((workspace) => workspace.id === legacySharedWorkspaceId)) {
+    next.unshift(defaultWorkspaceRecord({ id: legacySharedWorkspaceId, legacyShared: true }));
+  }
+  return saveJson(workspacesKey, next);
+}
+
+export async function loadMemberships() {
+  const stored = await loadJson(membershipsKey, []);
+  return Array.isArray(stored) ? stored.map(defaultMembershipRecord) : [];
+}
+
+export async function saveMemberships(memberships) {
+  const next = Array.isArray(memberships) ? memberships.map(defaultMembershipRecord) : [];
+  return saveJson(membershipsKey, next);
+}
+
+export function workspaceScopeFor(workspace = {}) {
+  return defaultWorkspaceRecord(workspace).scope;
+}
+
+export function legacyWorkspaceId() {
+  return legacySharedWorkspaceId;
 }
