@@ -223,6 +223,22 @@ async function saveMessagesRaw(scope = 'shared', messages) {
   return saveJson(messagesKeyFor(normaliseScope(scope)), messages);
 }
 
+export async function cloneScopeData(sourceScope = 'shared', targetScope = 'shared') {
+  const source = normaliseScope(sourceScope);
+  const target = normaliseScope(targetScope);
+  if (source === target) {
+    return;
+  }
+  const [state, messages] = await Promise.all([
+    loadAppState(source),
+    loadMessagesRaw(source),
+  ]);
+  await Promise.all([
+    saveAppState(target, state),
+    saveMessagesRaw(target, messages),
+  ]);
+}
+
 export async function saveCapturedMessage(scope = 'shared', message) {
   const resolved = resolveScopeAndMessage(scope, message);
   const messages = await loadMessagesRaw(resolved.scope);

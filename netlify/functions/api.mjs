@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { generateRecap } from '../../src/minutesAgent.js';
 import {
+  cloneScopeData,
   countCapturedMessages,
   defaultMembershipRecord,
   defaultWorkspaceRecord,
@@ -74,9 +75,9 @@ function requiredSecret(name) {
   return value;
 }
 
-function webhookToken() {
+function webhookToken(scope = legacySharedScope) {
   return createHmac('sha256', requiredSecret('ADMIN_SESSION_SECRET'))
-    .update(legacySharedScope)
+    .update(String(scope || legacySharedScope))
     .digest('hex');
 }
 
@@ -118,6 +119,19 @@ function sessionOwnerName(user = {}) {
   const candidate = localPart.split(/[._-]+/).find(Boolean) || localPart;
   if (!candidate) return 'Workspace member';
   return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+}
+
+function workspaceIdForUser(user = {}) {
+  const preferred = String(user.userId || user.email || '').trim().toLowerCase();
+  const suffix = preferred.replace(/[^a-z0-9_-]/g, '-').slice(0, 80) || `workspace-${Date.now()}`;
+  return `workspace-${suffix}`;
+}
+
+function workspaceNameForUser(user = {}) {
+  const ownerName = sessionOwnerName(user);
+  return ownerName === 'Workspace member'
+    ? 'Nzuko workspace'
+    : `${ownerName}'s workspace`;
 }
 
 function normaliseEmail(value = '') {
@@ -635,6 +649,7 @@ async function resolveWorkspaceMembership(user = {}) {
   let membership =
     memberships.find((entry) => String(entry.userId || '').trim() === userId) ||
     null;
+  const sharedWorkspaceMembers = memberships.filter((entry) => entry.workspaceId === sharedWorkspace.id);
 
   if (membership) {
     workspace =
@@ -645,9 +660,32 @@ async function resolveWorkspaceMembership(user = {}) {
       membership.updatedAt = nowIso();
       changed = true;
     }
+    if (workspace.legacyShared && sharedWorkspaceMembers.length <= 1 && userId) {
+      const migratedWorkspace = defaultWorkspaceRecord({
+        id: workspaceIdForUser(user),
+        name: workspaceNameForUser(user),
+        ownerUserId: userId,
+      });
+      if (!workspaces.some((entry) => entry.id === migratedWorkspace.id)) {
+        workspaces.push(migratedWorkspace);
+      }
+      await cloneScopeData(workspaceScopeFor(sharedWorkspace), workspaceScopeFor(migratedWorkspace));
+      membership.workspaceId = migratedWorkspace.id;
+      membership.updatedAt = nowIso();
+      workspace = migratedWorkspace;
+      changed = true;
+    }
   } else if (userId) {
+    workspace = defaultWorkspaceRecord({
+      id: workspaceIdForUser(user),
+      name: workspaceNameForUser(user),
+      ownerUserId: userId,
+    });
+    if (!workspaces.some((entry) => entry.id === workspace.id)) {
+      workspaces.push(workspace);
+    }
     membership = defaultMembershipRecord({
-      workspaceId: sharedWorkspace.id,
+      workspaceId: workspace.id,
       userId,
       role: 'owner',
     });
@@ -970,8 +1008,9 @@ async function pullWahaMessagesForRange({ settings, range, limit = 1000 }) {
   }
 }
 
-async function ensureManagedWahaSession({ settings, requestUrl }) {
-  const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha?token=${encodeURIComponent(webhookToken())}`;
+async function ensureManagedWahaSession({ settings, requestUrl, scope }) {
+  const resolvedScope = String(scope || legacySharedScope).trim() || legacySharedScope;
+  const webhookUrl = `${webhookBaseUrl(requestUrl)}/api/webhooks/waha?scope=${encodeURIComponent(resolvedScope)}&token=${encodeURIComponent(webhookToken(resolvedScope))}`;
   try {
     await configureWahaWebhook({
       baseUrl: settings.wahaBaseUrl,
@@ -1301,9 +1340,9 @@ export default async function handler(request) {
     }
 
     if (request.method === 'POST' && pathname === '/api/webhooks/waha') {
-      const scope = legacySharedScope;
+      const scope = String(requestUrl.searchParams.get('scope') || legacySharedScope).trim() || legacySharedScope;
       const token = requestUrl.searchParams.get('token') || '';
-      const expectedToken = webhookToken();
+      const expectedToken = webhookToken(scope);
       if (!token || token !== expectedToken) {
         return sendJson(401, { error: 'Invalid webhook token.' });
       }
@@ -1600,7 +1639,7 @@ export default async function handler(request) {
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       await claimSharedOwner(scope, state, session);
-      await ensureManagedWahaSession({ settings: state.settings, requestUrl });
+      await ensureManagedWahaSession({ settings: state.settings, requestUrl, scope });
       const status = await startWahaSession({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -1646,7 +1685,7 @@ export default async function handler(request) {
       const { scope, state, trial, ownerSummary } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
-      const webhookUrl = await ensureManagedWahaSession({ settings: state.settings, requestUrl });
+      const webhookUrl = await ensureManagedWahaSession({ settings: state.settings, requestUrl, scope });
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
