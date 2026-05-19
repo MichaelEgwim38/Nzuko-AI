@@ -85,7 +85,7 @@ function readPaymentQueryState() {
 function renderWorkspaceStatus(status = {}) {
   latestStatus = status;
   const trial = status.trial || {};
-  const sharedSession = status.sharedSession || {};
+  const workspaceSession = status.workspaceSession || status.sharedSession || {};
   const billing = status.billing || {};
   const admin = status.admin || {};
   const trialSummary = $('#trial-summary');
@@ -150,14 +150,14 @@ function renderWorkspaceStatus(status = {}) {
     let shouldBlink = false;
     if (!managedWahaWorkspace) {
       notice = '';
-    } else if (sharedSession.hasOwner && sharedSession.isCurrentUserOwner) {
-      notice = 'You are using the active shared WhatsApp connection right now.';
-    } else if (sharedSession.hasOwner) {
+    } else if (workspaceSession.hasOwner && workspaceSession.isCurrentUserOwner) {
+      notice = 'You are using the active workspace WhatsApp connection right now.';
+    } else if (workspaceSession.hasOwner) {
       notice = 'Another WhatsApp account is currently connected. Click Disconnect and switch WhatsApp to connect your own account.';
-    } else if (sharedSession.isExpired) {
-      notice = 'The current WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
+    } else if (workspaceSession.isExpired) {
+      notice = 'The current workspace WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
-      notice = 'No active WhatsApp connection. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
+      notice = 'No active workspace WhatsApp connection. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
       shouldBlink = true;
     }
     workspaceNotice.hidden = !notice;
@@ -166,8 +166,8 @@ function renderWorkspaceStatus(status = {}) {
   }
 
   const canUseApp = Boolean(trial.canUseApp);
-  const canClaimSession = canUseApp && (!sharedSession.hasOwner || sharedSession.isCurrentUserOwner || sharedSession.isExpired);
-  const canOperateLive = canUseApp && Boolean(sharedSession.isCurrentUserOwner);
+  const canClaimSession = canUseApp && (!workspaceSession.hasOwner || workspaceSession.isCurrentUserOwner || workspaceSession.isExpired);
+  const canOperateLive = canUseApp && Boolean(workspaceSession.isCurrentUserOwner);
 
   ['save-settings', 'check-waha', 'switch-waha-user'].forEach((id) => setButtonDisabled(id, !canUseApp));
   ['start-waha', 'show-qr'].forEach((id) => setButtonDisabled(id, !canClaimSession));
@@ -678,7 +678,7 @@ async function switchWahaUser() {
     currentApprovedGroupId = '';
     $('#group-name').value = '';
     $('#group-list').textContent = 'WhatsApp group not loaded yet.';
-    $('#qr-box').textContent = 'Session ended. Start the session again, show the QR on the shared screen, and let the next person scan from WhatsApp Linked Devices.';
+    $('#qr-box').textContent = 'Session ended. Start the session again, show the QR on the dashboard screen, and let the next person scan from WhatsApp Linked Devices.';
     setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'logged out'}. The next user can now scan a fresh QR from another screen.`);
     await api('/api/settings', {
       method: 'POST',
@@ -940,14 +940,14 @@ function billingBadge(entry = {}) {
 function renderLatestAdminBilling(payload = {}) {
   const pendingEntries = (payload.pendingActivations || []).map((entry) => ({
     title: entry.email || 'Pending reservation',
-    details: `${entry.planName || 'Nzuko AI Starter'} queued for activation.`,
+    details: `${entry.planName || 'Nzuko AI Starter'} queued for activation${entry.workspaceName ? ` - ${entry.workspaceName}` : ''}.`,
     when: entry.queuedAt || '',
     userId: '',
     email: '',
   }));
   const userEntries = (payload.users || []).map((entry) => ({
     title: entry.displayName || entry.email || 'Workspace member',
-    details: `${entry.email || 'No email recorded'} - ${billingBadge(entry)}`,
+    details: `${entry.email || 'No email recorded'} - ${billingBadge(entry)}${entry.workspaceName ? ` - ${entry.workspaceName}` : ''}`,
     when: entry.billing?.lastPaymentAt || entry.trial?.trialEndsAt || '',
     userId: entry.userId || '',
     email: entry.email || '',

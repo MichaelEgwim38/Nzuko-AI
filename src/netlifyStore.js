@@ -135,7 +135,6 @@ function defaultSharedSession() {
 
 function defaultBillingState() {
   return {
-    pendingActivations: {},
     lastStripeEventId: '',
     lastStripeEventType: '',
     lastStripeEventAt: null,
@@ -179,10 +178,6 @@ function mergeState(stored = {}) {
     billing: {
       ...defaults.billing,
       ...(stored.billing || {}),
-      pendingActivations: {
-        ...defaults.billing.pendingActivations,
-        ...((stored.billing && stored.billing.pendingActivations) || {}),
-      },
     },
     usageEvents: Array.isArray(stored.usageEvents) ? stored.usageEvents : [],
   };

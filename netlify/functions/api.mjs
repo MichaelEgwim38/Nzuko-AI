@@ -193,6 +193,7 @@ function ensureRecordDefaults(record = {}) {
     subscriptionStatus: nextSubscriptionStatus,
     planId: nextPlanId,
     planName: record.planName || (nextPlanId === 'trial' ? 'Starter trial' : planNameForId(nextPlanId)),
+    workspaceId: record.workspaceId || '',
     activatedAt: record.activatedAt || null,
     activatedBy: record.activatedBy || '',
     subscriptionEndsAt: record.subscriptionEndsAt || null,
@@ -205,34 +206,6 @@ function ensureRecordDefaults(record = {}) {
     usageWindowStartedAt: record.usageWindowStartedAt || record.activatedAt || record.lastPaymentAt || null,
     paidRecapsUsed: Number(record.paidRecapsUsed || 0),
     paidVoiceNotesUsed: Number(record.paidVoiceNotesUsed || 0),
-  };
-}
-
-function pendingActivationRecord(state, email) {
-  return state.billing?.pendingActivations?.[normaliseEmail(email)] || null;
-}
-
-function clearPendingActivation(state, email) {
-  const key = normaliseEmail(email);
-  if (state.billing?.pendingActivations?.[key]) {
-    delete state.billing.pendingActivations[key];
-  }
-}
-
-function queuePendingActivation(state, payload = {}) {
-  const email = normaliseEmail(payload.email);
-  if (!email) return;
-  state.billing.pendingActivations[email] = {
-    email,
-    planId: normalisePaidPlanId(payload.planId || defaultPaidPlan()?.id),
-    planName: payload.planName || 'Nzuko AI Starter',
-    source: payload.source || 'stripe',
-    eventId: payload.eventId || '',
-    eventType: payload.eventType || '',
-    customerId: payload.customerId || '',
-    subscriptionId: payload.subscriptionId || '',
-    checkoutSessionId: payload.checkoutSessionId || '',
-    queuedAt: payload.queuedAt || nowIso(),
   };
 }
 
@@ -636,6 +609,30 @@ async function loadWorkspaceOwnerAccess(state) {
   };
 }
 
+async function workspaceMaps() {
+  const [workspaces, memberships] = await Promise.all([loadWorkspaces(), loadMemberships()]);
+  const workspaceById = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
+  const membershipByUserId = new Map(
+    memberships
+      .filter((membership) => membership.userId)
+      .map((membership) => [String(membership.userId || ''), membership])
+  );
+  return {
+    workspaces,
+    memberships,
+    workspaceById,
+    membershipByUserId,
+  };
+}
+
+function userWorkspaceId(record, membershipByUserId) {
+  return String(
+    record.workspaceId ||
+    membershipByUserId.get(String(record.userId || ''))?.workspaceId ||
+    ''
+  ).trim();
+}
+
 async function resolveWorkspaceMembership(user = {}) {
   const workspaces = await loadWorkspaces();
   const memberships = await loadMemberships();
@@ -794,14 +791,8 @@ async function loadWorkspaceContext(user) {
   state.settings = managedSettings(state.settings);
   const ownerSummary = await normaliseSharedOwner(scope, state);
   const { users, record } = await loadOrCreateUserAccess(user);
-  const pendingActivation = pendingActivationRecord(state, record.email);
-  if (pendingActivation && String(record.subscriptionStatus || '').toLowerCase() !== 'active') {
-    record.subscriptionStatus = 'pending_activation';
-    record.planId = normalisePaidPlanId(pendingActivation.planId || defaultPaidPlan()?.id);
-    record.planName = pendingActivation.planName || 'Nzuko AI Starter';
-    record.paymentReservationAt = pendingActivation.queuedAt || nowIso();
-    record.paymentReservationSource = pendingActivation.source || 'stripe';
-    record.lastPaymentAt = pendingActivation.queuedAt || nowIso();
+  if (record.workspaceId !== workspace.id) {
+    record.workspaceId = workspace.id;
     await saveUserAccess(users, record);
   }
   return {
@@ -1112,6 +1103,7 @@ export default async function handler(request) {
         appName: 'Nzuko AI',
         groupName: context?.state?.settings?.approvedGroupName || '',
         trial: context?.trial || null,
+        workspaceSession: context?.ownerSummary || null,
         sharedSession: context?.ownerSummary || null,
         workspace: context?.workspace || null,
         auth: {
@@ -1191,7 +1183,7 @@ export default async function handler(request) {
 
       if (!matchingUser && email && shouldCreateUser) {
         matchingUser = ensureRecordDefaults({
-          userId: '',
+          userId: String(object.metadata?.user_id || object.client_reference_id || '').trim(),
           email,
           displayName: email.split('@')[0] || 'Workspace member',
         });
@@ -1199,20 +1191,7 @@ export default async function handler(request) {
       }
 
       if (eventType === 'checkout.session.completed' || eventType === 'invoice.paid') {
-        if (!matchingUser && email) {
-          queuePendingActivation(state, {
-            email,
-            planId,
-            planName,
-            source: 'stripe',
-            eventId: event.id,
-            eventType,
-            customerId: stripeObjectCustomerId(object),
-            subscriptionId: stripeObjectSubscriptionId(object),
-            checkoutSessionId: stripeObjectCheckoutSessionId(object),
-            queuedAt: eventAt,
-          });
-        } else {
+        if (matchingUser) {
           activatePaidUser(matchingUser, {
             planId,
             planName,
@@ -1222,7 +1201,22 @@ export default async function handler(request) {
             subscriptionEndsAt: stripePeriod.end,
             activatedAt: eventAt,
           });
-          clearPendingActivation(state, matchingUser.email);
+        } else if (email) {
+          matchingUser = ensureRecordDefaults({
+            userId: String(object.metadata?.user_id || object.client_reference_id || '').trim(),
+            email,
+            displayName: email.split('@')[0] || 'Workspace member',
+            subscriptionStatus: 'pending_activation',
+            planId,
+            planName,
+            paymentReservationAt: eventAt,
+            paymentReservationSource: 'stripe',
+            lastPaymentAt: eventAt,
+            stripeCustomerId: stripeObjectCustomerId(object),
+            stripeSubscriptionId: stripeObjectSubscriptionId(object),
+            stripeCheckoutSessionId: stripeObjectCheckoutSessionId(object),
+          });
+          users.push(matchingUser);
         }
         logUsageEvent(state, {
           type: 'billing.subscription_activated',
@@ -1249,7 +1243,6 @@ export default async function handler(request) {
             subscriptionEndsAt: stripePeriod.end,
             activatedAt: eventAt,
           });
-          clearPendingActivation(state, matchingUser.email);
           logUsageEvent(state, {
             type: 'billing.subscription_updated',
             actorUserId: matchingUser.userId || '',
@@ -1282,7 +1275,6 @@ export default async function handler(request) {
         } else if (status === 'canceled' || status === 'incomplete_expired') {
           matchingUser.subscriptionStatus = 'canceled';
           matchingUser.subscriptionEndsAt = stripePeriod.end || eventAt;
-          clearPendingActivation(state, matchingUser.email);
           logUsageEvent(state, {
             type: 'billing.subscription_canceled',
             actorUserId: matchingUser.userId || '',
@@ -1300,7 +1292,6 @@ export default async function handler(request) {
       } else if (eventType === 'customer.subscription.deleted' && matchingUser) {
         matchingUser.subscriptionStatus = 'canceled';
         matchingUser.subscriptionEndsAt = stripePeriod.end || eventAt;
-        clearPendingActivation(state, matchingUser.email);
         logUsageEvent(state, {
           type: 'billing.subscription_canceled',
           actorUserId: matchingUser.userId || '',
@@ -1412,6 +1403,7 @@ export default async function handler(request) {
         capturedCount,
         webhookStats: state.webhookStats,
         trial,
+        workspaceSession: ownerSummary,
         sharedSession: ownerSummary,
         billing: billingSummary(context.userRecord),
         admin: {
@@ -1496,20 +1488,52 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/admin/billing') {
       assertAdminUser(session);
-      const state = await loadAppState(legacySharedScope);
+      const { workspaces, workspaceById, membershipByUserId } = await workspaceMaps();
+      const workspaceStates = await Promise.all(
+        workspaces.map(async (workspace) => ({
+          workspace,
+          state: await loadAppState(workspaceScopeFor(workspace)),
+        }))
+      );
       const users = (await loadUsers())
         .map((entry) => ensureRecordDefaults(entry))
         .sort((left, right) => new Date(right.lastPaymentAt || right.trialStartedAt || 0).getTime() - new Date(left.lastPaymentAt || left.trialStartedAt || 0).getTime());
+      const recentUsageEvents = workspaceStates
+        .flatMap(({ workspace, state }) =>
+          (state.usageEvents || []).map((event) => ({
+            ...event,
+            workspaceId: workspace.id,
+            workspaceName: workspace.name,
+          }))
+        )
+        .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime())
+        .slice(0, 40);
+      const pendingActivations = users
+        .filter((entry) => String(entry.subscriptionStatus || '').toLowerCase() === 'pending_activation')
+        .map((entry) => {
+          const workspaceId = userWorkspaceId(entry, membershipByUserId);
+          const workspace = workspaceById.get(workspaceId);
+          return {
+            email: entry.email,
+            planId: entry.planId,
+            planName: entry.planName,
+            queuedAt: entry.paymentReservationAt || entry.lastPaymentAt || entry.trialStartedAt || '',
+            workspaceId,
+            workspaceName: workspace?.name || 'Workspace pending assignment',
+          };
+        });
       return sendJson(200, {
         users: users.map((entry) => ({
           userId: entry.userId,
           email: entry.email,
           displayName: entry.displayName,
+          workspaceId: userWorkspaceId(entry, membershipByUserId),
+          workspaceName: workspaceById.get(userWorkspaceId(entry, membershipByUserId))?.name || 'Workspace pending assignment',
           trial: trialStatus(entry),
           billing: billingSummary(entry),
         })),
-        pendingActivations: Object.values(state.billing?.pendingActivations || {}),
-        recentUsageEvents: (state.usageEvents || []).slice(0, 40),
+        pendingActivations,
+        recentUsageEvents,
         stripeWebhookConfigured: Boolean(stripeWebhookSecret),
       });
     }
@@ -1524,14 +1548,19 @@ export default async function handler(request) {
       if (!match) {
         return sendJson(404, { error: 'User not found for activation.' });
       }
-      const state = await loadAppState(legacySharedScope);
+      const { membershipByUserId } = await workspaceMaps();
+      const scope = workspaceScopeFor({
+        id: userWorkspaceId(match, membershipByUserId) || legacyWorkspaceId(),
+      });
+      const state = await loadAppState(scope);
       match.subscriptionStatus = 'active';
       match.planId = normalisePaidPlanId(body.planId || match.planId || defaultPaidPlan()?.id);
       match.planName = String(body.planName || match.planName || planNameForId(match.planId)).trim();
       match.activatedAt = nowIso();
       match.activatedBy = normaliseEmail(session.email);
       match.subscriptionEndsAt = body.subscriptionEndsAt ? String(body.subscriptionEndsAt) : match.subscriptionEndsAt;
-      clearPendingActivation(state, match.email);
+      match.paymentReservationAt = null;
+      match.paymentReservationSource = '';
       logUsageEvent(state, {
         type: 'billing.user_activated',
         actorUserId: session.userId || '',
@@ -1544,7 +1573,7 @@ export default async function handler(request) {
         },
       });
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
-      await saveAppState(legacySharedScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, {
         ok: true,
         user: {
@@ -1567,10 +1596,13 @@ export default async function handler(request) {
       if (!match) {
         return sendJson(404, { error: 'User not found for reset.' });
       }
-      const state = await loadAppState(legacySharedScope);
+      const { membershipByUserId } = await workspaceMaps();
+      const scope = workspaceScopeFor({
+        id: userWorkspaceId(match, membershipByUserId) || legacyWorkspaceId(),
+      });
+      const state = await loadAppState(scope);
       const resetRecord = resetUserTrial(match);
       Object.assign(match, resetRecord);
-      clearPendingActivation(state, match.email);
       logUsageEvent(state, {
         type: 'billing.user_reset',
         actorUserId: session.userId || '',
@@ -1582,7 +1614,7 @@ export default async function handler(request) {
         },
       });
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
-      await saveAppState(legacySharedScope, state);
+      await saveAppState(scope, state);
       return sendJson(200, {
         ok: true,
         user: {
@@ -1650,7 +1682,7 @@ export default async function handler(request) {
         actorUserId: session.userId || '',
         actorName: sessionOwnerName(session),
         actorEmail: session.email || '',
-        summary: `${sessionOwnerName(session)} started the shared WhatsApp session.`,
+        summary: `${sessionOwnerName(session)} started the workspace-owned WhatsApp session.`,
       });
       await saveAppState(scope, state);
       return sendJson(200, { status });
@@ -1674,10 +1706,11 @@ export default async function handler(request) {
         actorUserId: session.userId || '',
         actorName: sessionOwnerName(session),
         actorEmail: session.email || '',
-        summary: `${sessionOwnerName(session)} ended the shared WhatsApp session for a new user.`,
+        summary: `${sessionOwnerName(session)} ended the workspace-owned WhatsApp session for a new user.`,
       });
       await saveAppState(scope, state);
-      return sendJson(200, { status, sharedSession: ownerStateSummary(state, session) });
+      const ownerSummary = ownerStateSummary(state, session);
+      return sendJson(200, { status, workspaceSession: ownerSummary, sharedSession: ownerSummary });
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/webhook') {
