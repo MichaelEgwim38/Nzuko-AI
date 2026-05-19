@@ -123,6 +123,7 @@ Do not connect a personal account silently. Use only the group and account appro
 - [User Guide](./USER_GUIDE.md)
 - [Admin Handover](./ADMIN_README.md)
 - [Stripe Setup](./STRIPE_SETUP.md)
+- [Mobile Release](./MOBILE_RELEASE.md)
 - [Group Message](./GROUP_MESSAGE.md)
 
 ## Cost Notes

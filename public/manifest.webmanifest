@@ -1,0 +1,28 @@
+{
+  "name": "Nzuko AI",
+  "short_name": "Nzuko AI",
+  "description": "AI-powered WhatsApp meeting minutes, voice-note transcription, and recap workflows for community workspaces.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#eef6ed",
+  "theme_color": "#245d38",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

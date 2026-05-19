@@ -15,6 +15,46 @@ let showAllAudit = false;
 let showAllAdminActivity = false;
 let showAllBilling = false;
 let upgradeNoteDismissTimeout = null;
+let deferredInstallPrompt = null;
+
+function isStandaloneMode() {
+  return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
+}
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
+}
+
+function updateInstallButton() {
+  const button = $('#install-app');
+  if (!button) return;
+  const isStandalone = isStandaloneMode();
+  const canShowIosHelp = isIosDevice();
+  button.hidden = (!deferredInstallPrompt && !canShowIosHelp) || Boolean(isStandalone);
+  button.textContent = deferredInstallPrompt ? 'Install app' : 'Add to Home Screen';
+}
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    await navigator.serviceWorker.register('/sw.js');
+  } catch (error) {
+    console.warn('Service worker registration failed.', error);
+  }
+}
+
+async function installApp() {
+  if (!deferredInstallPrompt) {
+    setInstallHelpOpen(true);
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    deferredInstallPrompt = null;
+  }
+  updateInstallButton();
+}
 
 function firstNameFromUser(user = {}) {
   const displaySource = String(user.displayName || user.name || '').trim();
@@ -108,7 +148,7 @@ function renderWorkspaceStatus(status = {}) {
       trialSummary.textContent = `Trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left - ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
     } else {
       trialSummary.hidden = false;
-      trialSummary.textContent = 'Your trial limit has ended. Upgrade now if you want your full workspace activated within 7 days.';
+      trialSummary.textContent = 'Your trial limit has ended. Upgrade to continue using this workspace.';
     }
   }
 
@@ -157,7 +197,7 @@ function renderWorkspaceStatus(status = {}) {
     } else if (workspaceSession.isExpired) {
       notice = 'The current workspace WhatsApp connection appears inactive. You can disconnect and switch WhatsApp to connect your own account.';
     } else {
-      notice = 'No active workspace WhatsApp connection. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
+      notice = 'No WhatsApp account is connected to this workspace yet. Click Start session, get the QR code, then scan it with WhatsApp Linked Devices.';
       shouldBlink = true;
     }
     workspaceNotice.hidden = !notice;
@@ -417,6 +457,13 @@ function setQuickGuideOpen(isOpen) {
 
 function setPricingOpen(isOpen) {
   const modal = $('#pricing-modal');
+  if (!modal) return;
+  modal.hidden = !isOpen;
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function setInstallHelpOpen(isOpen) {
+  const modal = $('#install-help-modal');
   if (!modal) return;
   modal.hidden = !isOpen;
   document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -1073,9 +1120,12 @@ $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(fa
 $('#open-pricing')?.addEventListener('click', () => setPricingOpen(true));
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
+$('#close-install-help')?.addEventListener('click', () => setInstallHelpOpen(false));
+$('#install-help-backdrop')?.addEventListener('click', () => setInstallHelpOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
+$('#install-app')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;
@@ -1094,11 +1144,25 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     setQuickGuideOpen(false);
     setPricingOpen(false);
+    setInstallHelpOpen(false);
   }
+});
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
 });
 
 clearDraftFields();
 paymentQueryState = readPaymentQueryState();
+await registerServiceWorker();
+updateInstallButton();
 const auth = await api('/api/auth/status');
 authConfig = auth.auth || null;
 if (auth.authenticated) {

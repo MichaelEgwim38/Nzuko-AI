@@ -2,8 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Nzuko AI</title>
+    <meta name="theme-color" content="#245d38" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Nzuko AI" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -51,7 +59,12 @@
             <button id="sign-in-link" class="auth-inline-link" type="button">Sign in</button>
           </p>
           <p id="login-status" class="login-status" aria-live="polite" hidden></p>
-          <p class="auth-legal">By using Nzuko AI, you agree to the Terms of Service and Privacy Policy.</p>
+          <p class="auth-legal">
+            By using Nzuko AI, you agree to the
+            <a href="/terms.html" target="_blank" rel="noreferrer">Terms of Service</a>
+            and
+            <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+          </p>
         </section>
 
         <aside class="login-aside" aria-label="Nzuko AI overview">
@@ -103,6 +116,7 @@
           </div>
           <div class="topbar-actions">
             <button id="manage-billing" class="button compact-button upgrade-button" type="button" hidden>Manage billing</button>
+            <button id="install-app" class="button light-secondary compact-button" type="button" hidden>Install app</button>
             <button id="open-pricing" class="button light-secondary compact-button" type="button">Pricing</button>
             <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
             <button id="logout" class="button secondary compact-button" type="button">Log out</button>
@@ -402,6 +416,48 @@
         </div>
         <p id="pricing-plan-status" class="hint quick-guide-copy">Start with a free trial, then choose Starter or Pro in Stripe.</p>
         <div id="pricing-plan-cards" class="plan-grid">Plans are loading.</div>
+      </section>
+    </div>
+
+    <div id="install-help-modal" class="quick-guide-modal" hidden>
+      <div id="install-help-backdrop" class="quick-guide-backdrop"></div>
+      <section class="quick-guide-panel install-help-panel" role="dialog" aria-modal="true" aria-labelledby="install-help-title">
+        <div class="quick-guide-header">
+          <div>
+            <p class="eyebrow">Install Nzuko AI</p>
+            <h2 id="install-help-title">Add Nzuko AI to your phone</h2>
+          </div>
+          <button id="close-install-help" class="button secondary compact-button" type="button">Close</button>
+        </div>
+        <p class="hint quick-guide-copy">Install the workspace for faster access and an app-like experience on Android and iPhone.</p>
+        <div class="quick-guide-grid">
+          <section>
+            <h3>Android</h3>
+            <ol>
+              <li>Open Nzuko AI in Chrome.</li>
+              <li>Tap <strong>Install app</strong> when it appears in the top bar.</li>
+              <li>Accept the install prompt.</li>
+              <li>Open Nzuko AI from your home screen.</li>
+            </ol>
+          </section>
+          <section>
+            <h3>iPhone</h3>
+            <ol>
+              <li>Open Nzuko AI in Safari.</li>
+              <li>Tap the <strong>Share</strong> button.</li>
+              <li>Choose <strong>Add to Home Screen</strong>.</li>
+              <li>Tap <strong>Add</strong> to place it on your home screen.</li>
+            </ol>
+          </section>
+          <section>
+            <h3>Best results</h3>
+            <ol>
+              <li>Sign in after installation if asked.</li>
+              <li>Keep internet on for WhatsApp sync and billing.</li>
+              <li>Use the installed app for daily recap work.</li>
+            </ol>
+          </section>
+        </div>
       </section>
     </div>
     <script src="/app.js" type="module"></script>

@@ -12,3 +12,5 @@ cloudflared.out.log
 cloudflared.err.log
 .netlify/
 sessions/
+android/keystore.properties
+android/upload-keystore.jks

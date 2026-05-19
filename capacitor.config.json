@@ -1,0 +1,17 @@
+{
+  "appId": "com.roharigroup.nzukoai",
+  "appName": "Nzuko AI",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://nzuko-ai-pilot.netlify.app",
+    "cleartext": false,
+    "allowNavigation": [
+      "nzuko-ai-pilot.netlify.app",
+      "*.supabase.co",
+      "*.stripe.com",
+      "checkout.stripe.com",
+      "js.stripe.com"
+    ]
+  }
+}

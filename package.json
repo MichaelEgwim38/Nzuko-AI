@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check netlify/functions/api.mjs && node --check netlify/functions/process-voice-note-background.mjs"
+    "check": "node --check src/server.js && node --check netlify/functions/api.mjs && node --check netlify/functions/process-voice-note-background.mjs",
+    "mobile:add:android": "npx cap add android",
+    "mobile:sync": "npx cap sync android",
+    "mobile:open:android": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@netlify/blobs": "^8.1.0",
     "@netlify/functions": "^3.1.8",
-    "ffmpeg-static": "^5.3.0"
-    ,
+    "ffmpeg-static": "^5.3.0",
     "jose": "^5.9.6"
   }
 }

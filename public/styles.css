@@ -11,6 +11,10 @@
   --gold: #d8a43f;
   --earth: #b0392e;
   --leopard: #11100d;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 * {
@@ -23,6 +27,8 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
   background:
     linear-gradient(135deg, rgba(36, 93, 56, 0.08) 25%, transparent 25%) 0 0 / 28px 28px,
     linear-gradient(225deg, rgba(216, 164, 63, 0.12) 25%, transparent 25%) 0 0 / 28px 28px,
@@ -46,7 +52,7 @@ textarea {
 
 .dashboard-shell {
   width: min(1500px, calc(100% - 24px));
-  padding: 18px 0 32px;
+  padding: calc(18px + var(--safe-top)) var(--safe-right) calc(32px + var(--safe-bottom)) var(--safe-left);
 }
 
 .dashboard-frame {
@@ -69,11 +75,12 @@ textarea {
 
 .login-shell {
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   align-content: start;
   justify-items: center;
   gap: 42px;
-  padding: 28px 28px 40px;
+  padding: calc(28px + var(--safe-top)) calc(28px + var(--safe-right)) calc(40px + var(--safe-bottom)) calc(28px + var(--safe-left));
   background:
     radial-gradient(circle at top, rgba(111, 174, 69, 0.14), transparent 26%),
     radial-gradient(circle at 82% 38%, rgba(89, 168, 255, 0.12), transparent 24%),

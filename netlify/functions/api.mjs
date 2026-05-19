@@ -452,7 +452,7 @@ function ensureUsageAllowed(record, feature, count = 1) {
       403,
       usage.mode === 'paid'
         ? `You have reached the ${usage.planName} recap limit for this billing period.`
-        : 'You have reached your trial recap limit. Upgrade now if you want your full workspace activated within 7 days.'
+        : 'You have reached your trial recap limit. Upgrade to continue using this workspace.'
     );
   }
   if (feature === 'voice-note' && usage.voiceNoteRemaining < count) {
@@ -460,7 +460,7 @@ function ensureUsageAllowed(record, feature, count = 1) {
       403,
       usage.mode === 'paid'
         ? `You have reached the ${usage.planName} voice-note transcription limit for this billing period.`
-        : 'You have reached your trial voice-note transcription limit. Upgrade now if you want your full workspace activated within 7 days.'
+        : 'You have reached your trial voice-note transcription limit. Upgrade to continue using this workspace.'
     );
   }
 }
@@ -769,10 +769,10 @@ async function touchSharedOwnerActivity(scope, state, user) {
 
 function ensureTrialAllowed(trial, feature = 'use Nzuko AI') {
   if (!trial.canUseApp) {
-    throw httpError(403, 'Your trial limit has ended. Upgrade now if you want your full workspace activated within 7 days.');
+    throw httpError(403, 'Your trial limit has ended. Upgrade to continue using this workspace.');
   }
   if (feature === 'recap' && !trial.isSubscribed && trial.recapRemaining <= 0) {
-    throw httpError(403, 'You have reached your trial recap limit. Upgrade now if you want your full workspace activated within 7 days.');
+    throw httpError(403, 'You have reached your trial recap limit. Upgrade to continue using this workspace.');
   }
 }
 
