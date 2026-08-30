@@ -29,7 +29,7 @@
             <img class="auth-brand-icon" src="/assets/nzuko-mark.svg" alt="" />
           </div>
           <h1 class="login-title">Sign in to your workspace</h1>
-          <div class="provider-buttons" aria-label="Social login providers">
+          <div id="provider-buttons" class="provider-buttons" aria-label="Social login providers">
             <button id="continue-google" class="provider-button" type="button">
               <span class="provider-icon google-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
@@ -59,6 +59,29 @@
             <button id="sign-in-link" class="auth-inline-link" type="button">Sign in</button>
           </p>
           <p id="login-status" class="login-status" aria-live="polite" hidden></p>
+          <form
+            id="pilot-interest"
+            class="pilot-interest"
+            name="pilot-interest"
+            method="POST"
+            data-netlify="true"
+            netlify-honeypot="bot-field"
+            hidden
+          >
+            <input type="hidden" name="form-name" value="pilot-interest" />
+            <p class="visually-hidden">
+              <label>Do not fill this out: <input name="bot-field" /></label>
+            </p>
+            <label>
+              Your name
+              <input name="name" autocomplete="name" required />
+            </label>
+            <label>
+              Email address
+              <input name="email" type="email" autocomplete="email" required />
+            </label>
+            <button class="button" type="submit">Request pilot access</button>
+          </form>
           <p class="auth-legal">
             By using Nzuko AI, you agree to the
             <a href="/terms.html" target="_blank" rel="noreferrer">Terms of Service</a>

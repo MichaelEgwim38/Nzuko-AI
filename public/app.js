@@ -537,6 +537,18 @@ function showLogin(message = '') {
   }
 }
 
+function showPilotInterest() {
+  const title = $('.login-title');
+  const providers = $('#provider-buttons');
+  const signInPrompt = $('.auth-signin-prompt');
+  const form = $('#pilot-interest');
+  if (title) title.textContent = 'Join the Nzuko AI private pilot';
+  if (providers) providers.hidden = true;
+  if (signInPrompt) signInPrompt.hidden = true;
+  if (form) form.hidden = false;
+  showLogin('Turn busy WhatsApp group conversations into clear minutes, decisions, and action items. Request early access today.');
+}
+
 function showApp() {
   $('#login-screen').hidden = true;
   $('#app-shell').hidden = false;
@@ -1178,7 +1190,7 @@ if (auth.authenticated) {
       showApp();
       await startApp();
     } else if (!authConfig?.configured) {
-      showLogin('Social login is not configured yet. Add Supabase settings in Netlify first.');
+      showPilotInterest();
     } else {
       showLogin('Choose a sign-in option to continue.');
     }
