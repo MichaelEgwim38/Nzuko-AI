@@ -143,19 +143,39 @@ async function listMessages(entry, chatId, limit) {
   const mapped = [];
   for (const message of [...messages].reverse()) {
     const text = message.message || message.text || '';
-    const voice = Boolean(message.voice || message.media?.voice);
+    const audioAttribute = message.document?.attributes?.find((attribute) => attribute.className === 'DocumentAttributeAudio' || attribute.voice);
+    const voice = Boolean(message.voice || message.media?.voice || audioAttribute?.voice);
     if (!text && !voice) continue;
     const sender = message.sender || await message.getSender().catch(() => null);
     mapped.push({
-      id: String(message.id),
+      id: `telegram-${message.id}`,
       from: sender?.title || [sender?.firstName, sender?.lastName].filter(Boolean).join(' ') || sender?.username || 'Group member',
       body: text,
       timestamp: message.date instanceof Date ? Math.floor(message.date.getTime() / 1000) : Number(message.date || 0),
       type: voice ? 'voice' : 'chat',
       hasMedia: voice,
+      duration: Number(audioAttribute?.duration || 0),
+      media: voice ? {
+        mimetype: message.document?.mimeType || 'audio/ogg',
+        filename: `telegram-voice-${message.id}.ogg`,
+        path: `/sessions/${encodeURIComponent(entry.name)}/media/${message.id}?chatId=${encodeURIComponent(chatId)}`,
+      } : undefined,
     });
   }
   return mapped;
+}
+
+async function downloadVoiceMedia(entry, chatId, messageId) {
+  if (!(await connectExisting(entry))) throw new Error('Telegram is not connected.');
+  const messages = await entry.client.getMessages(chatId, { ids: [Number(messageId)] });
+  const message = messages?.[0];
+  if (!message?.document) throw new Error('Telegram voice note was not found.');
+  const audioAttribute = message.document.attributes?.find((attribute) => attribute.className === 'DocumentAttributeAudio' || attribute.voice);
+  if (!audioAttribute?.voice && !String(message.document.mimeType || '').startsWith('audio/')) throw new Error('The requested Telegram message is not audio.');
+  if (Number(message.document.size || 0) > 25 * 1024 * 1024) throw new Error('Telegram voice note exceeds the 25 MB download limit.');
+  const content = await entry.client.downloadMedia(message, {});
+  if (!content) throw new Error('Telegram returned an empty voice-note file.');
+  return { content: Buffer.from(content), mimetype: message.document.mimeType || 'audio/ogg' };
 }
 
 const server = http.createServer(async (request, response) => {
@@ -163,6 +183,18 @@ const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     if (url.pathname === '/health') return json(response, 200, { ok: true });
     if (!authorised(request)) return json(response, 401, { error: 'Unauthorized' });
+    const mediaMatch = url.pathname.match(/^\/sessions\/([^/]+)\/media\/([0-9]+)$/);
+    if (request.method === 'GET' && mediaMatch) {
+      const entry = await entryFor(decodeURIComponent(mediaMatch[1]));
+      const media = await downloadVoiceMedia(entry, url.searchParams.get('chatId'), mediaMatch[2]);
+      response.writeHead(200, {
+        'content-type': media.mimetype,
+        'content-length': media.content.length,
+        'cache-control': 'private, no-store',
+        'content-disposition': `attachment; filename="telegram-voice-${mediaMatch[2]}.ogg"`,
+      });
+      return response.end(media.content);
+    }
     const match = url.pathname.match(/^\/sessions\/([^/]+)(?:\/(start|status|password|groups|messages|logout))?$/);
     if (!match) return json(response, 404, { error: 'Not found' });
     const entry = await entryFor(decodeURIComponent(match[1]));

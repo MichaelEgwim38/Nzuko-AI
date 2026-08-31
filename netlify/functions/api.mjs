@@ -2005,7 +2005,7 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/telegram/pull') {
       const context = await loadWorkspaceContext(session);
-      const { state, trial } = context;
+      const { scope, state, trial, users, userRecord } = context;
       ensureTrialAllowed(trial);
       if (!state.settings.consentConfirmed) return sendJson(403, { error: 'Confirm permission before loading Telegram group messages.' });
       if (!state.settings.telegramGroupId) return sendJson(400, { error: 'Choose a Telegram group first.' });
@@ -2014,9 +2014,23 @@ export default async function handler(request) {
         chatId: state.settings.telegramGroupId,
         limit: 200,
       });
-      const messages = payload.messages || [];
-      const chatText = messages.filter((message) => message.body).map((message) => `${message.from}: ${message.body}`).join('\n');
-      const voiceNotes = messages.filter((message) => message.type === 'voice').map((message) => `${message.from}: [Telegram voice note — transcription support is being prepared]`).join('\n');
+      let messages = payload.messages || [];
+      const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(await unmeteredVoiceMessages(scope, messages));
+      if (transcriptionMinuteCount) {
+        ensureUsageAllowed(userRecord, 'transcription-minute', transcriptionMinuteCount);
+        recordUsage(userRecord, 'transcription-minute', transcriptionMinuteCount);
+        await saveUserAccess(users, userRecord);
+      }
+      for (const message of messages) {
+        await captureMappedWahaMessage({
+          message,
+          requestUrl,
+          settings: { ...state.settings, approvedGroupId: state.settings.telegramGroupId },
+          scope,
+        });
+      }
+      messages = await loadCapturedMessages(scope, { groupId: state.settings.telegramGroupId, limit: 500 });
+      const { chatText, voiceNotes } = splitMessageText(messages);
       return sendJson(200, { messages, chatText, voiceNotes });
     }
 

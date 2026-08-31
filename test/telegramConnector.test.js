@@ -23,11 +23,12 @@ test('requests messages only from the selected Telegram group', async () => {
   let capturedUrl;
   global.fetch = async (url) => {
     capturedUrl = new URL(url);
-    return new Response(JSON.stringify({ messages: [] }), { status: 200 });
+    return new Response(JSON.stringify({ messages: [{ id: 'telegram-4', media: { path: '/sessions/workspace/media/4?chatId=-100123', mimetype: 'audio/ogg' } }] }), { status: 200 });
   };
   try {
-    await getTelegramMessages({ baseUrl: 'https://connector.example', apiKey: 'secret', session: 'workspace', chatId: '-100123', limit: 50 });
+    const payload = await getTelegramMessages({ baseUrl: 'https://connector.example', apiKey: 'secret', session: 'workspace', chatId: '-100123', limit: 50 });
     assert.equal(capturedUrl.searchParams.get('chatId'), '-100123');
     assert.equal(capturedUrl.searchParams.get('limit'), '50');
+    assert.equal(payload.messages[0].media.url, 'https://connector.example/sessions/workspace/media/4?chatId=-100123');
   } finally { global.fetch = originalFetch; }
 });

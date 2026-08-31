@@ -23,5 +23,14 @@ export function startTelegramSession(options) { return request({ ...options, act
 export function getTelegramStatus(options) { return request({ ...options, action: 'status' }); }
 export function submitTelegramPassword(options) { return request({ ...options, action: 'password', method: 'POST', body: { password: options.password } }); }
 export function listTelegramGroups(options) { return request({ ...options, action: 'groups' }); }
-export function getTelegramMessages(options) { return request({ ...options, action: 'messages', query: { chatId: options.chatId, limit: options.limit } }); }
+export async function getTelegramMessages(options) {
+  const payload = await request({ ...options, action: 'messages', query: { chatId: options.chatId, limit: options.limit } });
+  return {
+    ...payload,
+    messages: (payload.messages || []).map((message) => ({
+      ...message,
+      media: message.media?.path ? { ...message.media, url: `${normaliseBaseUrl(options.baseUrl)}${message.media.path}` } : message.media,
+    })),
+  };
+}
 export function logoutTelegramSession(options) { return request({ ...options, action: 'logout', method: 'POST' }); }
