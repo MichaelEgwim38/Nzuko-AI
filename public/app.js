@@ -241,11 +241,16 @@ function renderBillingPlans(status = {}) {
   const container = $('#pricing-plan-cards');
   const summary = $('#pricing-plan-status');
   const manageButton = $('#manage-billing');
+  const trialRow = $('#pricing-trial-row');
   const plans = Array.isArray(billing.plans) ? billing.plans : [];
   const usage = billing.usage || {};
 
   if (manageButton) {
     manageButton.hidden = !billing.customerPortalAvailable;
+  }
+
+  if (trialRow) {
+    trialRow.hidden = trial.isSubscribed || !trial.canUseApp;
   }
 
   if (!container || !summary) return;
@@ -483,6 +488,13 @@ function setPricingOpen(isOpen) {
   if (!modal) return;
   modal.hidden = !isOpen;
   document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function startFreeTrial() {
+  setPricingOpen(false);
+  const setup = $('#workflow-setup');
+  setup?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setup?.querySelector('select, button, input')?.focus({ preventScroll: true });
 }
 
 async function openPricing() {
@@ -1266,6 +1278,7 @@ $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(fa
 $('#open-pricing')?.addEventListener('click', openPricing);
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
+$('#start-free-trial')?.addEventListener('click', startFreeTrial);
 $('#close-install-help')?.addEventListener('click', () => setInstallHelpOpen(false));
 $('#install-help-backdrop')?.addEventListener('click', () => setInstallHelpOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
