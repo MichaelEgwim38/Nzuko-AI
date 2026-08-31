@@ -38,6 +38,7 @@ import {
   startWahaSession,
 } from '../../src/connectors/waha.js';
 import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
+import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
@@ -45,7 +46,7 @@ const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$
 const legacySharedScope = 'shared';
 const trialDays = Number(process.env.TRIAL_DAYS || 3);
 const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
-const trialVoiceNoteLimit = Number(process.env.TRIAL_VOICE_NOTE_LIMIT || 3);
+const trialTranscriptionMinuteLimit = Number(process.env.TRIAL_TRANSCRIPTION_MINUTES || 10);
 const ownerTimeoutMinutes = Number(process.env.SHARED_SESSION_TIMEOUT_MINUTES || 45);
 const activationWindowDays = Number(process.env.PAID_ACTIVATION_WINDOW_DAYS || 7);
 const paidUsageWindowDays = Number(process.env.PAID_USAGE_WINDOW_DAYS || 30);
@@ -155,6 +156,7 @@ function resetUserTrial(record = {}) {
     trialEndsAt: trialEndIso(startedAt),
     trialRecapsUsed: 0,
     trialVoiceNotesUsed: 0,
+    trialTranscriptionMinutesUsed: 0,
     subscriptionStatus: 'trial',
     planId: 'trial',
     planName: 'Starter trial',
@@ -170,6 +172,7 @@ function resetUserTrial(record = {}) {
     usageWindowStartedAt: null,
     paidRecapsUsed: 0,
     paidVoiceNotesUsed: 0,
+    paidTranscriptionMinutesUsed: 0,
   };
 }
 
@@ -184,6 +187,7 @@ function ensureRecordDefaults(record = {}) {
     trialEndsAt: record.trialEndsAt || trialEndIso(record.trialStartedAt || nowIso()),
     trialRecapsUsed: Number(record.trialRecapsUsed || 0),
     trialVoiceNotesUsed: Number(record.trialVoiceNotesUsed || 0),
+    trialTranscriptionMinutesUsed: Number(record.trialTranscriptionMinutesUsed ?? record.trialVoiceNotesUsed ?? 0),
     subscriptionStatus: nextSubscriptionStatus,
     planId: nextPlanId,
     planName: record.planName || (nextPlanId === 'trial' ? 'Starter trial' : planNameForId(nextPlanId)),
@@ -200,6 +204,7 @@ function ensureRecordDefaults(record = {}) {
     usageWindowStartedAt: record.usageWindowStartedAt || record.activatedAt || record.lastPaymentAt || null,
     paidRecapsUsed: Number(record.paidRecapsUsed || 0),
     paidVoiceNotesUsed: Number(record.paidVoiceNotesUsed || 0),
+    paidTranscriptionMinutesUsed: Number(record.paidTranscriptionMinutesUsed ?? record.paidVoiceNotesUsed ?? 0),
     suspendedAt: record.suspendedAt || null,
     suspendedBy: record.suspendedBy || '',
   };
@@ -371,6 +376,7 @@ function activatePaidUser(record, details = {}) {
     record.usageWindowStartedAt = activatedAt;
     record.paidRecapsUsed = 0;
     record.paidVoiceNotesUsed = 0;
+    record.paidTranscriptionMinutesUsed = 0;
   }
 }
 
@@ -398,6 +404,7 @@ function normalisePaidUsageWindow(record, { resetAt } = {}) {
     record.usageWindowStartedAt = resetAt || record.lastPaymentAt || record.activatedAt || nowIso();
     record.paidRecapsUsed = 0;
     record.paidVoiceNotesUsed = 0;
+    record.paidTranscriptionMinutesUsed = 0;
     return true;
   }
   return false;
@@ -409,9 +416,9 @@ function usageSummary(record = {}) {
   if (paidPlan) {
     normalisePaidUsageWindow(normalisedRecord);
     const recapLimit = Number(paidPlan.monthlyRecapLimit || 0);
-    const voiceNoteLimit = Number(paidPlan.monthlyVoiceNoteLimit || 0);
+    const transcriptionMinuteLimit = Number(paidPlan.monthlyTranscriptionMinuteLimit || 0);
     const recapUsed = Number(normalisedRecord.paidRecapsUsed || 0);
-    const voiceNoteUsed = Number(normalisedRecord.paidVoiceNotesUsed || 0);
+    const transcriptionMinutesUsed = Number(normalisedRecord.paidTranscriptionMinutesUsed || 0);
     return {
       mode: 'paid',
       windowDays: paidUsageWindowDays,
@@ -419,9 +426,9 @@ function usageSummary(record = {}) {
       recapLimit,
       recapUsed,
       recapRemaining: Math.max(0, recapLimit - recapUsed),
-      voiceNoteLimit,
-      voiceNoteUsed,
-      voiceNoteRemaining: Math.max(0, voiceNoteLimit - voiceNoteUsed),
+      transcriptionMinuteLimit,
+      transcriptionMinutesUsed,
+      transcriptionMinutesRemaining: Math.max(0, transcriptionMinuteLimit - transcriptionMinutesUsed),
       planName: paidPlan.name,
     };
   }
@@ -434,9 +441,9 @@ function usageSummary(record = {}) {
     recapLimit: trial.recapLimit,
     recapUsed: trial.recapUsed,
     recapRemaining: trial.recapRemaining,
-    voiceNoteLimit: trial.voiceNoteLimit,
-    voiceNoteUsed: trial.voiceNoteUsed,
-    voiceNoteRemaining: trial.voiceNoteRemaining,
+    transcriptionMinuteLimit: trial.transcriptionMinuteLimit,
+    transcriptionMinutesUsed: trial.transcriptionMinutesUsed,
+    transcriptionMinutesRemaining: trial.transcriptionMinutesRemaining,
     planName: trial.planName,
   };
 }
@@ -451,12 +458,12 @@ function ensureUsageAllowed(record, feature, count = 1) {
         : 'You have reached your trial recap limit. Upgrade to continue using this workspace.'
     );
   }
-  if (feature === 'voice-note' && usage.voiceNoteRemaining < count) {
+  if (feature === 'transcription-minute' && usage.transcriptionMinutesRemaining < count) {
     throw httpError(
       403,
       usage.mode === 'paid'
-        ? `You have reached the ${usage.planName} voice-note transcription limit for this billing period.`
-        : 'You have reached your trial voice-note transcription limit. Upgrade to continue using this workspace.'
+        ? `You have reached the ${usage.planName} transcription-minute limit for this billing period.`
+        : 'You have reached your trial transcription-minute limit. Upgrade to continue using this workspace.'
     );
   }
 }
@@ -467,8 +474,8 @@ function recordUsage(record, feature, count = 1) {
     if (feature === 'recap') {
       record.paidRecapsUsed = Number(record.paidRecapsUsed || 0) + count;
     }
-    if (feature === 'voice-note') {
-      record.paidVoiceNotesUsed = Number(record.paidVoiceNotesUsed || 0) + count;
+    if (feature === 'transcription-minute') {
+      record.paidTranscriptionMinutesUsed = Math.round((Number(record.paidTranscriptionMinutesUsed || 0) + count) * 10) / 10;
     }
     return;
   }
@@ -476,8 +483,8 @@ function recordUsage(record, feature, count = 1) {
   if (feature === 'recap') {
     record.trialRecapsUsed = Number(record.trialRecapsUsed || 0) + count;
   }
-  if (feature === 'voice-note') {
-    record.trialVoiceNotesUsed = Number(record.trialVoiceNotesUsed || 0) + count;
+  if (feature === 'transcription-minute') {
+    record.trialTranscriptionMinutesUsed = Math.round((Number(record.trialTranscriptionMinutesUsed || 0) + count) * 10) / 10;
   }
 }
 
@@ -568,7 +575,7 @@ function trialStatus(record = {}) {
   const isTrialActive = !isSubscribed && msRemaining > 0;
   const daysRemaining = isSubscribed ? null : Math.max(0, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
   const recapsUsed = Number(record.trialRecapsUsed || 0);
-  const voiceNotesUsed = Number(record.trialVoiceNotesUsed || 0);
+  const transcriptionMinutesUsed = Number(record.trialTranscriptionMinutesUsed ?? record.trialVoiceNotesUsed ?? 0);
   const isSuspended = Boolean(record.suspendedAt);
 
   return {
@@ -580,9 +587,9 @@ function trialStatus(record = {}) {
     recapLimit: trialRecapLimit,
     recapUsed: recapsUsed,
     recapRemaining: Math.max(0, trialRecapLimit - recapsUsed),
-    voiceNoteLimit: trialVoiceNoteLimit,
-    voiceNoteUsed: voiceNotesUsed,
-    voiceNoteRemaining: Math.max(0, trialVoiceNoteLimit - voiceNotesUsed),
+    transcriptionMinuteLimit: trialTranscriptionMinuteLimit,
+    transcriptionMinutesUsed,
+    transcriptionMinutesRemaining: Math.max(0, trialTranscriptionMinuteLimit - transcriptionMinutesUsed),
     isSubscribed,
     isPendingActivation,
     isTrialActive,
@@ -1044,8 +1051,18 @@ async function enqueueVoiceNoteProcessing({ requestUrl, payload, scope }) {
   }
 }
 
-function countVoiceMessages(messages = []) {
-  return messages.filter((message) => isVoiceMedia(message)).length;
+function transcriptionMinutesForVoiceMessages(messages = []) {
+  return totalTranscriptionMinutes(messages.filter((message) => isVoiceMedia(message)));
+}
+
+function messageIdentifier(message = {}) {
+  return String(message.id?._serialized || message.id || message._data?.id?._serialized || '').trim();
+}
+
+async function unmeteredVoiceMessages(scope, messages = []) {
+  const existing = await loadCapturedMessages(scope, { limit: 5000 });
+  const existingIds = new Set(existing.map(messageIdentifier).filter(Boolean));
+  return messages.filter((message) => isVoiceMedia(message) && (!messageIdentifier(message) || !existingIds.has(messageIdentifier(message))));
 }
 
 async function captureMappedWahaMessage({ message, requestUrl, settings, scope }) {
@@ -1363,9 +1380,13 @@ export default async function handler(request) {
         if (isVoiceMedia(payload)) {
           const ownerAccess = await loadWorkspaceOwnerAccess(state);
           if (ownerAccess) {
-            ensureUsageAllowed(ownerAccess.record, 'voice-note');
-            recordUsage(ownerAccess.record, 'voice-note');
-            await saveUserAccess(ownerAccess.users, ownerAccess.record);
+            const [unmetered] = await unmeteredVoiceMessages(scope, [payload]);
+            if (unmetered) {
+              const minutes = transcriptionMinutes(unmetered);
+              ensureUsageAllowed(ownerAccess.record, 'transcription-minute', minutes);
+              recordUsage(ownerAccess.record, 'transcription-minute', minutes);
+              await saveUserAccess(ownerAccess.users, ownerAccess.record);
+            }
           }
         }
         await captureApprovedWebhookPayload({
@@ -1927,10 +1948,10 @@ export default async function handler(request) {
           limit: Number(body.limit || 100),
           downloadMedia: true,
         });
-        const voiceMessageCount = countVoiceMessages(messages);
-        if (voiceMessageCount) {
-          ensureUsageAllowed(userRecord, 'voice-note', voiceMessageCount);
-          recordUsage(userRecord, 'voice-note', voiceMessageCount);
+        const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(await unmeteredVoiceMessages(scope, messages));
+        if (transcriptionMinuteCount) {
+          ensureUsageAllowed(userRecord, 'transcription-minute', transcriptionMinuteCount);
+          recordUsage(userRecord, 'transcription-minute', transcriptionMinuteCount);
           await saveUserAccess(users, userRecord);
         }
         for (const message of messages) {
@@ -2017,10 +2038,10 @@ export default async function handler(request) {
       let warning = '';
       try {
         messages = await pullWahaMessagesForRange({ settings: state.settings, range, limit: 1000 });
-        const voiceMessageCount = countVoiceMessages(messages);
-        if (voiceMessageCount) {
-          ensureUsageAllowed(userRecord, 'voice-note', voiceMessageCount);
-          recordUsage(userRecord, 'voice-note', voiceMessageCount);
+        const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(await unmeteredVoiceMessages(scope, messages));
+        if (transcriptionMinuteCount) {
+          ensureUsageAllowed(userRecord, 'transcription-minute', transcriptionMinuteCount);
+          recordUsage(userRecord, 'transcription-minute', transcriptionMinuteCount);
           await saveUserAccess(users, userRecord);
         }
         for (const message of messages) {

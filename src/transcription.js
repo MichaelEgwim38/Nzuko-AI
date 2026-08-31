@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import ffmpegPath from 'ffmpeg-static';
 import { transcriptionLanguageConfig } from './transcriptionLanguages.js';
+import { audioDurationSeconds, maximumVoiceNoteMinutes } from './audioUsage.js';
 
 const supportedFallbackName = 'voice-note.webm';
 const openaiSupportedAudioTypes = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'];
@@ -205,6 +206,12 @@ export async function transcribeVoiceNote({ payload, wahaBaseUrl, wahaApiKey, op
   const media = payload.media || {};
   const mediaUrl = normaliseMediaUrl(media.url || payload.mediaUrl, wahaBaseUrl);
   const languageConfig = transcriptionLanguageConfig(transcribeLanguage);
+  const durationSeconds = audioDurationSeconds(payload);
+  const maximumMinutes = maximumVoiceNoteMinutes();
+
+  if (durationSeconds > maximumMinutes * 60) {
+    return buildPendingVoiceNote({ payload, reason: `voice note exceeds the ${maximumMinutes}-minute processing limit` });
+  }
 
   if (!mediaUrl) {
     return buildPendingVoiceNote({ payload, reason: 'WAHA did not provide a media URL for this voice note' });
@@ -301,6 +308,7 @@ export async function transcribeVoiceNote({ payload, wahaBaseUrl, wahaApiKey, op
       transcript,
       translation,
       mimetype,
+      durationSeconds,
       model: process.env.TRANSCRIBE_MODEL || 'gpt-4o-transcribe',
       language: languageConfig.value,
       translationModel: process.env.TRANSLATE_MODEL || 'gpt-4.1-mini',

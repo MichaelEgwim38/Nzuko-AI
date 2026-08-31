@@ -270,8 +270,8 @@ function renderBillingPlans(status = {}) {
     if (Number.isFinite(usage.recapRemaining) && Number.isFinite(usage.recapLimit)) {
       usageNotes.push(`${usage.recapRemaining} of ${usage.recapLimit} recaps left`);
     }
-    if (Number.isFinite(usage.voiceNoteRemaining) && Number.isFinite(usage.voiceNoteLimit)) {
-      usageNotes.push(`${usage.voiceNoteRemaining} of ${usage.voiceNoteLimit} voice notes left`);
+    if (Number.isFinite(usage.transcriptionMinutesRemaining) && Number.isFinite(usage.transcriptionMinuteLimit)) {
+      usageNotes.push(`${usage.transcriptionMinutesRemaining} of ${usage.transcriptionMinuteLimit} transcription minutes left`);
     }
     summary.textContent = usageNotes.length
       ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
