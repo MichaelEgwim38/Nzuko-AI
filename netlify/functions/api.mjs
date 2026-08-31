@@ -20,7 +20,7 @@ import {
 } from '../../src/netlifyStore.js';
 import { backgroundTaskSecret, cookieFlags, createSessionToken, readUserSession } from '../../src/netlifyAuth.js';
 import { providerSessionUser, supabaseAuthConfig, verifySupabaseAccessToken } from '../../src/supabaseAuth.js';
-import { defaultPaidPlan, listPaidPlans, normalisePaidPlanId, paidPlanById, paidPlanByPriceId, planNameForId } from '../../src/billingPlans.js';
+import { defaultPaidPlan, listPaidPlans, normalisePaidPlanId, paidPlanById, paidPlanByPriceId, paidPlanForCheckout, planNameForId } from '../../src/billingPlans.js';
 import { createCustomerPortalSession, createSubscriptionCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
@@ -1469,7 +1469,7 @@ export default async function handler(request) {
       const context = await loadWorkspaceContext(session);
       const { scope, state, userRecord } = context;
       const body = await readBody(request);
-      const plan = paidPlanById(body.planId || defaultPaidPlan()?.id);
+      const plan = paidPlanForCheckout(body.planId || defaultPaidPlan()?.id, body.billingInterval);
       if (!plan) {
         return sendJson(400, { error: 'Choose a valid subscription plan first.' });
       }
@@ -1493,10 +1493,11 @@ export default async function handler(request) {
         actorUserId: session.userId || '',
         actorName: sessionOwnerName(session),
         actorEmail: session.email || '',
-        summary: `${sessionOwnerName(session)} started Stripe checkout for ${plan.name}.`,
+        summary: `${sessionOwnerName(session)} started Stripe checkout for ${plan.name} (${plan.billingInterval}).`,
         details: {
           planId: plan.id,
           planName: plan.name,
+          billingInterval: plan.billingInterval,
           checkoutSessionId: checkout.id,
         },
       });

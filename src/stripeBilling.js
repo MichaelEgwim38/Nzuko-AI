@@ -88,12 +88,14 @@ export async function createSubscriptionCheckoutSession({
     ],
     metadata: {
       plan_id: plan.id,
+      billing_interval: plan.billingInterval || 'monthly',
       customer_email: customerEmail,
       user_id: userId || '',
     },
     subscription_data: {
       metadata: {
         plan_id: plan.id,
+        billing_interval: plan.billingInterval || 'monthly',
         customer_email: customerEmail,
         user_id: userId || '',
       },

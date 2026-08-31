@@ -942,6 +942,38 @@ h2 {
   display: none;
 }
 
+.billing-interval-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin: 16px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f4f7f3;
+}
+
+.billing-interval-option {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 9px 14px;
+}
+
+.billing-interval-option.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.billing-interval-option span {
+  color: var(--accent);
+  font-size: 11px;
+  margin-left: 4px;
+}
+
 .quick-guide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

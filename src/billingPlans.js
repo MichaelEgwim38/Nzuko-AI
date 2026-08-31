@@ -16,6 +16,9 @@ const paidPlanDefinitions = [
       'Human approval and audit trail',
     ],
     stripePriceEnv: 'STRIPE_STARTER_PRICE_ID',
+    annualPriceLabel: '£150/year',
+    annualAmountCents: 15000,
+    annualStripePriceEnv: 'STRIPE_STARTER_ANNUAL_PRICE_ID',
   },
   {
     id: 'pro',
@@ -35,6 +38,9 @@ const paidPlanDefinitions = [
       'Priority email support',
     ],
     stripePriceEnv: 'STRIPE_PRO_PRICE_ID',
+    annualPriceLabel: '£290/year',
+    annualAmountCents: 29000,
+    annualStripePriceEnv: 'STRIPE_PRO_ANNUAL_PRICE_ID',
   },
 ];
 
@@ -42,8 +48,13 @@ function stripePriceIdFor(definition) {
   return String(process.env[definition.stripePriceEnv] || '').trim();
 }
 
+function annualStripePriceIdFor(definition) {
+  return String(process.env[definition.annualStripePriceEnv] || '').trim();
+}
+
 function publicPlan(definition) {
   const stripePriceId = stripePriceIdFor(definition);
+  const annualStripePriceId = annualStripePriceIdFor(definition);
   return {
     id: definition.id,
     name: definition.name,
@@ -53,6 +64,20 @@ function publicPlan(definition) {
     features: definition.features,
     stripePriceId,
     checkoutEnabled: Boolean(stripePriceId),
+    prices: {
+      monthly: {
+        label: definition.priceLabel,
+        amountCents: definition.amountCents,
+        stripePriceId,
+        checkoutEnabled: Boolean(stripePriceId),
+      },
+      annual: {
+        label: definition.annualPriceLabel,
+        amountCents: definition.annualAmountCents,
+        stripePriceId: annualStripePriceId,
+        checkoutEnabled: Boolean(annualStripePriceId),
+      },
+    },
   };
 }
 
@@ -67,7 +92,22 @@ export function paidPlanById(planId = '') {
 export function paidPlanByPriceId(priceId = '') {
   const value = String(priceId || '').trim();
   if (!value) return null;
-  return listPaidPlans().find((plan) => plan.stripePriceId === value) || null;
+  return listPaidPlans().find((plan) => Object.values(plan.prices || {}).some((price) => price.stripePriceId === value)) || null;
+}
+
+export function paidPlanForCheckout(planId = '', billingInterval = 'monthly') {
+  const plan = paidPlanById(planId);
+  if (!plan) return null;
+  const interval = String(billingInterval || '').toLowerCase() === 'annual' ? 'annual' : 'monthly';
+  const price = plan.prices?.[interval];
+  return {
+    ...plan,
+    billingInterval: interval,
+    priceLabel: price?.label || plan.priceLabel,
+    amountCents: price?.amountCents || plan.amountCents,
+    stripePriceId: price?.stripePriceId || '',
+    checkoutEnabled: Boolean(price?.stripePriceId),
+  };
 }
 
 export function defaultPaidPlan() {

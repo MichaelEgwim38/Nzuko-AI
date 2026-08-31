@@ -19,6 +19,7 @@ let showAllAdminActivity = false;
 let showAllBilling = false;
 let upgradeNoteDismissTimeout = null;
 let deferredInstallPrompt = null;
+let selectedBillingInterval = 'monthly';
 
 function isStandaloneMode() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
@@ -286,6 +287,10 @@ function renderBillingPlans(status = {}) {
 
   container.innerHTML = plans
     .map((plan) => {
+      const selectedPrice = plan.prices?.[selectedBillingInterval] || {
+        label: plan.priceLabel,
+        checkoutEnabled: plan.checkoutEnabled,
+      };
       const isCurrent = Boolean(plan.isCurrent && trial.isSubscribed);
       const buttonLabel = isCurrent
         ? 'Current plan'
@@ -296,7 +301,7 @@ function renderBillingPlans(status = {}) {
         <article class="plan-card${isCurrent ? ' plan-card-current' : ''}">
           <div class="plan-card-header">
             <div>
-              <p class="plan-card-price">${escapeHtml(plan.priceLabel || '')}</p>
+              <p class="plan-card-price">${escapeHtml(selectedPrice.label || '')}</p>
               <h3>${escapeHtml(plan.name || '')}</h3>
             </div>
             ${isCurrent ? '<span class="plan-badge">Active</span>' : plan.recommended ? '<span class="plan-badge">Best value</span>' : ''}
@@ -310,7 +315,8 @@ function renderBillingPlans(status = {}) {
             type="button"
             data-plan-action="${trial.isSubscribed ? 'manage' : 'checkout'}"
             data-plan-id="${escapeHtml(plan.id || '')}"
-            ${!trial.isSubscribed && !plan.checkoutEnabled ? 'disabled' : ''}
+            data-billing-interval="${escapeHtml(selectedBillingInterval)}"
+            ${!trial.isSubscribed && !selectedPrice.checkoutEnabled ? 'disabled' : ''}
             ${isCurrent ? 'disabled' : ''}
           >${escapeHtml(buttonLabel)}</button>
         </article>
@@ -540,12 +546,12 @@ function showUpgradeNote() {
   }, 6000);
 }
 
-async function startCheckout(planId) {
+async function startCheckout(planId, billingInterval = 'monthly') {
   showUpgradeNote();
   setPricingOpen(false);
   const payload = await api('/api/billing/checkout', {
     method: 'POST',
-    body: JSON.stringify({ planId }),
+    body: JSON.stringify({ planId, billingInterval }),
   });
   window.location.href = payload.url;
 }
@@ -565,7 +571,7 @@ async function handlePlanAction(event) {
   if (!button) return;
   const action = button.dataset.planAction;
   if (action === 'checkout') {
-    await startCheckout(button.dataset.planId);
+    await startCheckout(button.dataset.planId, button.dataset.billingInterval);
     return;
   }
   if (action === 'manage') {
@@ -1326,6 +1332,16 @@ $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
+document.querySelectorAll('[data-billing-interval]').forEach((button) => {
+  if (!button.classList.contains('billing-interval-option')) return;
+  button.addEventListener('click', () => {
+    selectedBillingInterval = button.dataset.billingInterval === 'annual' ? 'annual' : 'monthly';
+    document.querySelectorAll('.billing-interval-option').forEach((option) => {
+      option.classList.toggle('active', option.dataset.billingInterval === selectedBillingInterval);
+    });
+    renderBillingPlans(latestStatus || {});
+  });
+});
 $('#toggle-audit-feed')?.addEventListener('click', () => {
   showAllAudit = !showAllAudit;
   renderAuditFeed();
