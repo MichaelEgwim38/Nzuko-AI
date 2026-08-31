@@ -563,6 +563,7 @@ textarea {
 }
 
 .login-header-cta {
+  border: 0;
   background: #9ae63e;
   color: #153018;
   padding: 11px 20px;
@@ -616,13 +617,22 @@ textarea {
 }
 
 .login-value-line span {
-  border: 1px solid #d7e3d3;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: #35513d;
-  padding: 8px 13px;
+  padding: 4px 2px;
   font-size: 13px;
   font-weight: 750;
+}
+
+.login-value-line span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #75b92f;
 }
 
 .login-primary-cta {
@@ -631,9 +641,11 @@ textarea {
   align-items: center;
   gap: 12px;
   margin-top: 30px;
+  border: 0;
   background: #082f20;
   color: #fff;
   padding: 15px 21px;
+  font: inherit;
 }
 
 .login-primary-cta span {

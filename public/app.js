@@ -1604,6 +1604,7 @@ $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
 $('#continue-google').addEventListener('click', continueWithGoogle);
 $('#sign-in-link').addEventListener('click', continueWithGoogle);
+document.querySelectorAll('[data-google-login]').forEach((button) => button.addEventListener('click', continueWithGoogle));
 $('#logout')?.addEventListener('click', logout);
 $('#back-to-login')?.addEventListener('click', logout);
 $('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true));
