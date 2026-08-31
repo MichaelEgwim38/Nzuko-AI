@@ -17,6 +17,7 @@ test('keeps an active group when applying a multi-group selection', () => {
 
 test('limits Pro to five groups and other plans to one', () => {
   assert.equal(groupLimitForPlan('starter'), 1);
+  assert.equal(groupLimitForPlan('personal'), 1);
   assert.equal(groupLimitForPlan('pro'), 5);
   assert.equal(groupLimitForPlan('trial'), 1);
 });

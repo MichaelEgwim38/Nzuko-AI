@@ -284,7 +284,7 @@ function renderBillingPlans(status = {}) {
   const checkoutEnabled = plans.some((plan) => plan.checkoutEnabled);
 
   if (!checkoutEnabled) {
-    summary.textContent = 'Starter and Pro are defined locally. Add Stripe price ids and webhook settings before checkout can go live.';
+    summary.textContent = 'Personal, Starter and Pro are defined locally. Add Stripe price ids and webhook settings before checkout can go live.';
   } else if (trial.isSubscribed) {
     const usageNotes = [];
     if (Number.isFinite(usage.recapRemaining) && Number.isFinite(usage.recapLimit)) {
@@ -297,7 +297,7 @@ function renderBillingPlans(status = {}) {
       ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
       : `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
   } else if (trial.canUseApp) {
-    summary.textContent = 'You are on the free trial. Choose Starter for regular team reporting or Pro for busy daily operations. No per-seat charge.';
+    summary.textContent = 'You are on the free trial. Choose Personal for your own follow-ups, Starter for a small team or Pro for busy operations.';
   } else {
     summary.textContent = 'Your trial has ended. Choose a paid plan in Stripe to keep using the workspace.';
   }

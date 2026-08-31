@@ -1,5 +1,26 @@
 const paidPlanDefinitions = [
   {
+    id: 'personal',
+    name: 'Personal',
+    priceLabel: '£9/month',
+    amountCents: 900,
+    groupLimit: 1,
+    summary: 'For individuals, freelancers and organisers who want reliable follow-ups from WhatsApp.',
+    monthlyRecapLimit: 20,
+    monthlyTranscriptionMinuteLimit: 100,
+    features: [
+      '1 WhatsApp group',
+      '20 structured reports per month',
+      '100 voice-transcription minutes per month',
+      'Personal actions, promises and deadlines',
+      'Human approval and audit history',
+    ],
+    stripePriceEnv: 'STRIPE_PERSONAL_PRICE_ID',
+    annualPriceLabel: '£90/year',
+    annualAmountCents: 9000,
+    annualStripePriceEnv: 'STRIPE_PERSONAL_ANNUAL_PRICE_ID',
+  },
+  {
     id: 'starter',
     name: 'Starter',
     priceLabel: '£15/month',
@@ -62,6 +83,9 @@ function publicPlan(definition) {
     amountCents: definition.amountCents,
     summary: definition.summary,
     features: definition.features,
+    groupLimit: definition.groupLimit,
+    monthlyRecapLimit: definition.monthlyRecapLimit,
+    monthlyTranscriptionMinuteLimit: definition.monthlyTranscriptionMinuteLimit,
     stripePriceId,
     checkoutEnabled: Boolean(stripePriceId),
     prices: {

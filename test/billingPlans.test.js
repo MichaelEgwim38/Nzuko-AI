@@ -3,6 +3,14 @@ import test from 'node:test';
 
 import { paidPlanByPriceId, paidPlanForCheckout } from '../src/billingPlans.js';
 
+test('defines Personal with its monthly operational allowances', () => {
+  const personal = paidPlanForCheckout('personal', 'monthly');
+  assert.equal(personal.priceLabel, '£9/month');
+  assert.equal(personal.monthlyRecapLimit, 20);
+  assert.equal(personal.monthlyTranscriptionMinuteLimit, 100);
+  assert.equal(personal.groupLimit, 1);
+});
+
 test('selects monthly and annual checkout prices independently', () => {
   process.env.STRIPE_STARTER_PRICE_ID = 'price_starter_monthly';
   process.env.STRIPE_STARTER_ANNUAL_PRICE_ID = 'price_starter_annual';
