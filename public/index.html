@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-29" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-30" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -186,6 +186,14 @@
             </div>
           </div>
           <div class="topbar-actions">
+            <section class="topbar-account" aria-label="Account details">
+              <div class="sidebar-account-badge" id="sidebar-account-badge">N</div>
+              <div class="topbar-account-copy">
+                <strong id="sidebar-account-name">Nzuko AI</strong>
+                <span id="sidebar-account-role">Your workspace</span>
+                <span id="sidebar-account-email" class="sidebar-account-email"></span>
+              </div>
+            </section>
             <button id="open-admin" class="button compact-button upgrade-button" type="button" hidden>Owner dashboard</button>
             <button id="manage-billing" class="button compact-button upgrade-button" type="button" hidden>Manage billing</button>
             <button id="install-app" class="button light-secondary compact-button" type="button" hidden>Install app</button>
@@ -195,27 +203,15 @@
           </div>
         </nav>
 
+        <nav class="dashboard-section-nav" aria-label="Workspace sections">
+          <a class="active" href="#overview">Dashboard</a>
+          <a href="#connect">Connection</a>
+          <a href="#messages">Messages</a>
+          <a href="#integrations">Integrations</a>
+          <a href="#review">Review</a>
+        </nav>
+
         <div class="dashboard-layout">
-          <aside class="dashboard-sidebar">
-            <nav class="sidebar-nav" aria-label="Primary dashboard sections">
-              <a class="sidebar-link active" href="#overview">Dashboard</a>
-              <a class="sidebar-link" href="#connect">Connection</a>
-              <a class="sidebar-link" href="#messages">Messages</a>
-              <a class="sidebar-link" href="#integrations">Integrations</a>
-              <a class="sidebar-link" href="#review">Review</a>
-              <a class="sidebar-link" href="#audit">Activity</a>
-            </nav>
-
-            <section class="sidebar-account" aria-label="Workspace details">
-              <div class="sidebar-account-badge" id="sidebar-account-badge">N</div>
-              <div>
-                <strong id="sidebar-account-name">Nzuko AI</strong>
-                <span id="sidebar-account-role">Your workspace</span>
-                <span id="sidebar-account-email" class="sidebar-account-email"></span>
-              </div>
-            </section>
-          </aside>
-
           <section class="dashboard-main">
             <section class="hero dashboard-hero" id="overview">
               <div class="dashboard-hero-copy">
@@ -455,27 +451,13 @@
             </div>
           </section>
 
-          <aside class="dashboard-rail">
-            <section class="panel rail-card" id="audit">
-              <div class="section-heading activity-heading">
-                <div>
-                  <p class="eyebrow">Recent activity</p>
-                  <h2>Audit stream</h2>
-                </div>
-                <button id="toggle-audit-feed" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
-              </div>
-              <p id="audit-summary" class="hint activity-summary">Latest approved recaps will appear here.</p>
-              <div id="audit-log" class="activity-log">No approved recaps yet.</div>
-            </section>
-
-          </aside>
         </div>
 
         <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
           <a href="#connect">Connect</a>
           <a href="#messages">Messages</a>
+          <a href="#integrations">Integrations</a>
           <a href="#review">Review</a>
-          <a href="#audit">Activity</a>
         </nav>
       </div>
     </main>
@@ -669,7 +651,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260901-29" type="module"></script>
+    <script src="/app.js?v=20260901-30" type="module"></script>
   </body>
 </html>
 
