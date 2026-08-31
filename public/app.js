@@ -870,11 +870,9 @@ function renderWorkspacePurposeSummary() {
   const template = workspaceTemplates[currentWorkspaceTemplate];
   const name = $('#workspace-purpose-name');
   const description = $('#workspace-purpose-description');
-  const summaryIcon = $('#workspace-purpose-icon');
   const heroIcon = $('#dashboard-purpose-icon');
   if (name) name.textContent = template?.name || 'Choose your workspace purpose';
   if (description) description.textContent = template?.description || 'Tell Nzuko AI what this workspace is used for.';
-  if (summaryIcon) summaryIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
   if (heroIcon) heroIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
 }
 
