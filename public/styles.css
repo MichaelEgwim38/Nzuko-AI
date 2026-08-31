@@ -69,16 +69,17 @@ textarea {
 
 .dashboard-frame {
   overflow: hidden;
-  border-radius: 30px;
-  background: #f7faf5;
-  box-shadow: 0 24px 60px rgba(12, 18, 14, 0.18);
+  border: 1px solid rgba(16, 24, 18, 0.08);
+  border-radius: 34px;
+  background: #f5f5f7;
+  box-shadow: 0 28px 80px rgba(12, 18, 14, 0.14);
 }
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 332px;
-  gap: 20px;
-  padding: 22px;
+  grid-template-columns: 196px minmax(0, 1fr) 300px;
+  gap: 24px;
+  padding: 28px;
 }
 
 .mobile-quick-nav {
@@ -513,10 +514,20 @@ textarea {
   margin-bottom: 0;
   border: 0;
   border-radius: 0;
-  background: linear-gradient(180deg, #0d0f12, #15181d);
-  padding: 16px 20px;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: none;
+  border-bottom: 1px solid rgba(16, 24, 18, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 14px 22px;
+  box-shadow: none;
+  backdrop-filter: blur(22px) saturate(160%);
+}
+
+.app-brand .brand-word,
+.app-brand .brand-lockup-wordmark {
+  color: #171a18;
+}
+
+.app-brand .brand-lockup-tagline {
+  color: #6e746f;
 }
 
 .topbar-actions {
@@ -532,8 +543,9 @@ textarea {
 }
 
 .app-topbar .secondary {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(16, 24, 18, 0.1);
+  background: rgba(255, 255, 255, 0.72);
+  color: #252925;
 }
 
 .dashboard-sidebar,
@@ -546,6 +558,9 @@ textarea {
   display: grid;
   align-content: start;
   gap: 18px;
+  position: sticky;
+  top: 88px;
+  align-self: start;
 }
 
 .sidebar-nav {
@@ -554,18 +569,19 @@ textarea {
 }
 
 .sidebar-link {
-  border-radius: 14px;
-  color: #4f5d54;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 12px 14px;
+  border-radius: 12px;
+  color: #656b66;
+  font-size: 13px;
+  font-weight: 650;
+  padding: 11px 13px;
   text-decoration: none;
 }
 
 .sidebar-link.active,
 .sidebar-link:hover {
-  background: #eef7e9;
-  color: #244329;
+  background: rgba(255, 255, 255, 0.9);
+  color: #172318;
+  box-shadow: 0 5px 18px rgba(25, 35, 28, 0.06);
 }
 
 .sidebar-card,
@@ -653,32 +669,58 @@ textarea {
 
 .hero,
 .panel {
-  border: 1px solid rgba(207, 222, 207, 0.92);
-  border-radius: 22px;
+  border: 1px solid rgba(16, 24, 18, 0.08);
+  border-radius: 26px;
   background: var(--panel);
-  padding: 28px;
-  box-shadow: 0 18px 38px rgba(22, 34, 43, 0.06);
+  padding: 30px;
+  box-shadow: 0 10px 32px rgba(22, 34, 43, 0.045);
 }
 
 .hero {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(154, 230, 62, 0.16), transparent 24%),
-    linear-gradient(180deg, #ffffff, #f8fbf7);
+    radial-gradient(circle at 90% 20%, rgba(154, 230, 62, 0.22), transparent 30%),
+    linear-gradient(145deg, #ffffff, #f4f8f1);
   color: var(--ink);
 }
 
 .dashboard-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  align-items: center;
+  gap: 28px;
+  min-height: 270px;
 }
 
 .dashboard-hero-copy {
   min-width: 0;
   max-width: 720px;
+}
+
+.dashboard-hero-object {
+  position: relative;
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+}
+
+.dashboard-hero-object img {
+  position: relative;
+  z-index: 1;
+  width: min(210px, 100%);
+  height: 210px;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 22px rgba(25, 55, 30, 0.16));
+}
+
+.dashboard-object-glow {
+  position: absolute;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgba(154, 230, 62, 0.22);
+  filter: blur(24px);
 }
 
 .dashboard-hero-actions {
@@ -776,6 +818,11 @@ textarea {
 
 .panel {
   margin-top: 18px;
+}
+
+.dashboard-main .panel,
+.dashboard-rail .panel {
+  margin-top: 0;
 }
 
 .managed-hidden {
@@ -1940,6 +1987,20 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-hero-object {
+    min-height: 140px;
+  }
+
+  .dashboard-hero-object img {
+    width: 140px;
+    height: 140px;
+  }
+
+  .dashboard-object-glow {
+    width: 110px;
+    height: 110px;
+  }
+
   .dashboard-hero-actions {
     flex-direction: column;
   }
@@ -2221,6 +2282,14 @@ pre {
   gap: 24px;
 }
 
+.purpose-summary-icon {
+  width: 82px;
+  height: 82px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 12px rgba(25, 55, 30, 0.12));
+}
+
 .purpose-summary h2 {
   margin: 6px 0 6px;
 }
@@ -2393,6 +2462,11 @@ pre {
   .purpose-summary {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .purpose-summary-icon {
+    width: 68px;
+    height: 68px;
   }
 
   .purpose-card-grid {

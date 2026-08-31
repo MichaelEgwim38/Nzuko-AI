@@ -29,30 +29,35 @@ let telegramPollTimer = null;
 const workspaceTemplates = {
   'healthcare-operations': {
     name: 'Healthcare operations',
+    icon: '/assets/purpose/healthcare-operations.png',
     description: 'Staff handovers, actions and operational escalations',
     workflowType: 'shift-handover',
     instructions: '',
   },
   'property-facilities': {
     name: 'Property & facilities',
+    icon: '/assets/purpose/property-facilities.png',
     description: 'Faults, site visits, owners and follow-ups',
     workflowType: 'custom',
     instructions: 'Identify the site or asset, reported fault, urgency or safety concern, work completed, evidence provided, responsible person, access requirement, deadline and unresolved follow-up.',
   },
   'field-service': {
     name: 'Field service',
+    icon: '/assets/purpose/field-service.png',
     description: 'Job updates, blockers and next steps',
     workflowType: 'project-update',
     instructions: '',
   },
   'community-charity': {
     name: 'Community & charity',
+    icon: '/assets/purpose/community-charity.png',
     description: 'Minutes, decisions, volunteers and actions',
     workflowType: 'meeting-minutes',
     instructions: '',
   },
   personal: {
     name: 'Personal productivity',
+    icon: '/assets/purpose/personal-productivity.png',
     description: 'Commitments, reminders and follow-ups',
     workflowType: 'custom',
     instructions: 'Identify commitments, reminders, appointments, promised follow-ups, owners, deadlines and unresolved personal actions.',
@@ -865,8 +870,12 @@ function renderWorkspacePurposeSummary() {
   const template = workspaceTemplates[currentWorkspaceTemplate];
   const name = $('#workspace-purpose-name');
   const description = $('#workspace-purpose-description');
+  const summaryIcon = $('#workspace-purpose-icon');
+  const heroIcon = $('#dashboard-purpose-icon');
   if (name) name.textContent = template?.name || 'Choose your workspace purpose';
   if (description) description.textContent = template?.description || 'Tell Nzuko AI what this workspace is used for.';
+  if (summaryIcon) summaryIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
+  if (heroIcon) heroIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
 }
 
 async function chooseWorkspaceTemplate(event) {
