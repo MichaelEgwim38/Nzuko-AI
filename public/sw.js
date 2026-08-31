@@ -1,9 +1,9 @@
-const CACHE_NAME = 'nzuko-ai-shell-v11';
+const CACHE_NAME = 'nzuko-ai-shell-v12';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/styles.css?v=20260831-11',
-  '/app.js?v=20260831-11',
+  '/styles.css?v=20260831-12',
+  '/app.js?v=20260831-12',
   '/supabase-browser.js',
   '/manifest.webmanifest',
   '/offline.html',
