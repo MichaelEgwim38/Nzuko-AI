@@ -2206,24 +2206,6 @@ pre {
   letter-spacing: -0.04em;
 }
 
-.purpose-welcome {
-  padding-bottom: clamp(28px, 5vw, 46px);
-  border-bottom: 1px solid var(--line);
-}
-
-.purpose-question {
-  padding-top: clamp(28px, 5vw, 46px);
-}
-
-.purpose-question h1 {
-  font-size: clamp(28px, 4vw, 42px);
-}
-
-.dashboard-statuses {
-  display: grid;
-  gap: 10px;
-}
-
 .purpose-onboarding-lead {
   max-width: 720px;
   margin: 0;
