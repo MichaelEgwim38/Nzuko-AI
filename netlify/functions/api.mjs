@@ -2015,13 +2015,16 @@ export default async function handler(request) {
         limit: 200,
       });
       let messages = payload.messages || [];
-      const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(await unmeteredVoiceMessages(scope, messages));
+      const unmeteredTelegramVoiceMessages = await unmeteredVoiceMessages(scope, messages);
+      const unmeteredTelegramVoiceIds = new Set(unmeteredTelegramVoiceMessages.map(messageIdentifier).filter(Boolean));
+      const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(unmeteredTelegramVoiceMessages);
       if (transcriptionMinuteCount) {
         ensureUsageAllowed(userRecord, 'transcription-minute', transcriptionMinuteCount);
         recordUsage(userRecord, 'transcription-minute', transcriptionMinuteCount);
         await saveUserAccess(users, userRecord);
       }
       for (const message of messages) {
+        if (isVoiceMedia(message) && !unmeteredTelegramVoiceIds.has(messageIdentifier(message))) continue;
         await captureMappedWahaMessage({
           message,
           requestUrl,
