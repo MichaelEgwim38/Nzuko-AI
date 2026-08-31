@@ -74,11 +74,17 @@ function isIosDevice() {
 
 function updateInstallButton() {
   const button = $('#install-app');
-  if (!button) return;
+  const loginButton = $('#login-install-app');
   const isStandalone = isStandaloneMode();
   const canShowIosHelp = isIosDevice();
-  button.hidden = (!deferredInstallPrompt && !canShowIosHelp) || Boolean(isStandalone);
-  button.textContent = deferredInstallPrompt ? 'Install app' : 'Add to Home Screen';
+  if (button) {
+    button.hidden = (!deferredInstallPrompt && !canShowIosHelp) || Boolean(isStandalone);
+    button.textContent = deferredInstallPrompt ? 'Install app' : 'Add to Home Screen';
+  }
+  if (loginButton) {
+    loginButton.hidden = Boolean(isStandalone);
+    loginButton.textContent = deferredInstallPrompt ? 'Install app' : 'Get the app';
+  }
 }
 
 async function registerServiceWorker() {
@@ -1624,6 +1630,7 @@ $('#admin-backdrop')?.addEventListener('click', () => setAdminOpen(false));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
+$('#login-install-app')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#pricing-topup-cards')?.addEventListener('click', handlePlanAction);
 document.querySelectorAll('[data-billing-interval]').forEach((button) => {

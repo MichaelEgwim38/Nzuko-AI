@@ -562,6 +562,11 @@ textarea {
   padding: 10px 18px;
 }
 
+.login-install-button {
+  border-color: rgba(154, 230, 62, 0.72);
+  color: #c9f795;
+}
+
 .login-header-cta {
   border: 0;
   background: #9ae63e;
@@ -3113,6 +3118,16 @@ pre {
   .login-header-cta {
     padding: 10px 13px;
     font-size: 13px;
+  }
+
+  .login-header-actions {
+    gap: 7px;
+  }
+
+  .login-install-button {
+    display: inline-flex;
+    padding: 9px 10px;
+    font-size: 12px;
   }
 
   .login-stage {
