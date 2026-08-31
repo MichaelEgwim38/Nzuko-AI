@@ -1,4 +1,5 @@
 import { browserSupabase } from './supabase-browser.js';
+import { importedConversationText } from './importText.js';
 
 const $ = (selector) => document.querySelector(selector);
 let currentApprovedGroupId = '';
@@ -854,6 +855,24 @@ async function saveSettings() {
   await loadStatus();
 }
 
+async function importConversationFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    if (file.size > 5 * 1024 * 1024) throw new Error('Choose a file smaller than 5 MB.');
+    const imported = importedConversationText(await file.text(), file.name);
+    if (!imported) throw new Error('No readable conversation text was found.');
+    const target = $('#chat-text');
+    target.value = target.value.trim() ? `${target.value.trim()}\n\n${imported}` : imported;
+    const source = $('#input-source')?.selectedOptions?.[0]?.textContent || 'Conversation';
+    setHintMessage('import-status', `${source} import loaded from ${file.name}. Review it before generating a report.`);
+  } catch (error) {
+    setHintMessage('import-status', `Import failed: ${error.message}`);
+  } finally {
+    event.target.value = '';
+  }
+}
+
 async function checkWaha() {
   try {
     await saveSettings();
@@ -1329,6 +1348,7 @@ async function handleBillingAdminAction(event) {
 }
 
 $('#save-settings').addEventListener('click', saveSettings);
+$('#conversation-file')?.addEventListener('change', importConversationFile);
 $('#save-workflow').addEventListener('click', saveWorkflow);
 $('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
 $('#check-waha').addEventListener('click', checkWaha);

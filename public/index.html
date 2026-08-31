@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260831-14" />
+    <link rel="stylesheet" href="/styles.css?v=20260831-15" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -267,10 +267,27 @@
               </section>
 
               <section class="panel" id="messages">
-                <p class="eyebrow">Message capture</p>
-                <h2>Today&apos;s group material</h2>
+                <p class="eyebrow">Conversation input</p>
+                <h2>Add today&apos;s operational material</h2>
+                <div class="conversation-import">
+                  <label>
+                    Source
+                    <select id="input-source">
+                      <option value="whatsapp">WhatsApp export</option>
+                      <option value="teams">Microsoft Teams export</option>
+                      <option value="slack">Slack export</option>
+                      <option value="email">Email conversation</option>
+                      <option value="other">Other conversation</option>
+                    </select>
+                  </label>
+                  <label>
+                    Upload conversation file
+                    <input id="conversation-file" type="file" accept=".txt,.json,.csv,text/plain,application/json,text/csv" />
+                  </label>
+                </div>
+                <p id="import-status" class="hint">Upload a TXT, JSON or CSV export, or paste conversation text below. Review all imported content before processing.</p>
                 <label>
-                  Chat messages
+                  Conversation text
                   <textarea id="chat-text" rows="9"></textarea>
                 </label>
                 <label>
@@ -563,7 +580,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260831-14" type="module"></script>
+    <script src="/app.js?v=20260831-15" type="module"></script>
   </body>
 </html>
 

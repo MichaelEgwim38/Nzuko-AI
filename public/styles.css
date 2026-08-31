@@ -1751,6 +1751,17 @@ pre {
 .topup-card strong, .topup-card small { display: block; }
 .topup-card small { margin-top: 3px; color: var(--muted); }
 
+.conversation-import {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(240px, 1.3fr);
+  gap: 12px;
+  margin: 14px 0 8px;
+}
+
+@media (max-width: 680px) {
+  .conversation-import { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 760px) {
   body {
     background: linear-gradient(180deg, #f7fbf5, var(--bg));
