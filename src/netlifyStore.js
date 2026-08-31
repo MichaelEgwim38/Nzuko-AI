@@ -89,6 +89,8 @@ export function defaultSettings() {
     outboundWebhookUrl: '',
     outboundWebhookSecret: '',
     outboundWebhookEnabled: false,
+    telegramGroupId: '',
+    telegramGroupName: '',
   };
 }
 

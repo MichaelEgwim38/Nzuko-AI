@@ -21,6 +21,9 @@ let showAllBilling = false;
 let upgradeNoteDismissTimeout = null;
 let deferredInstallPrompt = null;
 let selectedBillingInterval = 'monthly';
+let currentTelegramGroupId = '';
+let currentTelegramGroupName = '';
+let telegramPollTimer = null;
 
 function isStandaloneMode() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
@@ -86,7 +89,7 @@ function applyWelcomeUser(user = {}) {
     heading.textContent = `Welcome back, ${firstName}`;
   }
   if (kicker) {
-    kicker.textContent = 'Your WhatsApp meeting workspace';
+    kicker.textContent = 'Your conversation operations workspace';
   }
   if (sidebarName) {
     sidebarName.textContent = firstName;
@@ -773,6 +776,9 @@ async function loadStatus() {
   $('#outbound-webhook-secret').placeholder = status.settings.outboundWebhookSecret
     ? 'Signing secret configured'
     : 'Create a strong secret for signature verification';
+  currentTelegramGroupId = status.settings.telegramGroupId || '';
+  currentTelegramGroupName = status.settings.telegramGroupName || '';
+  $('#telegram-summary-status').textContent = currentTelegramGroupId ? `Group: ${currentTelegramGroupName}` : 'Setup required';
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
   $('#waha-base-url').readOnly = managedWahaWorkspace;
@@ -825,6 +831,8 @@ function settingsPayload(extra = {}) {
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
     outboundWebhookUrl: $('#outbound-webhook-url')?.value.trim() || '',
     outboundWebhookEnabled: Boolean($('#outbound-webhook-enabled')?.checked),
+    telegramGroupId: currentTelegramGroupId,
+    telegramGroupName: currentTelegramGroupName,
     retentionDays: 14,
     ...extra,
   };
@@ -998,6 +1006,105 @@ async function loadGroups() {
   } catch (error) {
     setHintMessage('waha-status', `Group load failed: ${error.message}`);
   }
+}
+
+function renderTelegramStatus(payload = {}) {
+  clearTimeout(telegramPollTimer);
+  $('#telegram-password-box').hidden = !payload.passwordRequired;
+  if (payload.connected) {
+    $('#telegram-summary-status').textContent = 'Connected';
+    $('#telegram-qr-box').innerHTML = `<strong>Connected as ${escapeHtml(payload.account?.name || 'Telegram user')}</strong>`;
+    setHintMessage('telegram-status', 'Telegram is connected. Load the groups available to this account.');
+    return;
+  }
+  if (payload.qr) {
+    $('#telegram-summary-status').textContent = 'Scan QR';
+    $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>Telegram → Settings → Devices → Link Desktop Device</p>`;
+    telegramPollTimer = setTimeout(checkTelegramStatus, 2000);
+    return;
+  }
+  if (payload.passwordRequired) {
+    $('#telegram-summary-status').textContent = 'Password required';
+    setHintMessage('telegram-status', `Enter your Telegram two-step verification password${payload.passwordHint ? ` (${payload.passwordHint})` : ''}.`);
+    telegramPollTimer = setTimeout(checkTelegramStatus, 2500);
+    return;
+  }
+  if (payload.status === 'starting' || payload.status === 'authorising') {
+    $('#telegram-summary-status').textContent = 'Connecting';
+    telegramPollTimer = setTimeout(checkTelegramStatus, 1500);
+    return;
+  }
+  $('#telegram-summary-status').textContent = payload.status === 'error' ? 'Connection failed' : 'Setup required';
+  if (payload.error) setHintMessage('telegram-status', payload.error);
+}
+
+async function checkTelegramStatus() {
+  try { renderTelegramStatus(await api('/api/telegram/status')); } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+async function startTelegram() {
+  try {
+    setHintMessage('telegram-status', 'Preparing a secure Telegram QR code…');
+    renderTelegramStatus(await api('/api/telegram/start', { method: 'POST', body: '{}' }));
+  } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+async function submitTelegramPassword() {
+  try {
+    const password = $('#telegram-password').value;
+    if (!password) return setHintMessage('telegram-status', 'Enter your Telegram two-step verification password.');
+    $('#telegram-password').value = '';
+    renderTelegramStatus(await api('/api/telegram/password', { method: 'POST', body: JSON.stringify({ password }) }));
+  } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+async function loadTelegramGroups() {
+  try {
+    const payload = await api('/api/telegram/groups');
+    if (!payload.groups?.length) {
+      $('#telegram-group-list').textContent = 'No Telegram groups were found for this account.';
+      return;
+    }
+    $('#telegram-group-list').innerHTML = payload.groups.map((group) => `
+      <button type="button" class="group-option telegram-group-option${group.id === currentTelegramGroupId ? ' selected' : ''}" data-group-id="${escapeHtml(group.id)}" data-group-name="${escapeHtml(group.name)}">
+        <span><strong>${escapeHtml(group.name)}</strong><small>${group.unreadCount || 0} unread</small></span>
+        <em>${group.id === currentTelegramGroupId ? 'Selected' : 'Choose'}</em>
+      </button>`).join('');
+    document.querySelectorAll('.telegram-group-option').forEach((button) => button.addEventListener('click', chooseTelegramGroup));
+  } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+async function chooseTelegramGroup(event) {
+  currentTelegramGroupId = event.currentTarget.dataset.groupId;
+  currentTelegramGroupName = event.currentTarget.dataset.groupName;
+  await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+  $('#telegram-summary-status').textContent = `Group: ${currentTelegramGroupName}`;
+  setHintMessage('telegram-status', `Selected Telegram group: ${currentTelegramGroupName}. Confirm permission below before loading messages.`);
+  await loadTelegramGroups();
+}
+
+async function loadTelegramMessages() {
+  try {
+    const payload = await api('/api/telegram/pull', { method: 'POST', body: '{}' });
+    $('#chat-text').value = payload.chatText || '';
+    $('#voice-notes').value = payload.voiceNotes || '';
+    $('#input-source').value = 'telegram';
+    setHintMessage('telegram-status', `Loaded ${payload.messages?.length || 0} Telegram messages for review.`);
+    location.hash = '#messages';
+  } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+async function disconnectTelegram() {
+  try {
+    clearTimeout(telegramPollTimer);
+    await api('/api/telegram/logout', { method: 'POST', body: '{}' });
+    currentTelegramGroupId = '';
+    currentTelegramGroupName = '';
+    $('#telegram-group-list').textContent = 'Telegram group not loaded yet.';
+    $('#telegram-qr-box').textContent = 'Telegram disconnected. Click Get Telegram QR to connect another account.';
+    $('#telegram-summary-status').textContent = 'Setup required';
+    setHintMessage('telegram-status', 'Telegram has been disconnected from this workspace.');
+  } catch (error) { setHintMessage('telegram-status', error.message); }
 }
 
 async function chooseGroup(event) {
@@ -1387,6 +1494,11 @@ $('#show-qr').addEventListener('click', showQr);
 $('#switch-waha-user').addEventListener('click', switchWahaUser);
 $('#load-groups').addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
+$('#start-telegram')?.addEventListener('click', startTelegram);
+$('#load-telegram-groups')?.addEventListener('click', loadTelegramGroups);
+$('#submit-telegram-password')?.addEventListener('click', submitTelegramPassword);
+$('#load-telegram-messages')?.addEventListener('click', loadTelegramMessages);
+$('#disconnect-telegram')?.addEventListener('click', disconnectTelegram);
 $('#configure-webhook').addEventListener('click', configureWebhook);
 $('#load-period-messages').addEventListener('click', loadPeriodMessages);
 $('#generate-range').addEventListener('click', generateRangeRecap);

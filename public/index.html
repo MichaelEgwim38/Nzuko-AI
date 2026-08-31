@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260831-17" />
+    <link rel="stylesheet" href="/styles.css?v=20260831-18" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -258,11 +258,42 @@
                 <div id="group-list" class="group-list">WhatsApp group not loaded yet.</div>
                 <label class="check-row">
                   <input id="consent-confirmed" type="checkbox" />
-                  <span>I have permission to summarize this group and I will review drafts before posting.</span>
+                  <span>I have permission to summarise the selected group and I will review drafts before sharing.</span>
                 </label>
                 <button id="save-settings" class="button">Save workspace settings</button>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
+                  </div>
+                </details>
+              </section>
+
+              <section class="panel" id="telegram-connect">
+                <details class="connection-disclosure">
+                  <summary>
+                    <span>
+                      <span class="eyebrow">Telegram connection</span>
+                      <strong>Connect Telegram with a QR code</strong>
+                    </span>
+                    <span id="telegram-summary-status" class="connection-summary-status">Setup required</span>
+                  </summary>
+                  <div class="connection-disclosure-content">
+                    <p class="hint connect-copy">Link the Telegram account used for this workspace, then choose an authorised group.</p>
+                    <div class="button-row">
+                      <button id="start-telegram" class="button" type="button">Get Telegram QR</button>
+                      <button id="load-telegram-groups" class="button secondary" type="button">Load Telegram groups</button>
+                      <button id="disconnect-telegram" class="button secondary" type="button">Disconnect Telegram</button>
+                    </div>
+                    <div id="telegram-qr-box" class="qr-box">Click Get Telegram QR, then scan it from Telegram Settings → Devices.</div>
+                    <div id="telegram-password-box" hidden>
+                      <label>
+                        Telegram two-step verification password
+                        <input id="telegram-password" type="password" autocomplete="current-password" />
+                      </label>
+                      <button id="submit-telegram-password" class="button" type="button">Continue connection</button>
+                    </div>
+                    <div id="telegram-group-list" class="group-list">Telegram group not loaded yet.</div>
+                    <button id="load-telegram-messages" class="button" type="button">Load selected Telegram messages</button>
+                    <p id="telegram-status" class="hint">Telegram operates independently from your WhatsApp connection.</p>
                   </div>
                 </details>
               </section>
@@ -605,7 +636,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260831-17" type="module"></script>
+    <script src="/app.js?v=20260831-18" type="module"></script>
   </body>
 </html>
 

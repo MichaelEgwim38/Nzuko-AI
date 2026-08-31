@@ -42,10 +42,19 @@ import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspac
 import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
 import { applyApprovedGroups, entitledApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
 import { deliverOutboundWebhook, validateOutboundWebhookUrl } from '../../src/outboundWebhook.js';
+import {
+  getTelegramMessages,
+  getTelegramStatus,
+  listTelegramGroups,
+  logoutTelegramSession,
+  startTelegramSession,
+  submitTelegramPassword,
+} from '../../src/connectors/telegram.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
 const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$/, '');
+const managedTelegramBaseUrl = String(process.env.TELEGRAM_BASE_URL || (managedWahaBaseUrl ? `${managedWahaBaseUrl}/telegram` : '')).replace(/\/+$/, '');
 const legacySharedScope = 'shared';
 const trialDays = Number(process.env.TRIAL_DAYS || 3);
 const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
@@ -90,6 +99,15 @@ function publicSettings(settings) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function telegramOptions(state) {
+  if (!managedTelegramBaseUrl) throw new Error('The Telegram connector is not configured yet.');
+  return {
+    baseUrl: managedTelegramBaseUrl,
+    apiKey: state.settings.wahaApiKey || process.env.WAHA_API_KEY || '',
+    session: state.settings.wahaSession,
+  };
 }
 
 function nowMs() {
@@ -1952,6 +1970,56 @@ export default async function handler(request) {
       return sendJson(200, { qr });
     }
 
+    if (request.method === 'POST' && pathname === '/api/telegram/start') {
+      const context = await loadWorkspaceContext(session);
+      const { state, trial } = context;
+      ensureTrialAllowed(trial);
+      return sendJson(200, await startTelegramSession(telegramOptions(state)));
+    }
+
+    if (request.method === 'GET' && pathname === '/api/telegram/status') {
+      const context = await loadWorkspaceContext(session);
+      return sendJson(200, await getTelegramStatus(telegramOptions(context.state)));
+    }
+
+    if (request.method === 'POST' && pathname === '/api/telegram/password') {
+      const body = await readBody(request);
+      const context = await loadWorkspaceContext(session);
+      if (!body.password) return sendJson(400, { error: 'Enter your Telegram two-step verification password.' });
+      return sendJson(202, await submitTelegramPassword({ ...telegramOptions(context.state), password: body.password }));
+    }
+
+    if (request.method === 'GET' && pathname === '/api/telegram/groups') {
+      const context = await loadWorkspaceContext(session);
+      return sendJson(200, await listTelegramGroups(telegramOptions(context.state)));
+    }
+
+    if (request.method === 'POST' && pathname === '/api/telegram/logout') {
+      const context = await loadWorkspaceContext(session);
+      const result = await logoutTelegramSession(telegramOptions(context.state));
+      context.state.settings.telegramGroupId = '';
+      context.state.settings.telegramGroupName = '';
+      await saveAppState(context.scope, context.state);
+      return sendJson(200, result);
+    }
+
+    if (request.method === 'POST' && pathname === '/api/telegram/pull') {
+      const context = await loadWorkspaceContext(session);
+      const { state, trial } = context;
+      ensureTrialAllowed(trial);
+      if (!state.settings.consentConfirmed) return sendJson(403, { error: 'Confirm permission before loading Telegram group messages.' });
+      if (!state.settings.telegramGroupId) return sendJson(400, { error: 'Choose a Telegram group first.' });
+      const payload = await getTelegramMessages({
+        ...telegramOptions(state),
+        chatId: state.settings.telegramGroupId,
+        limit: 200,
+      });
+      const messages = payload.messages || [];
+      const chatText = messages.filter((message) => message.body).map((message) => `${message.from}: ${message.body}`).join('\n');
+      const voiceNotes = messages.filter((message) => message.type === 'voice').map((message) => `${message.from}: [Telegram voice note — transcription support is being prepared]`).join('\n');
+      return sendJson(200, { messages, chatText, voiceNotes });
+    }
+
     if (request.method === 'GET' && pathname === '/api/sample') {
       return sendJson(200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes });
     }
@@ -1989,6 +2057,8 @@ export default async function handler(request) {
         outboundWebhookEnabled: body.outboundWebhookEnabled === undefined
           ? Boolean(state.settings.outboundWebhookEnabled)
           : Boolean(body.outboundWebhookEnabled),
+        telegramGroupId: body.telegramGroupId === undefined ? state.settings.telegramGroupId || '' : String(body.telegramGroupId || '').trim(),
+        telegramGroupName: body.telegramGroupName === undefined ? state.settings.telegramGroupName || '' : String(body.telegramGroupName || '').trim().slice(0, 200),
       };
       state.settings = applyApprovedGroups(state.settings, requestedGroups);
       if (body.approvedGroupId) {

@@ -1,0 +1,55 @@
+name: nzuko-waha-worker
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      WAHA_HOST: ${WAHA_HOST:?Set WAHA_HOST in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      waha:
+        condition: service_started
+      telegram:
+        condition: service_started
+
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest}
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY_HASH:?Set the SHA-512 WAHA API key hash in .env}
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-NOWEB}
+      WAHA_DASHBOARD_ENABLED: "false"
+      WHATSAPP_SWAGGER_ENABLED: "false"
+      WAHA_PRINT_QR: "false"
+      WAHA_MEDIA_STORAGE: LOCAL
+      WAHA_CLIENT_DEVICE_NAME: Nzuko AI
+      WAHA_CLIENT_BROWSER_NAME: Chrome
+    expose:
+      - "3000"
+    volumes:
+      - /opt/waha/sessions:/app/.sessions
+
+  telegram:
+    build: ./telegram-connector
+    restart: unless-stopped
+    environment:
+      PORT: "3100"
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:?Set TELEGRAM_API_ID in .env}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:?Set TELEGRAM_API_HASH in .env}
+      API_KEY_HASH: ${WAHA_API_KEY_HASH:?Set WAHA_API_KEY_HASH in .env}
+      SESSION_DIR: /data
+    expose:
+      - "3100"
+    volumes:
+      - ./telegram-sessions:/data
+
+volumes:
+  caddy_data:
+  caddy_config:
