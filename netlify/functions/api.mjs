@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { generateRecap } from '../../src/minutesAgent.js';
+import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from '../../src/workflowTemplates.js';
 import {
   cloneScopeData,
   countCapturedMessages,
@@ -37,11 +37,11 @@ import {
   postRecapToWaha,
   startWahaSession,
 } from '../../src/connectors/waha.js';
+import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
 const managedWahaBaseUrl = String(process.env.WAHA_BASE_URL || '').replace(/\/+$/, '');
-const managedWahaApiKey = String(process.env.WAHA_API_KEY || '');
 const legacySharedScope = 'shared';
 const trialDays = Number(process.env.TRIAL_DAYS || 3);
 const trialRecapLimit = Number(process.env.TRIAL_RECAP_LIMIT || 2);
@@ -57,14 +57,8 @@ const adminEmails = new Set(
     .filter(Boolean)
 );
 
-function managedSettings(settings = {}) {
-  return {
-    ...settings,
-    connectorMode: managedWahaBaseUrl ? 'waha' : settings.connectorMode,
-    wahaBaseUrl: managedWahaBaseUrl || settings.wahaBaseUrl,
-    wahaApiKey: managedWahaApiKey || settings.wahaApiKey,
-    wahaSession: process.env.WAHA_SESSION || settings.wahaSession || 'default',
-  };
+function managedSettings(settings = {}, workspace = {}) {
+  return applyWorkspaceWahaSettings(settings, workspace, process.env);
 }
 
 function requiredSecret(name) {
@@ -206,6 +200,8 @@ function ensureRecordDefaults(record = {}) {
     usageWindowStartedAt: record.usageWindowStartedAt || record.activatedAt || record.lastPaymentAt || null,
     paidRecapsUsed: Number(record.paidRecapsUsed || 0),
     paidVoiceNotesUsed: Number(record.paidVoiceNotesUsed || 0),
+    suspendedAt: record.suspendedAt || null,
+    suspendedBy: record.suspendedBy || '',
   };
 }
 
@@ -573,6 +569,7 @@ function trialStatus(record = {}) {
   const daysRemaining = isSubscribed ? null : Math.max(0, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
   const recapsUsed = Number(record.trialRecapsUsed || 0);
   const voiceNotesUsed = Number(record.trialVoiceNotesUsed || 0);
+  const isSuspended = Boolean(record.suspendedAt);
 
   return {
     subscriptionStatus: record.subscriptionStatus || 'trial',
@@ -589,7 +586,9 @@ function trialStatus(record = {}) {
     isSubscribed,
     isPendingActivation,
     isTrialActive,
-    canUseApp: isSubscribed || isTrialActive,
+    isSuspended,
+    suspendedAt: record.suspendedAt || null,
+    canUseApp: !isSuspended && (isSubscribed || isTrialActive),
   };
 }
 
@@ -695,6 +694,13 @@ async function resolveWorkspaceMembership(user = {}) {
     changed = true;
   }
 
+  const assignedWorker = selectWahaWorker(workspace, process.env);
+  if (assignedWorker && workspace.wahaWorkerId !== assignedWorker.id) {
+    workspace.wahaWorkerId = assignedWorker.id;
+    workspace.updatedAt = nowIso();
+    changed = true;
+  }
+
   if (changed) {
     await saveWorkspaces(workspaces);
     await saveMemberships(memberships);
@@ -788,7 +794,7 @@ async function loadWorkspaceContext(user) {
   const { workspace, membership } = await resolveWorkspaceMembership(user);
   const scope = workspaceScopeFor(workspace);
   const state = await loadAppState(scope);
-  state.settings = managedSettings(state.settings);
+  state.settings = managedSettings(state.settings, workspace);
   const ownerSummary = await normaliseSharedOwner(scope, state);
   const { users, record } = await loadOrCreateUserAccess(user);
   if (record.workspaceId !== workspace.id) {
@@ -1010,7 +1016,7 @@ async function ensureManagedWahaSession({ settings, requestUrl, scope }) {
       webhookUrl,
     });
   } catch (error) {
-    if (!String(error.message || '').includes('404')) {
+    if (error.status !== 404 && !/404|session not found/i.test(String(error.message || ''))) {
       throw error;
     }
     await createWahaSession({
@@ -1128,7 +1134,7 @@ export default async function handler(request) {
       }
 
       const state = await loadAppState(legacySharedScope);
-      state.settings = managedSettings(state.settings);
+      state.settings = managedSettings(state.settings, { id: legacyWorkspaceId(), legacyShared: true });
       logUsageEvent(state, {
         type: 'auth.login',
         actorUserId: user.userId || '',
@@ -1340,7 +1346,12 @@ export default async function handler(request) {
       const body = await readBody(request);
       const payload = body.payload || body;
       const state = await loadAppState(scope);
-      state.settings = managedSettings(state.settings);
+      const webhookWorkspaces = await loadWorkspaces();
+      const webhookWorkspace = webhookWorkspaces.find((entry) => workspaceScopeFor(entry) === scope) || {
+        id: scope,
+        legacyShared: scope === legacySharedScope,
+      };
+      state.settings = managedSettings(state.settings, webhookWorkspace);
       const approvedGroupId = state.settings.approvedGroupId;
       const chatId = approvedGroupChatId(payload);
       state.webhookStats.received += 1;
@@ -1393,6 +1404,11 @@ export default async function handler(request) {
       const capturedCount = await countCapturedMessages(scope, { groupId: state.settings.approvedGroupId });
       return sendJson(200, {
         app: 'Nzuko AI',
+        user: {
+          userId: session.userId || '',
+          email: session.email || '',
+          displayName: session.displayName || session.name || '',
+        },
         connector: state.settings.connectorMode,
         settings: publicSettings(state.settings),
         userScoped: !workspace?.legacyShared,
@@ -1415,6 +1431,7 @@ export default async function handler(request) {
           language: state.settings.transcribeLanguage || 'auto',
           languageOptions: transcriptionLanguageOptions.map(({ value, label }) => ({ value, label })),
         },
+        workflowTemplates,
       });
     }
 
@@ -1490,10 +1507,30 @@ export default async function handler(request) {
       assertAdminUser(session);
       const { workspaces, workspaceById, membershipByUserId } = await workspaceMaps();
       const workspaceStates = await Promise.all(
-        workspaces.map(async (workspace) => ({
-          workspace,
-          state: await loadAppState(workspaceScopeFor(workspace)),
-        }))
+        workspaces.map(async (workspace) => {
+          const scope = workspaceScopeFor(workspace);
+          const state = await loadAppState(scope);
+          const settings = managedSettings(state.settings, workspace);
+          let connectionStatus = 'not_started';
+          try {
+            const connection = await getWahaStatus({
+              baseUrl: settings.wahaBaseUrl,
+              session: settings.wahaSession,
+              apiKey: settings.wahaApiKey,
+            });
+            connectionStatus = String(connection?.status || 'reachable').toLowerCase();
+          } catch (error) {
+            connectionStatus = error.status === 404 || /session not found/i.test(String(error.message || ''))
+              ? 'not_started'
+              : 'unavailable';
+          }
+          return {
+            workspace,
+            state,
+            connectionStatus,
+            capturedCount: await countCapturedMessages(scope),
+          };
+        })
       );
       const users = (await loadUsers())
         .map((entry) => ensureRecordDefaults(entry))
@@ -1522,7 +1559,48 @@ export default async function handler(request) {
             workspaceName: workspace?.name || 'Workspace pending assignment',
           };
         });
+      const workspaceSummaries = workspaceStates
+        .filter(({ workspace }) => !workspace.legacyShared || users.some((entry) => userWorkspaceId(entry, membershipByUserId) === workspace.id))
+        .map(({ workspace, state, connectionStatus, capturedCount }) => {
+          const events = Array.isArray(state.usageEvents) ? state.usageEvents : [];
+          const lastEvent = events
+            .slice()
+            .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime())[0] || null;
+          return {
+            id: workspace.id,
+            name: workspace.name,
+            createdAt: workspace.createdAt,
+            groupName: state.settings?.approvedGroupName || '',
+            connectionStatus,
+            capturedCount,
+            approvedRecapCount: Array.isArray(state.auditLog) ? state.auditLog.length : 0,
+            lastActivityAt: lastEvent?.createdAt || state.webhookStats?.lastReceivedAt || null,
+            lastActivitySummary: lastEvent?.summary || '',
+          };
+        })
+        .sort((left, right) => new Date(right.lastActivityAt || right.createdAt || 0).getTime() - new Date(left.lastActivityAt || left.createdAt || 0).getTime());
+      const paidUsers = users.filter((entry) => String(entry.subscriptionStatus || '').toLowerCase() === 'active');
+      const activeTrials = users.filter((entry) => {
+        const trial = trialStatus(entry);
+        return trial.isTrialActive && !trial.isSuspended;
+      });
+      const endedTrials = users.filter((entry) => {
+        const trial = trialStatus(entry);
+        return !trial.isSubscribed && !trial.isTrialActive && !trial.isPendingActivation;
+      });
       return sendJson(200, {
+        summary: {
+          totalUsers: users.length,
+          totalWorkspaces: workspaceSummaries.length,
+          activeTrials: activeTrials.length,
+          endedTrials: endedTrials.length,
+          paidUsers: paidUsers.length,
+          pendingActivations: pendingActivations.length,
+          connectedWorkspaces: workspaceSummaries.filter((entry) => ['working', 'connected', 'authenticated'].includes(entry.connectionStatus)).length,
+          unavailableWorkspaces: workspaceSummaries.filter((entry) => entry.connectionStatus === 'unavailable').length,
+          totalRecaps: workspaceSummaries.reduce((total, entry) => total + entry.approvedRecapCount, 0),
+          totalCapturedMessages: workspaceSummaries.reduce((total, entry) => total + entry.capturedCount, 0),
+        },
         users: users.map((entry) => ({
           userId: entry.userId,
           email: entry.email,
@@ -1532,10 +1610,48 @@ export default async function handler(request) {
           trial: trialStatus(entry),
           billing: billingSummary(entry),
         })),
+        workspaces: workspaceSummaries,
         pendingActivations,
         recentUsageEvents,
         stripeWebhookConfigured: Boolean(stripeWebhookSecret),
       });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/admin/users/access') {
+      assertAdminUser(session);
+      const body = await readBody(request);
+      const email = normaliseEmail(body.email);
+      const userId = String(body.userId || '').trim();
+      const action = String(body.action || '').trim().toLowerCase();
+      if (!['suspend', 'restore'].includes(action)) {
+        return sendJson(400, { error: 'Choose suspend or restore.' });
+      }
+      const users = await loadUsers();
+      const match = users.find((entry) => (userId && String(entry.userId || '') === userId) || (email && normaliseEmail(entry.email) === email));
+      if (!match) {
+        return sendJson(404, { error: 'User not found.' });
+      }
+      if (isAdminUser(match)) {
+        return sendJson(400, { error: 'The owner account cannot be suspended.' });
+      }
+      match.suspendedAt = action === 'suspend' ? nowIso() : null;
+      match.suspendedBy = action === 'suspend' ? normaliseEmail(session.email) : '';
+      const { membershipByUserId } = await workspaceMaps();
+      const scope = workspaceScopeFor({ id: userWorkspaceId(match, membershipByUserId) || legacyWorkspaceId() });
+      const state = await loadAppState(scope);
+      logUsageEvent(state, {
+        type: action === 'suspend' ? 'admin.user_suspended' : 'admin.user_restored',
+        actorUserId: session.userId || '',
+        actorName: sessionOwnerName(session),
+        actorEmail: session.email || '',
+        summary: `${action === 'suspend' ? 'Suspended' : 'Restored'} access for ${match.email}.`,
+        details: { userId: match.userId },
+      });
+      await Promise.all([
+        saveUsers(users.map((entry) => ensureRecordDefaults(entry))),
+        saveAppState(scope, state),
+      ]);
+      return sendJson(200, { ok: true });
     }
 
     if (request.method === 'POST' && pathname === '/api/admin/billing/activate') {
@@ -1655,8 +1771,8 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/waha/status') {
       const context = await loadWorkspaceContext(session);
-      const { scope, state } = context;
-      state.settings = managedSettings(state.settings);
+      const { scope, state, workspace } = context;
+      state.settings = managedSettings(state.settings, workspace);
       const status = await getWahaStatus({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -1734,6 +1850,7 @@ export default async function handler(request) {
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       await claimSharedOwner(scope, state, session);
+      await ensureManagedWahaSession({ settings: state.settings, requestUrl, scope });
       const qr = await getWahaQr({
         baseUrl: state.settings.wahaBaseUrl,
         session: state.settings.wahaSession,
@@ -1752,7 +1869,7 @@ export default async function handler(request) {
       const { scope, state } = context;
       const previousSettings = { ...state.settings };
       state.settings = {
-        ...managedSettings(state.settings),
+        ...managedSettings(state.settings, context.workspace),
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
@@ -1761,6 +1878,8 @@ export default async function handler(request) {
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage
           : state.settings.transcribeLanguage,
+        workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
+        workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
       };
       if (Boolean(previousSettings.consentConfirmed) !== Boolean(state.settings.consentConfirmed)) {
         logUsageEvent(state, {
@@ -1849,8 +1968,8 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/captured') {
       const context = await loadWorkspaceContext(session);
-      const { scope, state } = context;
-      state.settings = managedSettings(state.settings);
+      const { scope, state, workspace } = context;
+      state.settings = managedSettings(state.settings, workspace);
       const messages = await loadCapturedMessages(scope, {
         groupId: state.settings.approvedGroupId,
         from: requestUrl.searchParams.get('from'),
@@ -1863,8 +1982,8 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/messages/range') {
       const context = await loadWorkspaceContext(session);
-      const { scope, state } = context;
-      state.settings = managedSettings(state.settings);
+      const { scope, state, workspace } = context;
+      state.settings = managedSettings(state.settings, workspace);
       const range = selectedDateRange({
         preset: requestUrl.searchParams.get('preset'),
         from: requestUrl.searchParams.get('from'),
@@ -1967,11 +2086,13 @@ export default async function handler(request) {
         chatText = split.chatText;
         voiceNotes = split.voiceNotes;
       }
-      const recap = generateRecap({
+      const recap = generateWorkflowReport({
         chatText: chatText || '',
         voiceNotes: voiceNotes || '',
         groupName: state.settings.approvedGroupName,
         messages: sourceMessages,
+        workflowType: state.settings.workflowType,
+        customInstructions: state.settings.workflowCustomInstructions,
       });
       state.currentDraft = {
         id: `draft-${Date.now()}`,

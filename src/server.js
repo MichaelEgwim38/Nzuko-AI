@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateRecap } from './minutesAgent.js';
+import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from './workflowTemplates.js';
 import { loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
 import { buildPendingVoiceNote, isVoiceMedia, transcribeVoiceNote } from './transcription.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from './connectors/mockWhatsApp.js';
@@ -62,6 +62,8 @@ const state = {
     wahaPublicUrl: process.env.WAHA_PUBLIC_URL || '',
     wahaSession: process.env.WAHA_SESSION || 'default',
     wahaApiKey: process.env.WAHA_API_KEY || '',
+    workflowType: 'meeting-minutes',
+    workflowCustomInstructions: '',
   },
   currentDraft: null,
   capturedMessages: initialCapturedMessages,
@@ -493,6 +495,7 @@ async function handleApi(request, response) {
         model: process.env.TRANSCRIBE_MODEL || 'gpt-4o-transcribe',
         language: process.env.TRANSCRIBE_LANGUAGE || 'auto',
       },
+      workflowTemplates,
     });
     return;
   }
@@ -585,6 +588,8 @@ async function handleApi(request, response) {
       wahaPublicUrl: body.wahaPublicUrl || state.settings.wahaPublicUrl,
       wahaSession: body.wahaSession || state.settings.wahaSession,
       wahaApiKey: body.wahaApiKey ?? state.settings.wahaApiKey,
+      workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
+      workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
     };
     sendJson(response, 200, { settings: publicSettings(state.settings) });
     return;
@@ -721,11 +726,13 @@ async function handleApi(request, response) {
       chatText = split.chatText;
       voiceNotes = split.voiceNotes;
     }
-    const recap = generateRecap({
+    const recap = generateWorkflowReport({
       chatText: chatText || '',
       voiceNotes: voiceNotes || '',
       groupName: state.settings.approvedGroupName,
       messages: sourceMessages,
+      workflowType: state.settings.workflowType,
+      customInstructions: state.settings.workflowCustomInstructions,
     });
     state.currentDraft = {
       id: `draft-${Date.now()}`,

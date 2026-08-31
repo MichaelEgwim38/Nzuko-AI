@@ -5,6 +5,7 @@ let currentApprovedGroupId = '';
 let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
+let currentWorkflowType = 'meeting-minutes';
 let latestStatus = null;
 let paymentQueryState = null;
 let adminBillingLoaded = false;
@@ -76,6 +77,7 @@ function applyWelcomeUser(user = {}) {
   const sidebarName = $('#sidebar-account-name');
   const sidebarRole = $('#sidebar-account-role');
   const sidebarBadge = $('#sidebar-account-badge');
+  const sidebarEmail = $('#sidebar-account-email');
   if (heading) {
     heading.textContent = `Welcome back, ${firstName}`;
   }
@@ -86,7 +88,10 @@ function applyWelcomeUser(user = {}) {
     sidebarName.textContent = firstName;
   }
   if (sidebarRole) {
-    sidebarRole.textContent = 'Your workspace';
+    sidebarRole.textContent = 'Workspace member';
+  }
+  if (sidebarEmail) {
+    sidebarEmail.textContent = String(user.email || '').trim();
   }
   if (sidebarBadge) {
     sidebarBadge.textContent = firstName.charAt(0).toUpperCase();
@@ -134,6 +139,8 @@ function renderWorkspaceStatus(status = {}) {
   const upgradeNote = $('#upgrade-note');
   const workspaceNotice = $('#workspace-notice');
   const adminBillingPanel = $('#admin-billing-panel');
+  const openAdminButton = $('#open-admin');
+  const sidebarRole = $('#sidebar-account-role');
   const checkWahaButton = $('#check-waha');
 
   if (trialSummary) {
@@ -175,10 +182,22 @@ function renderWorkspaceStatus(status = {}) {
 
   if (adminBillingPanel) {
     const shouldShowAdmin = Boolean(admin.isAdmin);
-    adminBillingPanel.hidden = !shouldShowAdmin;
     if (!shouldShowAdmin) {
+      adminBillingPanel.hidden = true;
       adminBillingLoaded = false;
     }
+  }
+
+  if (openAdminButton) {
+    openAdminButton.hidden = !admin.isAdmin;
+  }
+
+  if (sidebarRole && admin.isAdmin) {
+    sidebarRole.textContent = 'Owner account';
+  }
+  const ownerIdentity = $('#admin-owner-identity');
+  if (ownerIdentity) {
+    ownerIdentity.textContent = admin.isAdmin ? `Signed in as ${status.user?.email || ''}` : '';
   }
 
   if (checkWahaButton) {
@@ -357,7 +376,7 @@ function renderAuditFeed() {
         <div class="activity-item-header">
           <div class="activity-item-copy">
             <strong>${escapeHtml(entry.groupName)}</strong>
-            <p>${entry.recap.decisions.length} decision item(s), ${entry.recap.actions.length} action item(s).</p>
+            <p>${escapeHtml(entry.recap.workflowName || 'Meeting Minutes')} · ${(entry.recap.decisions || []).length} decision item(s), ${(entry.recap.actions || []).length} action item(s).</p>
           </div>
           <time datetime="${escapeHtml(entry.approvedAt)}">${escapeHtml(formatDateTime(entry.approvedAt))}</time>
         </div>
@@ -424,11 +443,15 @@ function renderBillingFeed() {
 
   container.innerHTML = visibleEntries
     .map((entry) => {
+      const accessAction = entry.isSuspended
+        ? `<button class="button secondary compact-button" data-billing-action="restore" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Restore</button>`
+        : `<button class="button danger compact-button" data-billing-action="suspend" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Suspend</button>`;
       const actions = entry.email || entry.userId
         ? `
           <div class="billing-entry-actions">
             <button class="button compact-button" data-billing-action="activate" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Activate</button>
             <button class="button secondary compact-button" data-billing-action="reset" data-user-id="${escapeHtml(entry.userId || '')}" data-email="${escapeHtml(entry.email || '')}">Reset trial</button>
+            ${accessAction}
           </div>
         `
         : '';
@@ -462,11 +485,33 @@ function setPricingOpen(isOpen) {
   document.body.style.overflow = isOpen ? 'hidden' : '';
 }
 
+async function openPricing() {
+  setPricingOpen(true);
+  const container = $('#pricing-plan-cards');
+  const summary = $('#pricing-plan-status');
+  if (container) container.textContent = 'Loading current plans…';
+  if (summary) summary.textContent = 'Checking your trial and subscription options.';
+  try {
+    await loadStatus();
+  } catch (error) {
+    if (container) container.textContent = 'Plans could not be loaded.';
+    if (summary) summary.textContent = error.message || 'Please close this window and try again.';
+  }
+}
+
 function setInstallHelpOpen(isOpen) {
   const modal = $('#install-help-modal');
   if (!modal) return;
   modal.hidden = !isOpen;
   document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function setAdminOpen(isOpen) {
+  const modal = $('#admin-billing-panel');
+  if (!modal || !latestStatus?.admin?.isAdmin) return;
+  modal.hidden = !isOpen;
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+  if (isOpen) loadAdminBilling(true);
 }
 
 function showUpgradeNote() {
@@ -660,8 +705,13 @@ async function loadStatus() {
   renderBillingPlans(status);
   currentApprovedGroupId = status.settings.approvedGroupId || '';
   $('#group-name').value = status.settings.approvedGroupName || '';
+  $('#connection-summary-status').textContent = status.settings.approvedGroupName
+    ? `Group: ${status.settings.approvedGroupName}`
+    : 'Setup required';
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
+  setWorkflowSelection(status.settings.workflowType || 'meeting-minutes');
+  $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
   $('#waha-base-url').readOnly = managedWahaWorkspace;
@@ -675,8 +725,32 @@ async function loadStatus() {
     setHintMessage('waha-status', '');
   }
   $('#approve-status').textContent = managedWahaWorkspace
-    ? 'Review the recap, then approve it when you are ready to post or export it.'
+    ? 'Review the draft, then approve it when you are ready to post or export it.'
     : 'Posting uses the currently selected connector mode.';
+}
+
+function selectedWorkflowType() {
+  return $('#workflow-type')?.value || 'meeting-minutes';
+}
+
+function workflowName(type = selectedWorkflowType()) {
+  return ({
+    'meeting-minutes': 'Meeting Minutes',
+    'shift-handover': 'Shift Handover',
+    'project-update': 'Project Update',
+    custom: 'Custom Workflow',
+  })[type] || 'Meeting Minutes';
+}
+
+function setWorkflowSelection(type) {
+  currentWorkflowType = type;
+  const select = $('#workflow-type');
+  if (select) {
+    select.value = [...select.options].some((option) => option.value === type) ? type : 'meeting-minutes';
+  }
+  $('#custom-workflow-field').hidden = selectedWorkflowType() !== 'custom';
+  $('#draft-workflow-name').textContent = `${workflowName()} draft`;
+  $('#generate').textContent = `Generate ${workflowName().toLowerCase()}`;
 }
 
 function settingsPayload(extra = {}) {
@@ -685,6 +759,8 @@ function settingsPayload(extra = {}) {
     consentConfirmed: $('#consent-confirmed').checked,
     connectorMode: $('#connector-mode').value,
     transcribeLanguage: $('#transcribe-language').value,
+    workflowType: selectedWorkflowType(),
+    workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
     retentionDays: 14,
     ...extra,
   };
@@ -697,6 +773,19 @@ function settingsPayload(extra = {}) {
     }
   }
   return payload;
+}
+
+async function saveWorkflow() {
+  if (selectedWorkflowType() === 'custom' && !$('#workflow-custom-instructions').value.trim()) {
+    setHintMessage('workflow-status', 'Describe what the custom workflow should extract before saving.');
+    return;
+  }
+  const payload = await api('/api/settings', {
+    method: 'POST',
+    body: JSON.stringify(settingsPayload()),
+  });
+  setWorkflowSelection(payload.settings.workflowType);
+  setHintMessage('workflow-status', `${workflowName(payload.settings.workflowType)} saved for this workspace.`);
 }
 
 async function saveSettings() {
@@ -926,6 +1015,7 @@ async function generateRangeRecap() {
       }),
     });
     $('#recap-output').textContent = payload.draft.recap.text;
+    $('#draft-workflow-name').textContent = `${payload.draft.recap.workflowName || workflowName()} draft`;
     $('#approve-status').textContent = 'Period draft ready. Review before approving.';
     $('#range-status').textContent = 'Generated from stored approved-group messages for the selected period.';
     await loadStatus();
@@ -937,7 +1027,7 @@ async function generateRangeRecap() {
 function clearDraftFields() {
   $('#chat-text').value = '';
   $('#voice-notes').value = '';
-  $('#recap-output').textContent = 'Generate a recap to preview the WhatsApp-ready post.';
+  $('#recap-output').textContent = 'Generate a report to preview the structured output.';
 }
 
 async function configureWebhook() {
@@ -959,6 +1049,7 @@ async function generateRecap() {
     }),
   });
   $('#recap-output').textContent = payload.draft.recap.text;
+  $('#draft-workflow-name').textContent = `${payload.draft.recap.workflowName || workflowName()} draft`;
   $('#approve-status').textContent = 'Draft ready. Review before approving.';
   await loadStatus();
 }
@@ -967,7 +1058,7 @@ async function approveRecap() {
   try {
     const payload = await api('/api/recap/approve', { method: 'POST', body: '{}' });
     $('#approve-status').textContent = `Approved through ${payload.auditEntry.posted.provider || $('#connector-mode').value} at ${payload.auditEntry.approvedAt}.`;
-    $('#recap-output').textContent = 'Generate a new recap to preview the next WhatsApp-ready post.';
+    $('#recap-output').textContent = 'Generate a new report to preview the next structured output.';
     await loadAudit();
     await loadStatus();
   } catch (error) {
@@ -978,7 +1069,7 @@ async function approveRecap() {
 async function purgeDraft() {
   const payload = await api('/api/purge', { method: 'POST', body: '{}' });
   $('#approve-status').textContent = payload.message;
-  $('#recap-output').textContent = 'Generate a recap to preview the WhatsApp-ready post.';
+  $('#recap-output').textContent = 'Generate a report to preview the structured output.';
 }
 
 async function loadAudit() {
@@ -1010,11 +1101,47 @@ function renderLatestAdminBilling(payload = {}) {
     when: entry.billing?.lastPaymentAt || entry.trial?.trialEndsAt || '',
     userId: entry.userId || '',
     email: entry.email || '',
+    isSuspended: Boolean(entry.trial?.isSuspended),
   }));
   billingEntriesCache = [...pendingEntries, ...userEntries];
   renderBillingFeed();
   recentUsageEventsCache = Array.isArray(payload.recentUsageEvents) ? payload.recentUsageEvents : [];
   renderAdminActivityFeed();
+
+  const summary = payload.summary || {};
+  const metrics = [
+    ['Users', summary.totalUsers || 0],
+    ['Active trials', summary.activeTrials || 0],
+    ['Paid', summary.paidUsers || 0],
+    ['WhatsApp connected', summary.connectedWorkspaces || 0],
+    ['Approved reports', summary.totalRecaps || 0],
+  ];
+  const metricsNode = $('#admin-metrics');
+  if (metricsNode) {
+    metricsNode.innerHTML = metrics.map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join('');
+  }
+
+  const workspaces = Array.isArray(payload.workspaces) ? payload.workspaces : [];
+  const workspaceStatus = $('#admin-workspace-status');
+  const workspaceList = $('#admin-workspace-list');
+  if (workspaceStatus) {
+    workspaceStatus.textContent = `${workspaces.length} workspace${workspaces.length === 1 ? '' : 's'} · ${summary.totalCapturedMessages || 0} captured message${summary.totalCapturedMessages === 1 ? '' : 's'}.`;
+  }
+  if (workspaceList) {
+    workspaceList.innerHTML = workspaces.length ? `
+      <table class="admin-table">
+        <thead><tr><th>Workspace</th><th>WhatsApp</th><th>Group</th><th>Reports</th><th>Messages</th><th>Last activity</th></tr></thead>
+        <tbody>${workspaces.map((workspace) => `
+          <tr>
+            <td><strong>${escapeHtml(workspace.name || 'Workspace')}</strong></td>
+            <td><span class="health-badge health-${escapeHtml(workspace.connectionStatus || 'not_started')}">${escapeHtml(String(workspace.connectionStatus || 'not started').replaceAll('_', ' '))}</span></td>
+            <td>${escapeHtml(workspace.groupName || 'Not selected')}</td>
+            <td>${escapeHtml(workspace.approvedRecapCount || 0)}</td>
+            <td>${escapeHtml(workspace.capturedCount || 0)}</td>
+            <td>${workspace.lastActivityAt ? escapeHtml(formatDateTime(workspace.lastActivityAt)) : 'No activity'}</td>
+          </tr>`).join('')}</tbody>
+      </table>` : 'No customer workspaces yet.';
+  }
 }
 
 function renderAdminBilling(payload = {}) {
@@ -1103,6 +1230,11 @@ async function handleBillingAdminAction(event) {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  } else if (action === 'suspend' || action === 'restore') {
+    await api('/api/admin/users/access', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, action }),
+    });
   } else {
     return;
   }
@@ -1110,6 +1242,8 @@ async function handleBillingAdminAction(event) {
 }
 
 $('#save-settings').addEventListener('click', saveSettings);
+$('#save-workflow').addEventListener('click', saveWorkflow);
+$('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
@@ -1129,12 +1263,15 @@ $('#back-to-login')?.addEventListener('click', logout);
 $('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true));
 $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
-$('#open-pricing')?.addEventListener('click', () => setPricingOpen(true));
+$('#open-pricing')?.addEventListener('click', openPricing);
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#close-install-help')?.addEventListener('click', () => setInstallHelpOpen(false));
 $('#install-help-backdrop')?.addEventListener('click', () => setInstallHelpOpen(false));
 $('#refresh-billing')?.addEventListener('click', () => loadAdminBilling(true));
+$('#open-admin')?.addEventListener('click', () => setAdminOpen(true));
+$('#close-admin')?.addEventListener('click', () => setAdminOpen(false));
+$('#admin-backdrop')?.addEventListener('click', () => setAdminOpen(false));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
@@ -1154,6 +1291,7 @@ $('#toggle-admin-activity')?.addEventListener('click', () => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
+    setAdminOpen(false);
     setQuickGuideOpen(false);
     setPricingOpen(false);
     setInstallHelpOpen(false);

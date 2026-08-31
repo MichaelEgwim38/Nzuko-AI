@@ -21,7 +21,9 @@ async function parseWahaResponse(response) {
 
   if (!response.ok) {
     const message = payload?.message || payload?.error || `WAHA returned ${response.status}`;
-    throw new Error(Array.isArray(message) ? message.join(', ') : message);
+    const error = new Error(Array.isArray(message) ? message.join(', ') : message);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;

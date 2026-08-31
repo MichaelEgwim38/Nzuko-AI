@@ -7,6 +7,7 @@
     "dev": "node src/server.js",
     "start": "node src/server.js",
     "check": "node --check src/server.js && node --check netlify/functions/api.mjs && node --check netlify/functions/process-voice-note-background.mjs",
+    "test": "node --test",
     "mobile:add:android": "npx cap add android",
     "mobile:sync": "npx cap sync android",
     "mobile:open:android": "npx cap open android"

@@ -50,7 +50,9 @@ Required Netlify environment variables:
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
 - `WAHA_BASE_URL`
-- `WAHA_SESSION`
+- `WAHA_SESSION` (legacy shared workspace only)
+- `WAHA_SESSION_PREFIX` (optional, defaults to `nzuko`)
+- `WAHA_WORKERS_JSON` (optional JSON array of WAHA workers for horizontal scaling)
 - `WAHA_API_KEY` when your WAHA instance requires it
 - `OPENAI_API_KEY` for voice-note transcription and translation
 - `PUBLIC_APP_URL` for webhook registration in production
@@ -64,6 +66,18 @@ Authentication now uses provider-based login. Configure Google and Azure (Micros
 Voice-note language choices in the dashboard now include auto-detect, the five most common main languages in England and Wales from Census 2021, and extra community options requested for this pilot: Igbo, Yoruba, Zimbabwe (Shona), Ghana (Twi), and India (Hindi).
 
 Netlify-specific behavior change:
+
+Each customer workspace is assigned its own deterministic WAHA session. When
+`WAHA_WORKERS_JSON` is configured, new workspaces are distributed across the
+pool and the selected worker ID is persisted on the workspace, so adding a
+worker does not move existing WhatsApp sessions. Example:
+
+```json
+[
+  {"id":"waha-1","baseUrl":"https://waha-1.example.com","apiKey":"secret-1"},
+  {"id":"waha-2","baseUrl":"https://waha-2.example.com","apiKey":"secret-2"}
+]
+```
 
 - voice-note transcripts may appear shortly after capture instead of in the same request, because transcription is queued in the background
 

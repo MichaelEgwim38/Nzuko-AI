@@ -79,7 +79,10 @@ export function defaultSettings() {
     wahaPublicUrl: process.env.WAHA_PUBLIC_URL || '',
     wahaSession: process.env.WAHA_SESSION || 'default',
     wahaApiKey: process.env.WAHA_API_KEY || '',
+    wahaWorkerId: '',
     transcribeLanguage: process.env.TRANSCRIBE_LANGUAGE || 'auto',
+    workflowType: 'meeting-minutes',
+    workflowCustomInstructions: '',
   };
 }
 
@@ -94,6 +97,7 @@ export function defaultWorkspaceRecord(workspace = {}) {
     createdAt: workspace.createdAt || new Date().toISOString(),
     updatedAt: workspace.updatedAt || workspace.createdAt || new Date().toISOString(),
     ownerUserId: String(workspace.ownerUserId || '').trim(),
+    wahaWorkerId: String(workspace.wahaWorkerId || '').trim(),
     legacyShared,
     archivedAt: workspace.archivedAt || null,
   };

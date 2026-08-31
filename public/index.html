@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=20260831-6" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -120,10 +120,11 @@
         </aside>
       </section>
       <section class="login-trust" aria-label="Who Nzuko AI is built for">
-        <span>Family associations</span>
-        <span>Church teams</span>
-        <span>Alumni groups</span>
-        <span>Community admins</span>
+        <p class="login-trust-heading">Built for teams like yours</p>
+        <span>Healthcare operations teams</span>
+        <span>Charities &amp; community organisations</span>
+        <span>Field-service businesses</span>
+        <span>Property &amp; facilities teams</span>
       </section>
     </main>
 
@@ -138,6 +139,7 @@
             </div>
           </div>
           <div class="topbar-actions">
+            <button id="open-admin" class="button compact-button upgrade-button" type="button" hidden>Owner dashboard</button>
             <button id="manage-billing" class="button compact-button upgrade-button" type="button" hidden>Manage billing</button>
             <button id="install-app" class="button light-secondary compact-button" type="button" hidden>Install app</button>
             <button id="open-pricing" class="button light-secondary compact-button" type="button">Pricing</button>
@@ -156,17 +158,12 @@
               <a class="sidebar-link" href="#audit">Activity</a>
             </nav>
 
-            <section class="sidebar-card">
-              <p class="eyebrow">AI is ready</p>
-              <strong>Nzuko AI is actively monitoring your groups and summarizing conversations.</strong>
-              <a href="#audit">View activity</a>
-            </section>
-
             <section class="sidebar-account" aria-label="Workspace details">
               <div class="sidebar-account-badge" id="sidebar-account-badge">N</div>
               <div>
                 <strong id="sidebar-account-name">Nzuko AI</strong>
                 <span id="sidebar-account-role">Your workspace</span>
+                <span id="sidebar-account-email" class="sidebar-account-email"></span>
               </div>
             </section>
           </aside>
@@ -176,7 +173,7 @@
               <div class="dashboard-hero-copy">
                 <p class="eyebrow" id="welcome-kicker">Welcome back</p>
                 <h1 id="welcome-heading">Nzuko AI</h1>
-                <p class="lead">We capture decisions, action items, and voice-note summaries from your WhatsApp meetings so your community stays aligned and nothing gets missed.</p>
+                <p class="lead">Turn approved team conversations into structured minutes, shift handovers, project updates and accountable actions.</p>
                 <p id="trial-summary" class="status-banner" hidden></p>
                 <p id="payment-notice" class="status-banner secondary" hidden></p>
                 <p id="upgrade-note" class="status-banner secondary upgrade-note" hidden>You&apos;ll be redirected to Stripe to start or manage your subscription.</p>
@@ -185,40 +182,67 @@
             </section>
 
             <div class="workspace-stack">
+              <section class="panel" id="workflow-setup">
+                <p class="eyebrow">Workspace purpose</p>
+                <h2>What should Nzuko AI create?</h2>
+                <p class="hint">Choose the workflow that matches this workspace. You can change it later without reconnecting WhatsApp.</p>
+                <label class="workflow-select-field">
+                  Workspace output
+                  <select id="workflow-type">
+                    <option value="meeting-minutes">Meeting Minutes — decisions, actions and open questions</option>
+                    <option value="shift-handover">Shift Handover — completed work, outstanding tasks and concerns</option>
+                    <option value="project-update">Project Update — progress, blockers and next steps</option>
+                    <option value="custom">Custom Workflow — define what the report should focus on</option>
+                  </select>
+                </label>
+                <label id="custom-workflow-field" hidden>
+                  Custom workflow instructions
+                  <textarea id="workflow-custom-instructions" rows="3" maxlength="1000" placeholder="Example: Identify customer requests, promises made, follow-up owners and due dates."></textarea>
+                </label>
+                <button id="save-workflow" class="button" type="button">Save workspace purpose</button>
+                <p class="hint" id="workflow-status" hidden></p>
+              </section>
+
               <section class="panel" id="connect">
-                <div class="section-heading">
-                  <div>
-                    <p class="eyebrow">WhatsApp connection</p>
-                    <h2>Connect the active WhatsApp account</h2>
-                  </div>
-                  <button id="check-waha" class="button secondary compact-button" type="button" hidden>Check WAHA</button>
-                </div>
+                <details class="connection-disclosure">
+                  <summary>
+                    <span>
+                      <span class="eyebrow">WhatsApp connection</span>
+                      <strong>Connect the active WhatsApp account</strong>
+                    </span>
+                    <span id="connection-summary-status" class="connection-summary-status">Setup required</span>
+                  </summary>
+                  <div class="connection-disclosure-content">
+                <button id="check-waha" class="button secondary compact-button" type="button" hidden>Check WAHA</button>
                 <p class="hint connect-copy">Connect the WhatsApp account you want to use for this workspace.</p>
                 <label>
                   Selected WhatsApp group
                   <input id="group-name" placeholder="Shows after you load and choose one of the available WhatsApp groups" />
                 </label>
-                <label class="managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
-                  Connector mode
-                  <select id="connector-mode">
-                    <option value="mock">Mock demo</option>
-                    <option value="waha">WAHA linked device</option>
-                  </select>
-                </label>
-                <div class="field-grid managed-field-grid managed-hidden" data-managed-hidden="true" aria-hidden="true">
-                  <label class="managed-field managed-hidden" data-managed-hidden="true">
-                    WAHA URL
-                    <input id="waha-base-url" value="http://localhost:3000" />
+                <details class="advanced-tools managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
+                  <summary>Technical connector settings</summary>
+                  <label>
+                    Connector mode
+                    <select id="connector-mode">
+                      <option value="mock">Mock demo</option>
+                      <option value="waha">WAHA linked device</option>
+                    </select>
                   </label>
-                  <label class="managed-field managed-hidden" data-managed-hidden="true">
-                    Session
-                    <input id="waha-session" value="default" />
+                  <div class="field-grid managed-field-grid">
+                    <label>
+                      WAHA URL
+                      <input id="waha-base-url" value="http://localhost:3000" />
+                    </label>
+                    <label>
+                      Session
+                      <input id="waha-session" value="default" />
+                    </label>
+                  </div>
+                  <label>
+                    API key
+                    <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
                   </label>
-                </div>
-                <label class="managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
-                  API key
-                  <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
-                </label>
+                </details>
                 <div class="button-row">
                   <button id="start-waha" class="button">Start session</button>
                   <button id="show-qr" class="button secondary">Get QR code</button>
@@ -238,6 +262,8 @@
                 <button id="save-settings" class="button">Save workspace settings</button>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
+                  </div>
+                </details>
               </section>
 
               <section class="panel" id="messages">
@@ -291,7 +317,7 @@
                   </div>
                   <div class="button-row">
                     <button id="load-period-messages" class="button secondary">Get messages for this period</button>
-                    <button id="generate-range" class="button">Generate period recap</button>
+                    <button id="generate-range" class="button">Generate period report</button>
                   </div>
                   <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
                 </div>
@@ -303,7 +329,7 @@
                   </div>
                 </details>
                 <div class="button-row">
-                  <button id="generate" class="button">Generate recap</button>
+                  <button id="generate" class="button">Generate report</button>
                   <button id="purge" class="button secondary">Clear raw draft</button>
                 </div>
               </section>
@@ -311,13 +337,13 @@
               <section class="panel" id="review">
                 <div class="section-heading">
                   <div>
-                    <p class="eyebrow">WhatsApp post draft</p>
-                    <h2>Review before posting</h2>
+                    <p class="eyebrow" id="draft-workflow-name">Workflow draft</p>
+                    <h2>Review before approval</h2>
                   </div>
                   <button id="approve" class="button">Approve post</button>
                 </div>
-                <pre id="recap-output">Generate a recap to preview the WhatsApp-ready post.</pre>
-                <p class="hint" id="approve-status">Review the recap, then approve it when you are ready to post or export it.</p>
+                <pre id="recap-output">Generate a report to preview the structured output.</pre>
+                <p class="hint" id="approve-status">Review the draft, then approve it when you are ready to post or export it.</p>
               </section>
 
             </div>
@@ -336,31 +362,6 @@
               <div id="audit-log" class="activity-log">No approved recaps yet.</div>
             </section>
 
-            <section class="panel rail-card" id="admin-billing-panel" hidden>
-              <div class="section-heading activity-heading">
-                <div>
-                  <p class="eyebrow">Admin billing</p>
-                  <h2>Workspace access</h2>
-                </div>
-                <div class="section-actions">
-                  <button id="refresh-billing" class="button secondary compact-button">Refresh</button>
-                  <button id="toggle-billing-feed" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
-                </div>
-              </div>
-              <p id="billing-admin-status" class="hint activity-summary">Review paid, pending, and trial users here.</p>
-              <div id="billing-admin-list" class="activity-log">No billing records yet.</div>
-              <section class="activity-subpanel" aria-label="Recent workspace activity">
-                <div class="section-heading activity-heading">
-                  <div>
-                    <p class="eyebrow">Workspace activity</p>
-                    <h3>Latest events</h3>
-                  </div>
-                  <button id="toggle-admin-activity" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
-                </div>
-                <p id="admin-activity-summary" class="hint activity-summary">Latest workspace changes will appear here.</p>
-                <div id="admin-activity-log" class="activity-log">No recent workspace activity.</div>
-              </section>
-            </section>
           </aside>
         </div>
 
@@ -372,6 +373,69 @@
         </nav>
       </div>
     </main>
+
+    <div id="admin-billing-panel" class="admin-modal" hidden>
+      <div id="admin-backdrop" class="quick-guide-backdrop"></div>
+      <section class="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-dashboard-title">
+        <header class="admin-header">
+          <div>
+            <p class="eyebrow">Private owner console</p>
+            <h2 id="admin-dashboard-title">Nzuko AI monitoring</h2>
+            <p id="admin-owner-identity" class="admin-owner-identity"></p>
+            <p class="hint">Customers, trials, WhatsApp connections, usage and billing in one place.</p>
+          </div>
+          <div class="section-actions">
+            <button id="refresh-billing" class="button secondary compact-button" type="button">Refresh</button>
+            <button id="close-admin" class="button secondary compact-button" type="button">Close</button>
+          </div>
+        </header>
+
+        <div id="admin-metrics" class="admin-metrics" aria-label="Business summary">
+          <article><span>Users</span><strong>—</strong></article>
+          <article><span>Active trials</span><strong>—</strong></article>
+          <article><span>Paid</span><strong>—</strong></article>
+          <article><span>WhatsApp connected</span><strong>—</strong></article>
+          <article><span>Approved reports</span><strong>—</strong></article>
+        </div>
+
+        <div class="admin-dashboard-grid">
+          <section class="admin-section admin-section-wide">
+            <div class="section-heading activity-heading">
+              <div>
+                <p class="eyebrow">Operations</p>
+                <h3>Customer workspaces</h3>
+              </div>
+            </div>
+            <p id="admin-workspace-status" class="hint activity-summary">Loading workspace health…</p>
+            <div id="admin-workspace-list" class="admin-table-wrap">No workspaces yet.</div>
+          </section>
+
+          <section class="admin-section">
+            <div class="section-heading activity-heading">
+              <div>
+                <p class="eyebrow">Customers</p>
+                <h3>Access and billing</h3>
+              </div>
+              <button id="toggle-billing-feed" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
+            </div>
+            <p id="billing-admin-status" class="hint activity-summary">Review paid, pending and trial users here.</p>
+            <div id="billing-admin-list" class="activity-log admin-scroll-list">No customer records yet.</div>
+          </section>
+
+          <section class="admin-section">
+            <div class="section-heading activity-heading">
+              <div>
+                <p class="eyebrow">Audit</p>
+                <h3>Latest platform events</h3>
+              </div>
+              <button id="toggle-admin-activity" class="button secondary compact-button activity-toggle" type="button" hidden>Show all</button>
+            </div>
+            <p id="admin-activity-summary" class="hint activity-summary">Latest workspace changes will appear here.</p>
+            <div id="admin-activity-log" class="activity-log admin-scroll-list">No recent platform activity.</div>
+          </section>
+        </div>
+      </section>
+    </div>
 
     <div id="quick-guide-modal" class="quick-guide-modal" hidden>
       <div id="quick-guide-backdrop" class="quick-guide-backdrop"></div>
@@ -483,7 +547,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js" type="module"></script>
+    <script src="/app.js?v=20260831-6" type="module"></script>
   </body>
 </html>
 
