@@ -108,6 +108,28 @@ export async function createSubscriptionCheckoutSession({
   };
 }
 
+export async function createTopUpCheckoutSession({ topUp, customerEmail, customerId, publicAppUrl, userId }) {
+  if (!topUp?.stripePriceId) throw new Error('Stripe price is not configured for this top-up.');
+  const appUrl = String(publicAppUrl || '').replace(/\/+$/, '');
+  if (!appUrl) throw new Error('PUBLIC_APP_URL is not configured.');
+  const session = await stripeRequest('/checkout/sessions', {
+    mode: 'payment',
+    success_url: `${appUrl}?payment=topup-success`,
+    cancel_url: `${appUrl}?payment=cancel`,
+    customer: customerId || undefined,
+    customer_email: customerId ? undefined : customerEmail,
+    client_reference_id: userId || undefined,
+    line_items: [{ price: topUp.stripePriceId, quantity: 1 }],
+    metadata: {
+      purchase_type: 'topup',
+      topup_id: topUp.id,
+      customer_email: customerEmail,
+      user_id: userId || '',
+    },
+  });
+  return { id: session.id, url: session.url };
+}
+
 export async function createCustomerPortalSession({ customerId, publicAppUrl }) {
   const appUrl = String(publicAppUrl || '').replace(/\/+$/, '');
   if (!customerId) {

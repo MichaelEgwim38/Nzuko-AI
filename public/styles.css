@@ -1720,6 +1720,37 @@ pre {
   text-transform: uppercase;
 }
 
+.pricing-topups {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.pricing-topups[hidden] { display: none; }
+.pricing-topups h3 { margin: 4px 0; }
+
+.topup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.topup-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fbfcfc;
+}
+
+.topup-card strong, .topup-card small { display: block; }
+.topup-card small { margin-top: 3px; color: var(--muted); }
+
 @media (max-width: 760px) {
   body {
     background: linear-gradient(180deg, #f7fbf5, var(--bg));

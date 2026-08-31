@@ -21,7 +21,8 @@ import {
 import { backgroundTaskSecret, cookieFlags, createSessionToken, readUserSession } from '../../src/netlifyAuth.js';
 import { providerSessionUser, supabaseAuthConfig, verifySupabaseAccessToken } from '../../src/supabaseAuth.js';
 import { defaultPaidPlan, listPaidPlans, normalisePaidPlanId, paidPlanById, paidPlanByPriceId, paidPlanForCheckout, planNameForId } from '../../src/billingPlans.js';
-import { createCustomerPortalSession, createSubscriptionCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
+import { billingTopUpById, consumeAllowanceWithCredits, listBillingTopUps } from '../../src/billingTopUps.js';
+import { createCustomerPortalSession, createSubscriptionCheckoutSession, createTopUpCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from '../../src/connectors/mockWhatsApp.js';
@@ -175,6 +176,9 @@ function resetUserTrial(record = {}) {
     paidRecapsUsed: 0,
     paidVoiceNotesUsed: 0,
     paidTranscriptionMinutesUsed: 0,
+    recapTopUpCredits: 0,
+    transcriptionTopUpMinutes: 0,
+    appliedTopUpSessionIds: [],
   };
 }
 
@@ -207,6 +211,9 @@ function ensureRecordDefaults(record = {}) {
     paidRecapsUsed: Number(record.paidRecapsUsed || 0),
     paidVoiceNotesUsed: Number(record.paidVoiceNotesUsed || 0),
     paidTranscriptionMinutesUsed: Number(record.paidTranscriptionMinutesUsed ?? record.paidVoiceNotesUsed ?? 0),
+    recapTopUpCredits: Number(record.recapTopUpCredits || 0),
+    transcriptionTopUpMinutes: Number(record.transcriptionTopUpMinutes || 0),
+    appliedTopUpSessionIds: Array.isArray(record.appliedTopUpSessionIds) ? record.appliedTopUpSessionIds : [],
     suspendedAt: record.suspendedAt || null,
     suspendedBy: record.suspendedBy || '',
   };
@@ -427,10 +434,12 @@ function usageSummary(record = {}) {
       windowStartedAt: normalisedRecord.usageWindowStartedAt || null,
       recapLimit,
       recapUsed,
-      recapRemaining: Math.max(0, recapLimit - recapUsed),
+      recapRemaining: Math.max(0, recapLimit - recapUsed) + Number(normalisedRecord.recapTopUpCredits || 0),
+      recapTopUpCredits: Number(normalisedRecord.recapTopUpCredits || 0),
       transcriptionMinuteLimit,
       transcriptionMinutesUsed,
-      transcriptionMinutesRemaining: Math.max(0, transcriptionMinuteLimit - transcriptionMinutesUsed),
+      transcriptionMinutesRemaining: Math.max(0, transcriptionMinuteLimit - transcriptionMinutesUsed) + Number(normalisedRecord.transcriptionTopUpMinutes || 0),
+      transcriptionTopUpMinutes: Number(normalisedRecord.transcriptionTopUpMinutes || 0),
       planName: paidPlan.name,
     };
   }
@@ -474,10 +483,14 @@ function recordUsage(record, feature, count = 1) {
   if (activePaidPlan(record)) {
     normalisePaidUsageWindow(record);
     if (feature === 'recap') {
-      record.paidRecapsUsed = Number(record.paidRecapsUsed || 0) + count;
+      const consumed = consumeAllowanceWithCredits({ used: record.paidRecapsUsed, limit: activePaidPlan(record).monthlyRecapLimit, credits: record.recapTopUpCredits, count });
+      record.paidRecapsUsed = consumed.used;
+      record.recapTopUpCredits = consumed.credits;
     }
     if (feature === 'transcription-minute') {
-      record.paidTranscriptionMinutesUsed = Math.round((Number(record.paidTranscriptionMinutesUsed || 0) + count) * 10) / 10;
+      const consumed = consumeAllowanceWithCredits({ used: record.paidTranscriptionMinutesUsed, limit: activePaidPlan(record).monthlyTranscriptionMinuteLimit, credits: record.transcriptionTopUpMinutes, count });
+      record.paidTranscriptionMinutesUsed = Math.round(consumed.used * 10) / 10;
+      record.transcriptionTopUpMinutes = Math.round(consumed.credits * 10) / 10;
     }
     return;
   }
@@ -514,6 +527,7 @@ function billingSummary(record = {}) {
     stripeWebhookConfigured: Boolean(stripeWebhookSecret),
     currentPlan: paidPlan,
     plans,
+    topUps: listBillingTopUps().map(({ stripePriceEnv, ...topUp }) => topUp),
     usage,
     customerPortalAvailable: Boolean(normalisedRecord.stripeCustomerId),
   };
@@ -1197,6 +1211,7 @@ export default async function handler(request) {
       const planName = stripeEventPlanName(event);
       const eventType = String(event.type || '');
       const object = event.data?.object || {};
+      const isTopUpCheckout = eventType === 'checkout.session.completed' && object.metadata?.purchase_type === 'topup';
       const stripePeriod = stripeEventPeriod(event);
       const eventAt = unixToIso(event.created) || nowIso();
       let matchingUser = matchingStripeUser(users, object, email);
@@ -1216,7 +1231,23 @@ export default async function handler(request) {
         users.push(matchingUser);
       }
 
-      if (eventType === 'checkout.session.completed' || eventType === 'invoice.paid') {
+      if (isTopUpCheckout) {
+        const topUp = billingTopUpById(object.metadata?.topup_id);
+        const sessionId = stripeObjectCheckoutSessionId(object);
+        if (matchingUser && topUp && !matchingUser.appliedTopUpSessionIds.includes(sessionId)) {
+          matchingUser.recapTopUpCredits = Number(matchingUser.recapTopUpCredits || 0) + Number(topUp.recaps || 0);
+          matchingUser.transcriptionTopUpMinutes = Number(matchingUser.transcriptionTopUpMinutes || 0) + Number(topUp.transcriptionMinutes || 0);
+          matchingUser.appliedTopUpSessionIds = [sessionId, ...matchingUser.appliedTopUpSessionIds].slice(0, 100);
+          logUsageEvent(state, {
+            type: 'billing.topup_credited',
+            actorUserId: matchingUser.userId || '',
+            actorName: matchingUser.displayName || '',
+            actorEmail: matchingUser.email || email,
+            summary: `${topUp.name} credited to ${matchingUser.email || 'workspace member'}.`,
+            details: { topUpId: topUp.id, checkoutSessionId: sessionId },
+          });
+        }
+      } else if (eventType === 'checkout.session.completed' || eventType === 'invoice.paid') {
         if (matchingUser) {
           activatePaidUser(matchingUser, {
             planId,
@@ -1532,6 +1563,34 @@ export default async function handler(request) {
       });
       await saveAppState(scope, state);
       return sendJson(200, { url: portal.url });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/billing/topup-checkout') {
+      const { scope, state, userRecord } = await loadWorkspaceContext(session);
+      if (String(userRecord.subscriptionStatus || '').toLowerCase() !== 'active') {
+        return sendJson(403, { error: 'Top-ups are available to active subscribers.' });
+      }
+      const body = await readBody(request);
+      const topUp = billingTopUpById(body.topUpId);
+      if (!topUp) return sendJson(400, { error: 'Choose a valid top-up first.' });
+      if (!topUp.checkoutEnabled) return sendJson(500, { error: `${topUp.name} is not configured in Stripe yet.` });
+      const checkout = await createTopUpCheckoutSession({
+        topUp,
+        customerEmail: userRecord.email || session.email || '',
+        customerId: userRecord.stripeCustomerId || '',
+        publicAppUrl: publicAppUrl || requestUrl.origin,
+        userId: userRecord.userId || session.userId || '',
+      });
+      logUsageEvent(state, {
+        type: 'billing.topup_checkout_started',
+        actorUserId: session.userId || '',
+        actorName: sessionOwnerName(session),
+        actorEmail: session.email || '',
+        summary: `${sessionOwnerName(session)} started checkout for ${topUp.name}.`,
+        details: { topUpId: topUp.id, checkoutSessionId: checkout.id },
+      });
+      await saveAppState(scope, state);
+      return sendJson(200, { url: checkout.url });
     }
 
     if (request.method === 'GET' && pathname === '/api/admin/billing') {

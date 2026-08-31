@@ -247,6 +247,23 @@ function renderBillingPlans(status = {}) {
   const trialRow = $('#pricing-trial-row');
   const plans = Array.isArray(billing.plans) ? billing.plans : [];
   const usage = billing.usage || {};
+  const topUpSection = $('#pricing-topups');
+  const topUpContainer = $('#pricing-topup-cards');
+  const topUpBalance = $('#topup-balance');
+
+  if (topUpSection) topUpSection.hidden = !trial.isSubscribed;
+  if (topUpContainer && trial.isSubscribed) {
+    const topUps = Array.isArray(billing.topUps) ? billing.topUps : [];
+    topUpContainer.innerHTML = topUps.map((topUp) => `
+      <article class="topup-card">
+        <div><strong>${escapeHtml(topUp.name || '')}</strong><small>${escapeHtml(topUp.priceLabel || '')} one-time payment</small></div>
+        <button class="button compact-button" type="button" data-topup-id="${escapeHtml(topUp.id || '')}" ${topUp.checkoutEnabled ? '' : 'disabled'}>Buy</button>
+      </article>
+    `).join('');
+  }
+  if (topUpBalance && trial.isSubscribed) {
+    topUpBalance.textContent = `Available top-ups: ${usage.recapTopUpCredits || 0} reports and ${usage.transcriptionTopUpMinutes || 0} transcription minutes.`;
+  }
 
   if (manageButton) {
     manageButton.hidden = !billing.customerPortalAvailable;
@@ -566,7 +583,22 @@ async function openBillingPortal() {
   window.location.href = payload.url;
 }
 
+async function startTopUpCheckout(topUpId) {
+  showUpgradeNote();
+  setPricingOpen(false);
+  const payload = await api('/api/billing/topup-checkout', {
+    method: 'POST',
+    body: JSON.stringify({ topUpId }),
+  });
+  window.location.href = payload.url;
+}
+
 async function handlePlanAction(event) {
+  const topUpButton = event.target.closest('[data-topup-id]');
+  if (topUpButton) {
+    await startTopUpCheckout(topUpButton.dataset.topupId);
+    return;
+  }
   const button = event.target.closest('[data-plan-action]');
   if (!button) return;
   const action = button.dataset.planAction;
@@ -1332,6 +1364,7 @@ $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
+$('#pricing-topup-cards')?.addEventListener('click', handlePlanAction);
 document.querySelectorAll('[data-billing-interval]').forEach((button) => {
   if (!button.classList.contains('billing-interval-option')) return;
   button.addEventListener('click', () => {
