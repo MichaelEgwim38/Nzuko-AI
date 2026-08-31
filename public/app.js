@@ -870,7 +870,7 @@ function renderWorkspacePurposeSummary() {
   const template = workspaceTemplates[currentWorkspaceTemplate];
   const name = $('#workspace-purpose-name');
   const heroIcon = $('#dashboard-purpose-icon');
-  if (name) name.textContent = template?.name || 'Choose your workspace purpose';
+  if (name) name.textContent = template?.name || 'Choose your Nzuko Mode';
   if (heroIcon) heroIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
 }
 
