@@ -39,6 +39,7 @@ import {
 } from '../../src/connectors/waha.js';
 import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
 import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
+import { applyApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
@@ -79,6 +80,7 @@ function webhookToken(scope = legacySharedScope) {
 function publicSettings(settings) {
   return {
     ...settings,
+    approvedGroups: normaliseApprovedGroups(settings),
     wahaApiKey: settings.wahaApiKey ? 'configured' : '',
   };
 }
@@ -1082,17 +1084,18 @@ async function captureMappedWahaMessage({ message, requestUrl, settings, scope }
 }
 
 async function captureApprovedWebhookPayload({ payload, requestUrl, settings, scope }) {
+  const groupId = approvedGroupChatId(payload) || settings.approvedGroupId;
   if (isVoiceMedia(payload)) {
     await saveCapturedMessage(scope, {
       ...buildPendingVoiceNote({ payload, reason: 'transcription queued in background' }),
-      groupId: settings.approvedGroupId,
+      groupId,
     });
     await enqueueVoiceNoteProcessing({
       requestUrl,
       scope,
       payload: {
         ...payload,
-        groupId: settings.approvedGroupId,
+        groupId,
       },
     });
     return;
@@ -1102,7 +1105,7 @@ async function captureApprovedWebhookPayload({ payload, requestUrl, settings, sc
   if (body) {
     await saveCapturedMessage(scope, {
       id: payload.id?._serialized || payload.id || `message-${Date.now()}`,
-      groupId: settings.approvedGroupId,
+      groupId,
       from: messageSender(payload),
       body,
       timestamp: payload.timestamp || Date.now(),
@@ -1369,12 +1372,13 @@ export default async function handler(request) {
         legacyShared: scope === legacySharedScope,
       };
       state.settings = managedSettings(state.settings, webhookWorkspace);
-      const approvedGroupId = state.settings.approvedGroupId;
+      const approvedGroups = normaliseApprovedGroups(state.settings);
+      const approvedGroupIds = new Set(approvedGroups.map((group) => group.id));
       const chatId = approvedGroupChatId(payload);
       state.webhookStats.received += 1;
       state.webhookStats.lastReceivedAt = new Date().toISOString();
 
-      if (chatId === approvedGroupId) {
+      if (approvedGroupIds.has(chatId)) {
         state.webhookStats.matchedApprovedGroup += 1;
         state.webhookStats.lastMatchedAt = new Date().toISOString();
         if (isVoiceMedia(payload)) {
@@ -1408,10 +1412,10 @@ export default async function handler(request) {
         actorUserId: '',
         actorName: '',
         actorEmail: '',
-        summary: chatId === approvedGroupId ? 'Captured an approved-group WhatsApp message.' : 'Ignored a WhatsApp webhook outside the approved group.',
+        summary: approvedGroupIds.has(chatId) ? 'Captured an approved-group WhatsApp message.' : 'Ignored a WhatsApp webhook outside the approved groups.',
         details: {
           chatId,
-          approvedGroupId,
+          approvedGroupIds: [...approvedGroupIds],
         },
       });
 
@@ -1421,7 +1425,7 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/status') {
       const context = await loadWorkspaceContext(session);
-      const { scope, state, trial, ownerSummary, workspace } = context;
+      const { scope, state, trial, ownerSummary, workspace, userRecord } = context;
       const capturedCount = await countCapturedMessages(scope, { groupId: state.settings.approvedGroupId });
       return sendJson(200, {
         app: 'Nzuko AI',
@@ -1435,6 +1439,10 @@ export default async function handler(request) {
         userScoped: !workspace?.legacyShared,
         workspace,
         managedWahaConnection: Boolean(managedWahaBaseUrl),
+        groupAccess: {
+          limit: groupLimitForPlan(userRecord.planId),
+          approvedCount: normaliseApprovedGroups(state.settings).length,
+        },
         draftReady: Boolean(state.currentDraft),
         auditCount: state.auditLog.length,
         capturedCount,
@@ -1836,6 +1844,7 @@ export default async function handler(request) {
       });
       state.settings.approvedGroupId = '';
       state.settings.approvedGroupName = '';
+      state.settings.approvedGroups = [];
       state.currentDraft = null;
       clearSharedOwner(state);
       logUsageEvent(state, {
@@ -1887,8 +1896,15 @@ export default async function handler(request) {
     if (request.method === 'POST' && pathname === '/api/settings') {
       const body = await readBody(request);
       const context = await loadWorkspaceContext(session);
-      const { scope, state } = context;
+      const { scope, state, userRecord } = context;
       const previousSettings = { ...state.settings };
+      const requestedGroups = body.approvedGroups === undefined
+        ? normaliseApprovedGroups(state.settings)
+        : normaliseApprovedGroups({ approvedGroups: body.approvedGroups });
+      const groupLimit = groupLimitForPlan(userRecord.planId);
+      if (requestedGroups.length > groupLimit) {
+        return sendJson(403, { error: `${planNameForId(userRecord.planId)} supports up to ${groupLimit} WhatsApp group${groupLimit === 1 ? '' : 's'}.` });
+      }
       state.settings = {
         ...managedSettings(state.settings, context.workspace),
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
@@ -1902,6 +1918,14 @@ export default async function handler(request) {
         workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
         workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
       };
+      state.settings = applyApprovedGroups(state.settings, requestedGroups);
+      if (body.approvedGroupId) {
+        const selected = requestedGroups.find((group) => group.id === String(body.approvedGroupId));
+        if (selected) {
+          state.settings.approvedGroupId = selected.id;
+          state.settings.approvedGroupName = selected.name;
+        }
+      }
       if (Boolean(previousSettings.consentConfirmed) !== Boolean(state.settings.consentConfirmed)) {
         logUsageEvent(state, {
           type: 'workspace.consent_updated',

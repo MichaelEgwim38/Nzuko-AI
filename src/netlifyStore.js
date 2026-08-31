@@ -71,6 +71,9 @@ export function defaultSettings() {
   return {
     approvedGroupId: process.env.APPROVED_GROUP_ID || '',
     approvedGroupName: process.env.APPROVED_GROUP_NAME || '',
+    approvedGroups: process.env.APPROVED_GROUP_ID
+      ? [{ id: process.env.APPROVED_GROUP_ID, name: process.env.APPROVED_GROUP_NAME || process.env.APPROVED_GROUP_ID }]
+      : [],
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
     retentionDays: Number(process.env.RETENTION_DAYS || 14),
     postingMode: 'review-first',

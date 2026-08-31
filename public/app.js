@@ -2,6 +2,8 @@ import { browserSupabase } from './supabase-browser.js';
 
 const $ = (selector) => document.querySelector(selector);
 let currentApprovedGroupId = '';
+let currentApprovedGroups = [];
+let currentGroupLimit = 1;
 let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
@@ -716,9 +718,11 @@ async function loadStatus() {
   renderWorkspaceStatus(status);
   renderBillingPlans(status);
   currentApprovedGroupId = status.settings.approvedGroupId || '';
+  currentApprovedGroups = Array.isArray(status.settings.approvedGroups) ? status.settings.approvedGroups : [];
+  currentGroupLimit = Number(status.groupAccess?.limit || 1);
   $('#group-name').value = status.settings.approvedGroupName || '';
-  $('#connection-summary-status').textContent = status.settings.approvedGroupName
-    ? `Group: ${status.settings.approvedGroupName}`
+  $('#connection-summary-status').textContent = currentApprovedGroups.length
+    ? `${currentApprovedGroups.length} of ${currentGroupLimit} groups`
     : 'Setup required';
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
@@ -768,6 +772,7 @@ function setWorkflowSelection(type) {
 function settingsPayload(extra = {}) {
   const payload = {
     approvedGroupName: $('#group-name').value.trim(),
+    approvedGroups: currentApprovedGroups,
     consentConfirmed: $('#consent-confirmed').checked,
     connectorMode: $('#connector-mode').value,
     transcribeLanguage: $('#transcribe-language').value,
@@ -836,6 +841,7 @@ async function switchWahaUser() {
   try {
     const payload = await api('/api/waha/logout', { method: 'POST', body: '{}' });
     currentApprovedGroupId = '';
+    currentApprovedGroups = [];
     $('#group-name').value = '';
     $('#group-list').textContent = 'WhatsApp group not loaded yet.';
     $('#qr-box').textContent = 'Session ended. Start the session again, show the QR on the dashboard screen, and let the next person scan from WhatsApp Linked Devices.';
@@ -845,6 +851,7 @@ async function switchWahaUser() {
       body: JSON.stringify(settingsPayload({
         approvedGroupId: '',
         approvedGroupName: '',
+        approvedGroups: [],
       })),
     });
     await loadStatus();
@@ -883,25 +890,26 @@ async function loadGroups() {
 
     $('#group-list').innerHTML = payload.groups
       .map((group) => {
+        const approved = currentApprovedGroups.some((entry) => entry.id === group.id);
         const selected = group.id === currentApprovedGroupId;
         return `
         <button
           type="button"
-          class="group-option${selected ? ' selected' : ''}"
+          class="group-option${approved ? ' selected' : ''}"
           data-group-id="${escapeHtml(group.id)}"
           data-group-name="${escapeHtml(group.name)}"
-          aria-pressed="${selected ? 'true' : 'false'}"
+          aria-pressed="${approved ? 'true' : 'false'}"
         >
           <span>
             <strong>${escapeHtml(group.name)}</strong>
             <small>${escapeHtml(group.id)}${group.memberCount ? ` &middot; ${group.memberCount} members` : ''}</small>
           </span>
-          <em>${selected ? 'Selected' : 'Select group'}</em>
+          <em>${selected ? 'Active' : approved ? 'Added' : 'Add group'}</em>
         </button>
       `;
       })
       .join('');
-    setHintMessage('waha-status', `Loaded ${payload.groups.length} WhatsApp group chat(s). Choose the one group you want to summarize.`);
+    setHintMessage('waha-status', `Loaded ${payload.groups.length} WhatsApp group chat(s). Your plan allows ${currentGroupLimit}.`);
   } catch (error) {
     setHintMessage('waha-status', `Group load failed: ${error.message}`);
   }
@@ -911,40 +919,69 @@ async function chooseGroup(event) {
   const button = event.target.closest('.group-option');
   if (!button) return;
 
+  const alreadyApproved = currentApprovedGroups.some((group) => group.id === button.dataset.groupId);
+  if (!alreadyApproved && currentApprovedGroups.length >= currentGroupLimit) {
+    setHintMessage('waha-status', `Your plan allows ${currentGroupLimit} WhatsApp group${currentGroupLimit === 1 ? '' : 's'}. Upgrade or remove a group first.`);
+    return;
+  }
+  const approvedGroups = alreadyApproved
+    ? currentApprovedGroups
+    : [...currentApprovedGroups, { id: button.dataset.groupId, name: button.dataset.groupName }];
+
   const payload = await api('/api/settings', {
     method: 'POST',
     body: JSON.stringify(settingsPayload({
       approvedGroupId: button.dataset.groupId,
       approvedGroupName: button.dataset.groupName,
+      approvedGroups,
     })),
   });
   currentApprovedGroupId = payload.settings.approvedGroupId;
+  currentApprovedGroups = payload.settings.approvedGroups || [];
   $('#group-name').value = payload.settings.approvedGroupName;
   document.querySelectorAll('.group-option').forEach((option) => {
-    const selected = option.dataset.groupId === payload.settings.approvedGroupId;
-    option.classList.toggle('selected', selected);
-    option.setAttribute('aria-pressed', selected ? 'true' : 'false');
-    option.querySelector('em').textContent = selected ? 'Selected' : 'Select group';
+    const approved = currentApprovedGroups.some((group) => group.id === option.dataset.groupId);
+    const active = option.dataset.groupId === payload.settings.approvedGroupId;
+    option.classList.toggle('selected', approved);
+    option.setAttribute('aria-pressed', approved ? 'true' : 'false');
+    option.querySelector('em').textContent = active ? 'Active' : approved ? 'Added' : 'Add group';
   });
   collapseGroupList(payload.settings);
-  setHintMessage('waha-status', `Selected group: ${payload.settings.approvedGroupName}.`);
+  setHintMessage('waha-status', `Active report group: ${payload.settings.approvedGroupName}. ${currentApprovedGroups.length} of ${currentGroupLimit} groups connected.`);
 }
 
 function collapseGroupList(settings) {
-  if (!settings.approvedGroupId) {
+  const groups = Array.isArray(settings.approvedGroups) ? settings.approvedGroups : currentApprovedGroups;
+  if (!groups.length) {
     $('#group-list').textContent = 'No approved group selected yet.';
     return;
   }
-  $('#group-list').innerHTML = `
+  $('#group-list').innerHTML = groups.map((group) => `
     <div class="selected-group">
       <span>
-        <strong>Selected group</strong>
-        <small>${escapeHtml(settings.approvedGroupName)} &middot; ${escapeHtml(settings.approvedGroupId)}</small>
+        <strong>${escapeHtml(group.name)}${group.id === settings.approvedGroupId ? ' · Active' : ''}</strong>
+        <small>${escapeHtml(group.id)}</small>
       </span>
-      <button id="change-group" type="button" class="button secondary">Choose another group</button>
+      <button type="button" class="button secondary compact-button remove-approved-group" data-group-id="${escapeHtml(group.id)}">Remove</button>
     </div>
-  `;
+  `).join('') + '<button id="change-group" type="button" class="button secondary">Manage WhatsApp groups</button>';
   $('#change-group').addEventListener('click', loadGroups);
+  document.querySelectorAll('.remove-approved-group').forEach((button) => button.addEventListener('click', removeApprovedGroup));
+}
+
+async function removeApprovedGroup(event) {
+  const groupId = event.currentTarget.dataset.groupId;
+  const approvedGroups = currentApprovedGroups.filter((group) => group.id !== groupId);
+  const nextActive = approvedGroups.find((group) => group.id === currentApprovedGroupId) || approvedGroups[0] || { id: '', name: '' };
+  const payload = await api('/api/settings', {
+    method: 'POST',
+    body: JSON.stringify(settingsPayload({ approvedGroups, approvedGroupId: nextActive.id, approvedGroupName: nextActive.name })),
+  });
+  currentApprovedGroups = payload.settings.approvedGroups || [];
+  currentApprovedGroupId = payload.settings.approvedGroupId || '';
+  $('#group-name').value = payload.settings.approvedGroupName || '';
+  collapseGroupList(payload.settings);
+  setHintMessage('waha-status', `${currentApprovedGroups.length} of ${currentGroupLimit} WhatsApp groups connected.`);
 }
 
 async function pullWahaMessages() {
