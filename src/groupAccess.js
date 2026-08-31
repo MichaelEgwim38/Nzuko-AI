@@ -13,6 +13,10 @@ export function groupLimitForPlan(planId = 'trial') {
   return String(planId || '').toLowerCase() === 'pro' ? 5 : 1;
 }
 
+export function entitledApprovedGroups(settings = {}, planId = 'trial') {
+  return normaliseApprovedGroups(settings).slice(0, groupLimitForPlan(planId));
+}
+
 export function applyApprovedGroups(settings = {}, approvedGroups = []) {
   const groups = normaliseApprovedGroups({ approvedGroups });
   const active = groups.find((group) => group.id === settings.approvedGroupId) || groups[0] || null;

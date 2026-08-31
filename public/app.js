@@ -299,7 +299,7 @@ function renderBillingPlans(status = {}) {
               <p class="plan-card-price">${escapeHtml(plan.priceLabel || '')}</p>
               <h3>${escapeHtml(plan.name || '')}</h3>
             </div>
-            ${isCurrent ? '<span class="plan-badge">Active</span>' : ''}
+            ${isCurrent ? '<span class="plan-badge">Active</span>' : plan.recommended ? '<span class="plan-badge">Best value</span>' : ''}
           </div>
           <p class="plan-card-summary">${escapeHtml(plan.summary || '')}</p>
           <ul class="plan-feature-list">

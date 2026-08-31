@@ -20,6 +20,7 @@ const paidPlanDefinitions = [
   {
     id: 'pro',
     name: 'Pro',
+    recommended: true,
     priceLabel: '£29/month',
     amountCents: 2900,
     groupLimit: 5,

@@ -39,7 +39,7 @@ import {
 } from '../../src/connectors/waha.js';
 import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
 import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
-import { applyApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
+import { applyApprovedGroups, entitledApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
@@ -1372,7 +1372,8 @@ export default async function handler(request) {
         legacyShared: scope === legacySharedScope,
       };
       state.settings = managedSettings(state.settings, webhookWorkspace);
-      const approvedGroups = normaliseApprovedGroups(state.settings);
+      const workspaceOwnerAccess = await loadWorkspaceOwnerAccess(state);
+      const approvedGroups = entitledApprovedGroups(state.settings, workspaceOwnerAccess?.record?.planId || 'trial');
       const approvedGroupIds = new Set(approvedGroups.map((group) => group.id));
       const chatId = approvedGroupChatId(payload);
       state.webhookStats.received += 1;
@@ -1435,7 +1436,7 @@ export default async function handler(request) {
           displayName: session.displayName || session.name || '',
         },
         connector: state.settings.connectorMode,
-        settings: publicSettings(state.settings),
+        settings: publicSettings(applyApprovedGroups(state.settings, entitledApprovedGroups(state.settings, userRecord.planId))),
         userScoped: !workspace?.legacyShared,
         workspace,
         managedWahaConnection: Boolean(managedWahaBaseUrl),
