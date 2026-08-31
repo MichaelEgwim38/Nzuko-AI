@@ -12,23 +12,43 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-31" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-32" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
-      <div class="brand-lockup hero-brand" aria-label="Nzuko AI">
-        <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
-        <div class="brand-lockup-copy">
-          <div class="brand-lockup-wordmark"><span class="brand-word">Nzuko</span> <span class="brand-ai">AI</span></div>
-          <div class="brand-lockup-tagline">MEETING MINUTES. <span>COMMUNITY.</span> CLARITY.</div>
-        </div>
-      </div>
-      <section class="login-stage" aria-label="Nzuko AI sign-in">
-        <section class="auth-card">
-          <div class="auth-brand" aria-hidden="true">
-            <img class="auth-brand-icon" src="/assets/nzuko-mark.svg" alt="" />
+      <header class="login-header">
+        <div class="brand-lockup login-header-brand" aria-label="Nzuko AI">
+          <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
+          <div class="brand-lockup-copy">
+            <div class="brand-lockup-wordmark"><span class="brand-word">Nzuko</span> <span class="brand-ai">AI</span></div>
+            <div class="brand-lockup-tagline">CONVERSATIONS. ACTIONS. CLARITY.</div>
           </div>
-          <h1 class="login-title">Sign in to your workspace</h1>
+        </div>
+        <div class="login-header-actions">
+          <button id="login-pricing" class="login-header-link" type="button">Pricing</button>
+          <a class="login-header-cta" href="#login-auth">Get started free</a>
+        </div>
+      </header>
+
+      <section class="login-stage" aria-label="Nzuko AI overview and sign-in">
+        <div class="login-aside">
+          <p class="login-aside-kicker">Your conversations, turned into progress</p>
+          <h1>Every conversation can become <span>clear action.</span></h1>
+          <p class="login-aside-copy">Nzuko AI transforms messages and voice notes into structured reports, decisions, responsibilities and follow-ups—adapted to your Nzuko Mode.</p>
+          <div class="login-value-line" aria-label="Nzuko AI capabilities">
+            <span>WhatsApp</span>
+            <span>Telegram</span>
+            <span>Voice notes</span>
+            <span>Team reports</span>
+          </div>
+          <a class="login-primary-cta" href="#login-auth">Start your free trial <span aria-hidden="true">→</span></a>
+          <p class="login-audience">For operations teams, field services, communities and everyday productivity.</p>
+        </div>
+
+        <section class="auth-card" id="login-auth">
+          <p class="auth-eyebrow">Start in seconds</p>
+          <h2 class="login-title">Create your Nzuko workspace</h2>
+          <p class="auth-subtitle">No card required. Continue with Google to begin your free trial.</p>
           <div id="provider-buttons" class="provider-buttons" aria-label="Social login providers">
             <button id="continue-google" class="provider-button" type="button">
               <span class="provider-icon google-icon" aria-hidden="true">
@@ -55,8 +75,8 @@
             </button>
           </div>
           <p class="auth-signin-prompt">
-            Already have an Nzuko AI account?
-            <button id="sign-in-link" class="auth-inline-link" type="button">Sign in</button>
+            Already use Nzuko AI?
+            <button id="sign-in-link" class="auth-inline-link" type="button">Continue to sign in</button>
           </p>
           <p id="login-status" class="login-status" aria-live="polite" hidden></p>
           <form
@@ -89,43 +109,20 @@
             <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
           </p>
         </section>
+      </section>
 
-        <aside class="login-aside" aria-label="Nzuko AI overview">
-          <p class="login-aside-kicker">WhatsApp meeting minutes without the mess</p>
-          <h2>Capture decisions, action items, and voice-note summaries for <span>the group you choose.</span></h2>
-          <p class="login-aside-copy">Nzuko AI listens, understands, and organizes your WhatsApp conversations so your community stays aligned and nothing gets missed.</p>
-          <div class="login-aside-points" aria-label="Nzuko AI highlights">
-            <div class="feature-row">
-              <span class="feature-icon feature-icon-summary" aria-hidden="true"></span>
-              <div>
-                <strong>Accurate summaries</strong>
-                <span>Get clear, concise meeting minutes from voice notes and messages.</span>
-              </div>
-            </div>
-            <div class="feature-row">
-              <span class="feature-icon feature-icon-action" aria-hidden="true"></span>
-              <div>
-                <strong>Action items that stick</strong>
-                <span>Extract tasks, owners, and deadlines so nothing falls through the cracks.</span>
-              </div>
-            </div>
-            <div class="feature-row">
-              <span class="feature-icon feature-icon-community" aria-hidden="true"></span>
-              <div>
-                <strong>Built for your community</strong>
-                <span>Choose the group you manage and let Nzuko AI handle the rest.</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </section>
-      <section class="login-trust" aria-label="Who Nzuko AI is built for">
-        <p class="login-trust-heading">Built for teams like yours</p>
-        <span>Healthcare operations teams</span>
-        <span>Charities &amp; community organisations</span>
-        <span>Field-service businesses</span>
-        <span>Property &amp; facilities teams</span>
-      </section>
+      <footer class="login-footer">
+        <div class="brand-lockup login-footer-brand" aria-label="Nzuko AI">
+          <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
+          <span>Nzuko AI</span>
+        </div>
+        <nav aria-label="Legal and company links">
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="mailto:egwim.michaels@gmail.com">Contact</a>
+        </nav>
+        <p>Built by Rohari Group LTD</p>
+      </footer>
     </main>
 
     <main id="purpose-screen" class="purpose-onboarding" hidden>
@@ -651,7 +648,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260901-31" type="module"></script>
+    <script src="/app.js?v=20260901-32" type="module"></script>
   </body>
 </html>
 

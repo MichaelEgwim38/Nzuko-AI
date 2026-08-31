@@ -1610,6 +1610,7 @@ $('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true))
 $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#open-pricing')?.addEventListener('click', openPricing);
+$('#login-pricing')?.addEventListener('click', openPricing);
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#start-free-trial')?.addEventListener('click', startFreeTrial);
