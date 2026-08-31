@@ -767,6 +767,12 @@ async function loadStatus() {
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   setWorkflowSelection(status.settings.workflowType || 'meeting-minutes');
   $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
+  $('#outbound-webhook-url').value = status.settings.outboundWebhookUrl || '';
+  $('#outbound-webhook-enabled').checked = Boolean(status.settings.outboundWebhookEnabled);
+  $('#outbound-webhook-secret').value = '';
+  $('#outbound-webhook-secret').placeholder = status.settings.outboundWebhookSecret
+    ? 'Signing secret configured'
+    : 'Create a strong secret for signature verification';
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
   $('#waha-base-url').readOnly = managedWahaWorkspace;
@@ -817,6 +823,8 @@ function settingsPayload(extra = {}) {
     transcribeLanguage: $('#transcribe-language').value,
     workflowType: selectedWorkflowType(),
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
+    outboundWebhookUrl: $('#outbound-webhook-url')?.value.trim() || '',
+    outboundWebhookEnabled: Boolean($('#outbound-webhook-enabled')?.checked),
     retentionDays: 14,
     ...extra,
   };
@@ -828,6 +836,8 @@ function settingsPayload(extra = {}) {
       payload.wahaApiKey = apiKey;
     }
   }
+  const outboundSecret = $('#outbound-webhook-secret')?.value;
+  if (outboundSecret) payload.outboundWebhookSecret = outboundSecret;
   return payload;
 }
 
@@ -870,6 +880,24 @@ async function importConversationFile(event) {
     setHintMessage('import-status', `Import failed: ${error.message}`);
   } finally {
     event.target.value = '';
+  }
+}
+
+async function saveIntegration() {
+  const payload = await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+  setHintMessage('integration-status', payload.settings.outboundWebhookEnabled
+    ? 'Integration saved and approved-report delivery is enabled.'
+    : 'Integration saved. Delivery remains disabled until you enable it.');
+  await loadStatus();
+}
+
+async function testIntegration() {
+  try {
+    await saveIntegration();
+    const payload = await api('/api/integrations/webhook/test', { method: 'POST', body: '{}' });
+    setHintMessage('integration-status', `Test delivered successfully (HTTP ${payload.status}).`);
+  } catch (error) {
+    setHintMessage('integration-status', `Test failed: ${error.message}`);
   }
 }
 
@@ -1349,6 +1377,8 @@ async function handleBillingAdminAction(event) {
 
 $('#save-settings').addEventListener('click', saveSettings);
 $('#conversation-file')?.addEventListener('change', importConversationFile);
+$('#save-integration')?.addEventListener('click', saveIntegration);
+$('#test-integration')?.addEventListener('click', testIntegration);
 $('#save-workflow').addEventListener('click', saveWorkflow);
 $('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
 $('#check-waha').addEventListener('click', checkWaha);

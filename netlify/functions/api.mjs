@@ -41,6 +41,7 @@ import {
 import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
 import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
 import { applyApprovedGroups, entitledApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
+import { deliverOutboundWebhook, validateOutboundWebhookUrl } from '../../src/outboundWebhook.js';
 
 const adminSessionMaxAgeSeconds = Number(process.env.ADMIN_SESSION_MAX_AGE_SECONDS || 60 * 60 * 24 * 7);
 const publicAppUrl = String(process.env.PUBLIC_APP_URL || '').replace(/\/+$/, '');
@@ -83,6 +84,7 @@ function publicSettings(settings) {
     ...settings,
     approvedGroups: normaliseApprovedGroups(settings),
     wahaApiKey: settings.wahaApiKey ? 'configured' : '',
+    outboundWebhookSecret: settings.outboundWebhookSecret ? 'configured' : '',
   };
 }
 
@@ -1978,6 +1980,15 @@ export default async function handler(request) {
           : state.settings.transcribeLanguage,
         workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
         workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
+        outboundWebhookUrl: body.outboundWebhookUrl === undefined
+          ? state.settings.outboundWebhookUrl || ''
+          : validateOutboundWebhookUrl(body.outboundWebhookUrl),
+        outboundWebhookSecret: body.outboundWebhookSecret
+          ? String(body.outboundWebhookSecret).trim().slice(0, 256)
+          : state.settings.outboundWebhookSecret || '',
+        outboundWebhookEnabled: body.outboundWebhookEnabled === undefined
+          ? Boolean(state.settings.outboundWebhookEnabled)
+          : Boolean(body.outboundWebhookEnabled),
       };
       state.settings = applyApprovedGroups(state.settings, requestedGroups);
       if (body.approvedGroupId) {
@@ -2004,6 +2015,20 @@ export default async function handler(request) {
       }
       await saveAppState(scope, state);
       return sendJson(200, { settings: publicSettings(state.settings) });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/integrations/webhook/test') {
+      const context = await loadWorkspaceContext(session);
+      const { state, workspace } = context;
+      const result = await deliverOutboundWebhook({
+        url: state.settings.outboundWebhookUrl,
+        secret: state.settings.outboundWebhookSecret,
+        event: 'integration.test',
+        data: { workspaceId: workspace.id, workspaceName: workspace.name, message: 'Nzuko AI webhook test successful.' },
+      });
+      if (!result.configured) return sendJson(400, { error: 'Save a webhook URL first.' });
+      if (!result.delivered) return sendJson(502, { error: result.error || `Webhook returned HTTP ${result.status}.` });
+      return sendJson(200, { ok: true, status: result.status });
     }
 
     if (request.method === 'POST' && pathname === '/api/waha/pull') {
@@ -2229,7 +2254,7 @@ export default async function handler(request) {
 
     if (request.method === 'POST' && pathname === '/api/recap/approve') {
       const context = await loadWorkspaceContext(session);
-      const { scope, state, trial, ownerSummary } = context;
+      const { scope, state, trial, ownerSummary, workspace } = context;
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       if (!state.currentDraft) {
@@ -2265,6 +2290,17 @@ export default async function handler(request) {
         recap: state.currentDraft.recap,
         posted,
       };
+      if (state.settings.outboundWebhookEnabled && state.settings.outboundWebhookUrl) {
+        auditEntry.integrationDelivery = await deliverOutboundWebhook({
+          url: state.settings.outboundWebhookUrl,
+          secret: state.settings.outboundWebhookSecret,
+          event: 'report.approved',
+          data: {
+            workspace: { id: workspace.id, name: workspace.name },
+            report: { id: auditEntry.id, approvedAt: auditEntry.approvedAt, groupName: auditEntry.groupName, recap: auditEntry.recap },
+          },
+        });
+      }
       state.auditLog.unshift(auditEntry);
       state.currentDraft = null;
       logUsageEvent(state, {
