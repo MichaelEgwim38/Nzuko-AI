@@ -29,26 +29,31 @@ let telegramPollTimer = null;
 const workspaceTemplates = {
   'healthcare-operations': {
     name: 'Healthcare operations',
+    description: 'Staff handovers, actions and operational escalations',
     workflowType: 'shift-handover',
     instructions: '',
   },
   'property-facilities': {
     name: 'Property & facilities',
+    description: 'Faults, site visits, owners and follow-ups',
     workflowType: 'custom',
     instructions: 'Identify the site or asset, reported fault, urgency or safety concern, work completed, evidence provided, responsible person, access requirement, deadline and unresolved follow-up.',
   },
   'field-service': {
     name: 'Field service',
+    description: 'Job updates, blockers and next steps',
     workflowType: 'project-update',
     instructions: '',
   },
   'community-charity': {
     name: 'Community & charity',
+    description: 'Minutes, decisions, volunteers and actions',
     workflowType: 'meeting-minutes',
     instructions: '',
   },
   personal: {
     name: 'Personal productivity',
+    description: 'Commitments, reminders and follow-ups',
     workflowType: 'custom',
     instructions: 'Identify commitments, reminders, appointments, promised follow-ups, owners, deadlines and unresolved personal actions.',
   },
@@ -659,6 +664,7 @@ async function api(path, options = {}) {
 
 function showLogin(message = '') {
   $('#login-screen').hidden = false;
+  $('#purpose-screen').hidden = true;
   $('#app-shell').hidden = true;
   const status = $('#login-status');
   if (status) {
@@ -681,7 +687,21 @@ function showPilotInterest() {
 
 function showApp() {
   $('#login-screen').hidden = true;
+  $('#purpose-screen').hidden = true;
   $('#app-shell').hidden = false;
+}
+
+function setPurposeScreenOpen(isOpen) {
+  const purposeScreen = $('#purpose-screen');
+  const appShell = $('#app-shell');
+  if (!purposeScreen || !appShell) return;
+  purposeScreen.hidden = !isOpen;
+  appShell.hidden = isOpen;
+  $('#purpose-back').hidden = !currentWorkspaceTemplate;
+  if (isOpen) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.requestAnimationFrame(() => $('#purpose-heading')?.focus?.());
+  }
 }
 
 function ensureSupabase() {
@@ -801,6 +821,8 @@ async function loadStatus() {
   $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
   currentWorkspaceTemplate = status.settings.workspaceTemplate || '';
   renderWorkspaceTemplate();
+  renderWorkspacePurposeSummary();
+  setPurposeScreenOpen(!currentWorkspaceTemplate);
   $('#outbound-webhook-url').value = status.settings.outboundWebhookUrl || '';
   $('#outbound-webhook-enabled').checked = Boolean(status.settings.outboundWebhookEnabled);
   $('#outbound-webhook-secret').value = '';
@@ -839,6 +861,14 @@ function renderWorkspaceTemplate() {
   });
 }
 
+function renderWorkspacePurposeSummary() {
+  const template = workspaceTemplates[currentWorkspaceTemplate];
+  const name = $('#workspace-purpose-name');
+  const description = $('#workspace-purpose-description');
+  if (name) name.textContent = template?.name || 'Choose your workspace purpose';
+  if (description) description.textContent = template?.description || 'Tell Nzuko AI what this workspace is used for.';
+}
+
 async function chooseWorkspaceTemplate(event) {
   const templateId = event.currentTarget.dataset.workspaceTemplate;
   const template = workspaceTemplates[templateId];
@@ -849,7 +879,10 @@ async function chooseWorkspaceTemplate(event) {
   renderWorkspaceTemplate();
   try {
     await saveWorkflow();
+    renderWorkspacePurposeSummary();
     setHintMessage('workflow-status', `${template.name} selected. Your reports are now configured for this workspace.`);
+    setPurposeScreenOpen(false);
+    window.location.hash = 'connect';
   } catch (error) {
     setHintMessage('workflow-status', error.message);
   }
@@ -1545,6 +1578,8 @@ $('#test-integration')?.addEventListener('click', testIntegration);
 $('#save-workflow').addEventListener('click', saveWorkflow);
 $('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
 document.querySelectorAll('.purpose-card').forEach((card) => card.addEventListener('click', chooseWorkspaceTemplate));
+$('#change-workspace-purpose')?.addEventListener('click', () => setPurposeScreenOpen(true));
+$('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false));
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
