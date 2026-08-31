@@ -272,7 +272,7 @@ function renderBillingPlans(status = {}) {
       ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
       : `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
   } else if (trial.canUseApp) {
-    summary.textContent = `You are on the free trial. Choose Starter or Pro whenever you are ready to subscribe.`;
+    summary.textContent = 'You are on the free trial. Choose Starter for regular team reporting or Pro for busy daily operations. No per-seat charge.';
   } else {
     summary.textContent = 'Your trial has ended. Choose a paid plan in Stripe to keep using the workspace.';
   }
