@@ -2237,7 +2237,7 @@ pre {
 }
 
 .purpose-card {
-  min-height: 152px;
+  min-height: 190px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2275,19 +2275,17 @@ pre {
 }
 
 .purpose-icon {
-  width: 34px;
-  height: 34px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 11px;
-  background: #edf8e5;
-  color: var(--accent-dark);
-  font-weight: 900;
+  width: 64px;
+  height: 64px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 8px rgba(20, 55, 26, 0.12));
+  transition: transform 160ms ease, filter 160ms ease;
 }
 
 .purpose-card.selected .purpose-icon {
-  background: var(--accent);
-  color: #13200d;
+  transform: scale(1.06);
+  filter: drop-shadow(0 9px 10px rgba(58, 126, 40, 0.2));
 }
 
 .purpose-customise {

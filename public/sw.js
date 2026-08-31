@@ -1,14 +1,19 @@
-const CACHE_NAME = 'nzuko-ai-shell-v20';
+const CACHE_NAME = 'nzuko-ai-shell-v22';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/styles.css?v=20260831-20',
-  '/app.js?v=20260831-20',
+  '/styles.css?v=20260831-22',
+  '/app.js?v=20260831-22',
   '/supabase-browser.js',
   '/importText.js',
   '/manifest.webmanifest',
   '/offline.html',
   '/assets/nzuko-mark.svg',
+  '/assets/purpose/healthcare-operations.png',
+  '/assets/purpose/property-facilities.png',
+  '/assets/purpose/field-service.png',
+  '/assets/purpose/community-charity.png',
+  '/assets/purpose/personal-productivity.png',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
 ];
