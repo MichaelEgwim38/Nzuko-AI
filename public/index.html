@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260831-18" />
+    <link rel="stylesheet" href="/styles.css?v=20260831-19" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -185,22 +185,52 @@
             <div class="workspace-stack">
               <section class="panel" id="workflow-setup">
                 <p class="eyebrow">Workspace purpose</p>
-                <h2>What should Nzuko AI create?</h2>
-                <p class="hint">Choose the workflow that matches this workspace. You can change it later without reconnecting WhatsApp.</p>
-                <label class="workflow-select-field">
-                  Workspace output
-                  <select id="workflow-type">
-                    <option value="meeting-minutes">Meeting Minutes — decisions, actions and open questions</option>
-                    <option value="shift-handover">Shift Handover — completed work, outstanding tasks and concerns</option>
-                    <option value="project-update">Project Update — progress, blockers and next steps</option>
-                    <option value="custom">Custom Workflow — define what the report should focus on</option>
-                  </select>
-                </label>
-                <label id="custom-workflow-field" hidden>
-                  Custom workflow instructions
-                  <textarea id="workflow-custom-instructions" rows="3" maxlength="1000" placeholder="Example: Identify customer requests, promises made, follow-up owners and due dates."></textarea>
-                </label>
-                <button id="save-workflow" class="button" type="button">Save workspace purpose</button>
+                <h2>What kind of work happens here?</h2>
+                <p class="hint">Choose one. Nzuko AI will organise reports around the needs of this workspace.</p>
+                <div class="purpose-card-grid" role="group" aria-label="Workspace type">
+                  <button class="purpose-card" type="button" data-workspace-template="healthcare-operations">
+                    <span class="purpose-icon" aria-hidden="true">+</span>
+                    <strong>Healthcare operations</strong>
+                    <small>Staff handovers, actions and operational escalations</small>
+                  </button>
+                  <button class="purpose-card" type="button" data-workspace-template="property-facilities">
+                    <span class="purpose-icon" aria-hidden="true">P</span>
+                    <strong>Property &amp; facilities</strong>
+                    <small>Faults, site visits, owners and follow-ups</small>
+                  </button>
+                  <button class="purpose-card" type="button" data-workspace-template="field-service">
+                    <span class="purpose-icon" aria-hidden="true">F</span>
+                    <strong>Field service</strong>
+                    <small>Job updates, blockers and next steps</small>
+                  </button>
+                  <button class="purpose-card" type="button" data-workspace-template="community-charity">
+                    <span class="purpose-icon" aria-hidden="true">C</span>
+                    <strong>Community &amp; charity</strong>
+                    <small>Minutes, decisions, volunteers and actions</small>
+                  </button>
+                  <button class="purpose-card" type="button" data-workspace-template="personal">
+                    <span class="purpose-icon" aria-hidden="true">1</span>
+                    <strong>Personal productivity</strong>
+                    <small>Commitments, reminders and follow-ups</small>
+                  </button>
+                </div>
+                <details class="purpose-customise">
+                  <summary>Customise the report format</summary>
+                  <label class="workflow-select-field">
+                    Report format
+                    <select id="workflow-type">
+                      <option value="meeting-minutes">Meeting Minutes — decisions, actions and open questions</option>
+                      <option value="shift-handover">Shift Handover — completed work, outstanding tasks and concerns</option>
+                      <option value="project-update">Project Update — progress, blockers and next steps</option>
+                      <option value="custom">Custom Workflow — define what the report should focus on</option>
+                    </select>
+                  </label>
+                  <label id="custom-workflow-field" hidden>
+                    Custom instructions
+                    <textarea id="workflow-custom-instructions" rows="3" maxlength="1000" placeholder="Example: Identify requests, owners, deadlines and anything requiring escalation."></textarea>
+                  </label>
+                  <button id="save-workflow" class="button" type="button">Save changes</button>
+                </details>
                 <p class="hint" id="workflow-status" hidden></p>
               </section>
 
@@ -636,7 +666,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260831-18" type="module"></script>
+    <script src="/app.js?v=20260831-19" type="module"></script>
   </body>
 </html>
 

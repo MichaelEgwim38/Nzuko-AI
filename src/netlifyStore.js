@@ -86,6 +86,7 @@ export function defaultSettings() {
     transcribeLanguage: process.env.TRANSCRIBE_LANGUAGE || 'auto',
     workflowType: 'meeting-minutes',
     workflowCustomInstructions: '',
+    workspaceTemplate: '',
     outboundWebhookUrl: '',
     outboundWebhookSecret: '',
     outboundWebhookEnabled: false,

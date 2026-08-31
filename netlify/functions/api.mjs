@@ -2065,6 +2065,11 @@ export default async function handler(request) {
           : state.settings.transcribeLanguage,
         workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
         workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
+        workspaceTemplate: body.workspaceTemplate === undefined
+          ? state.settings.workspaceTemplate || ''
+          : ['healthcare-operations', 'property-facilities', 'field-service', 'community-charity', 'personal'].includes(String(body.workspaceTemplate || ''))
+            ? String(body.workspaceTemplate)
+            : '',
         outboundWebhookUrl: body.outboundWebhookUrl === undefined
           ? state.settings.outboundWebhookUrl || ''
           : validateOutboundWebhookUrl(body.outboundWebhookUrl),

@@ -9,6 +9,7 @@ let supabaseClient = null;
 let authConfig = null;
 let managedWahaWorkspace = false;
 let currentWorkflowType = 'meeting-minutes';
+let currentWorkspaceTemplate = '';
 let latestStatus = null;
 let paymentQueryState = null;
 let adminBillingLoaded = false;
@@ -24,6 +25,34 @@ let selectedBillingInterval = 'monthly';
 let currentTelegramGroupId = '';
 let currentTelegramGroupName = '';
 let telegramPollTimer = null;
+
+const workspaceTemplates = {
+  'healthcare-operations': {
+    name: 'Healthcare operations',
+    workflowType: 'shift-handover',
+    instructions: '',
+  },
+  'property-facilities': {
+    name: 'Property & facilities',
+    workflowType: 'custom',
+    instructions: 'Identify the site or asset, reported fault, urgency or safety concern, work completed, evidence provided, responsible person, access requirement, deadline and unresolved follow-up.',
+  },
+  'field-service': {
+    name: 'Field service',
+    workflowType: 'project-update',
+    instructions: '',
+  },
+  'community-charity': {
+    name: 'Community & charity',
+    workflowType: 'meeting-minutes',
+    instructions: '',
+  },
+  personal: {
+    name: 'Personal productivity',
+    workflowType: 'custom',
+    instructions: 'Identify commitments, reminders, appointments, promised follow-ups, owners, deadlines and unresolved personal actions.',
+  },
+};
 
 function isStandaloneMode() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
@@ -770,6 +799,8 @@ async function loadStatus() {
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   setWorkflowSelection(status.settings.workflowType || 'meeting-minutes');
   $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
+  currentWorkspaceTemplate = status.settings.workspaceTemplate || '';
+  renderWorkspaceTemplate();
   $('#outbound-webhook-url').value = status.settings.outboundWebhookUrl || '';
   $('#outbound-webhook-enabled').checked = Boolean(status.settings.outboundWebhookEnabled);
   $('#outbound-webhook-secret').value = '';
@@ -798,6 +829,30 @@ async function loadStatus() {
 
 function selectedWorkflowType() {
   return $('#workflow-type')?.value || 'meeting-minutes';
+}
+
+function renderWorkspaceTemplate() {
+  document.querySelectorAll('.purpose-card').forEach((card) => {
+    const selected = card.dataset.workspaceTemplate === currentWorkspaceTemplate;
+    card.classList.toggle('selected', selected);
+    card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+}
+
+async function chooseWorkspaceTemplate(event) {
+  const templateId = event.currentTarget.dataset.workspaceTemplate;
+  const template = workspaceTemplates[templateId];
+  if (!template) return;
+  currentWorkspaceTemplate = templateId;
+  setWorkflowSelection(template.workflowType);
+  $('#workflow-custom-instructions').value = template.instructions;
+  renderWorkspaceTemplate();
+  try {
+    await saveWorkflow();
+    setHintMessage('workflow-status', `${template.name} selected. Your reports are now configured for this workspace.`);
+  } catch (error) {
+    setHintMessage('workflow-status', error.message);
+  }
 }
 
 function workflowName(type = selectedWorkflowType()) {
@@ -829,6 +884,7 @@ function settingsPayload(extra = {}) {
     transcribeLanguage: $('#transcribe-language').value,
     workflowType: selectedWorkflowType(),
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
+    workspaceTemplate: currentWorkspaceTemplate,
     outboundWebhookUrl: $('#outbound-webhook-url')?.value.trim() || '',
     outboundWebhookEnabled: Boolean($('#outbound-webhook-enabled')?.checked),
     telegramGroupId: currentTelegramGroupId,
@@ -1488,6 +1544,7 @@ $('#save-integration')?.addEventListener('click', saveIntegration);
 $('#test-integration')?.addEventListener('click', testIntegration);
 $('#save-workflow').addEventListener('click', saveWorkflow);
 $('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
+document.querySelectorAll('.purpose-card').forEach((card) => card.addEventListener('click', chooseWorkspaceTemplate));
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
