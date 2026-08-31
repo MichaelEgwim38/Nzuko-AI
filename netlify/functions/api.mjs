@@ -1701,7 +1701,7 @@ export default async function handler(request) {
       const state = await loadAppState(scope);
       match.subscriptionStatus = 'active';
       match.planId = normalisePaidPlanId(body.planId || match.planId || defaultPaidPlan()?.id);
-      match.planName = String(body.planName || match.planName || planNameForId(match.planId)).trim();
+      match.planName = String(body.planName || planNameForId(match.planId)).trim();
       match.activatedAt = nowIso();
       match.activatedBy = normaliseEmail(session.email);
       match.subscriptionEndsAt = body.subscriptionEndsAt ? String(body.subscriptionEndsAt) : match.subscriptionEndsAt;
