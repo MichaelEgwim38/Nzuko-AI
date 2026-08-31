@@ -869,10 +869,8 @@ function renderWorkspaceTemplate() {
 function renderWorkspacePurposeSummary() {
   const template = workspaceTemplates[currentWorkspaceTemplate];
   const name = $('#workspace-purpose-name');
-  const description = $('#workspace-purpose-description');
   const heroIcon = $('#dashboard-purpose-icon');
   if (name) name.textContent = template?.name || 'Choose your workspace purpose';
-  if (description) description.textContent = template?.description || 'Tell Nzuko AI what this workspace is used for.';
   if (heroIcon) heroIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
 }
 

@@ -720,57 +720,29 @@ textarea {
   position: relative;
   z-index: 2;
   width: 100%;
-  display: grid;
-  gap: 5px;
-  border: 1px solid rgba(74, 130, 65, 0.16);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 14px 16px;
-  box-shadow: 0 12px 28px rgba(27, 55, 31, 0.08);
-  backdrop-filter: blur(18px) saturate(150%);
-}
-
-.hero-purpose-kicker {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: #497249;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hero-purpose-kicker i {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #8fe03f;
-  box-shadow: 0 0 12px rgba(103, 190, 54, 0.8);
+  justify-content: center;
+  gap: 10px;
 }
 
 .hero-purpose-control strong {
   color: #182319;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.2;
 }
 
-.hero-purpose-control > span:not(.hero-purpose-kicker) {
-  color: #687269;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .hero-purpose-action {
-  justify-self: start;
   min-height: auto;
-  margin-top: 5px;
   border: 0;
   background: transparent;
   color: #386f35;
-  padding: 0;
+  padding: 2px 0;
   font-size: 12px;
   font-weight: 850;
+  text-decoration: underline;
+  text-decoration-color: rgba(56, 111, 53, 0.35);
+  text-underline-offset: 3px;
 }
 
 .hero-purpose-action:hover {
