@@ -63,7 +63,7 @@ textarea {
 }
 
 .dashboard-shell {
-  width: min(1500px, calc(100% - 24px));
+  width: min(1240px, calc(100% - 40px));
   padding: calc(18px + var(--safe-top)) var(--safe-right) calc(32px + var(--safe-bottom)) var(--safe-left);
 }
 
@@ -78,7 +78,7 @@ textarea {
 .dashboard-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  padding: 28px;
+  padding: 32px 40px 44px;
 }
 
 .mobile-quick-nav {
@@ -646,6 +646,8 @@ textarea {
   display: grid;
   align-content: start;
   gap: 14px;
+  width: min(100%, 1040px);
+  margin-inline: auto;
 }
 
 .dashboard-rail {
