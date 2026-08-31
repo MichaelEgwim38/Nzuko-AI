@@ -15,3 +15,12 @@ test('extracts common Slack or Teams JSON message fields', () => {
   assert.match(imported, /Alice - Job complete/);
   assert.match(imported, /Ben - Part still required/);
 });
+
+test('extracts formatted text from a Telegram JSON export', () => {
+  const imported = importedConversationText(JSON.stringify({ messages: [{
+    date: '2026-08-31T10:00:00',
+    from: 'Michael',
+    text: ['Order ', { type: 'bold', text: 'part PV18' }, ' today'],
+  }] }), 'result.json');
+  assert.match(imported, /Michael - Order part PV18 today/);
+});

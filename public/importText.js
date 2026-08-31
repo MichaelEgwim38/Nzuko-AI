@@ -1,10 +1,13 @@
 function messageLine(entry = {}) {
   if (typeof entry === 'string') return entry.trim();
   if (!entry || typeof entry !== 'object') return '';
-  const text = entry.text || entry.body || entry.content || entry.message || entry.subject || '';
+  const rawText = entry.text || entry.body || entry.content || entry.message || entry.subject || '';
+  const text = Array.isArray(rawText)
+    ? rawText.map((part) => typeof part === 'string' ? part : part?.text || '').join('')
+    : rawText;
   if (!text || typeof text === 'object') return '';
-  const sender = entry.sender?.name || entry.sender || entry.from?.name || entry.from || entry.user_name || entry.username || entry.author || '';
-  const timestamp = entry.timestamp || entry.created_at || entry.createdAt || entry.date || '';
+  const sender = entry.sender?.name || entry.sender || entry.from?.name || entry.from || entry.from_name || entry.user_name || entry.username || entry.author || '';
+  const timestamp = entry.timestamp || entry.created_at || entry.createdAt || entry.date || entry.date_unixtime || '';
   return [timestamp, sender, String(text).trim()].filter(Boolean).join(' - ');
 }
 
