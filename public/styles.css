@@ -21,6 +21,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -3476,5 +3480,155 @@ pre {
   .footer-install-actions img {
     width: 62px;
     height: 62px;
+  }
+}
+
+/* Mobile clarity pass */
+@media (max-width: 760px) {
+  .dashboard-main {
+    width: 100%;
+  }
+
+  .app-topbar {
+    align-items: center;
+  }
+
+  .topbar-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 3px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .topbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar-actions > * {
+    scroll-snap-align: start;
+  }
+
+  .workspace-stack {
+    gap: 14px;
+  }
+
+  .dashboard-hero {
+    border-radius: 22px;
+  }
+
+  .dashboard-hero-copy .lead {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .panel {
+    border-radius: 20px;
+  }
+
+  #overview,
+  #connect,
+  #messages,
+  #integrations,
+  #review {
+    scroll-margin-top: 20px;
+  }
+
+  .login-stage {
+    gap: 30px;
+    padding: 40px 0 48px;
+  }
+
+  .login-aside h1 {
+    font-size: clamp(40px, 11vw, 52px);
+    line-height: 1.02;
+  }
+
+  .login-audience {
+    margin-top: 18px;
+    padding: 11px 13px;
+    font-size: 14px;
+  }
+
+  .provider-button {
+    min-height: 54px;
+  }
+
+  .mobile-quick-nav {
+    left: 12px;
+    right: 12px;
+    bottom: max(10px, var(--safe-bottom));
+    gap: 4px;
+    border-color: rgba(16, 24, 18, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    padding: 6px;
+    box-shadow: 0 14px 34px rgba(18, 35, 23, 0.18);
+    backdrop-filter: blur(20px) saturate(160%);
+  }
+
+  .mobile-quick-nav a {
+    border-radius: 13px;
+    background: transparent;
+    padding: 11px 4px;
+    font-size: 10px;
+  }
+
+  .mobile-quick-nav a:active,
+  .mobile-quick-nav a:focus-visible {
+    background: #e8f6df;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 980px) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 24px;
+  }
+
+  .dashboard-main {
+    width: min(100%, 820px);
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-header-cta {
+    display: none;
+  }
+
+  .login-install-button {
+    min-height: 42px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .login-value-line span {
+    font-size: 12px;
+  }
+
+  .login-stage {
+    width: min(100% - 24px, 520px);
+    padding-top: 32px;
+  }
+
+  .auth-card {
+    border-radius: 20px;
+    padding-inline: 17px;
+  }
+
+  .install-qr-card {
+    padding: 15px;
+  }
+
+  .install-qr-card img {
+    width: min(170px, 100%);
+    height: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
