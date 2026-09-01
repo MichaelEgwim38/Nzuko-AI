@@ -163,6 +163,7 @@ export function createDefaultState() {
     settings: defaultSettings(),
     currentDraft: null,
     auditLog: [],
+    operationalActions: [],
     webhookStats: defaultWebhookStats(),
     sharedSession: defaultSharedSession(),
     billing: defaultBillingState(),
@@ -180,6 +181,7 @@ function mergeState(stored = {}) {
       ...(stored.settings || {}),
     },
     auditLog: Array.isArray(stored.auditLog) ? stored.auditLog : [],
+    operationalActions: Array.isArray(stored.operationalActions) ? stored.operationalActions : [],
     webhookStats: {
       ...defaults.webhookStats,
       ...(stored.webhookStats || {}),

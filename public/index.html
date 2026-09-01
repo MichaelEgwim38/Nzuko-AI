@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-44" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-45" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -223,6 +223,7 @@
 
         <nav class="dashboard-section-nav" aria-label="Workspace sections">
           <a class="active" href="#overview">Dashboard</a>
+          <a href="#actions">Actions</a>
           <a href="#connect">Connection</a>
           <a href="#messages">Messages</a>
           <a href="#integrations">Integrations</a>
@@ -251,6 +252,31 @@
             </section>
 
             <div class="workspace-stack">
+              <section class="panel actions-panel" id="actions">
+                <div class="section-heading actions-heading">
+                  <div>
+                    <p class="eyebrow">Approved operational actions</p>
+                    <h2>Keep every commitment moving</h2>
+                    <p class="hint">Actions appear here only after a person approves the source report.</p>
+                  </div>
+                  <button id="refresh-actions" class="button secondary compact-button" type="button">Refresh</button>
+                </div>
+                <div id="action-metrics" class="action-metrics" aria-label="Action overview">
+                  <article><strong>0</strong><span>Open</span></article>
+                  <article><strong>0</strong><span>Awaiting acknowledgement</span></article>
+                  <article><strong>0</strong><span>Overdue</span></article>
+                  <article><strong>0</strong><span>Escalated</span></article>
+                </div>
+                <div class="action-toolbar" role="group" aria-label="Filter actions">
+                  <button class="action-filter active" type="button" data-action-filter="open">Open</button>
+                  <button class="action-filter" type="button" data-action-filter="overdue">Overdue</button>
+                  <button class="action-filter" type="button" data-action-filter="done">Completed</button>
+                  <button class="action-filter" type="button" data-action-filter="all">All</button>
+                </div>
+                <p id="actions-status" class="hint">Approved report actions will appear here.</p>
+                <div id="actions-list" class="actions-list"></div>
+              </section>
+
               <section class="panel" id="connect">
                 <details class="connection-disclosure">
                   <summary>
@@ -472,6 +498,7 @@
         </div>
 
         <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
+          <a href="#actions">Actions</a>
           <a href="#connect">Connect</a>
           <a href="#messages">Messages</a>
           <a href="#integrations">Integrations</a>
@@ -723,7 +750,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260901-44" type="module"></script>
+    <script src="/app.js?v=20260901-45" type="module"></script>
   </body>
 </html>
 

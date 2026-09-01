@@ -42,6 +42,7 @@ import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspac
 import { totalTranscriptionMinutes, transcriptionMinutes } from '../../src/audioUsage.js';
 import { applyApprovedGroups, entitledApprovedGroups, groupLimitForPlan, normaliseApprovedGroups } from '../../src/groupAccess.js';
 import { deliverOutboundWebhook, validateOutboundWebhookUrl } from '../../src/outboundWebhook.js';
+import { actionView, actionsFromApprovedRecap, updateOperationalAction } from '../../src/operationalActions.js';
 import {
   getTelegramMessages,
   getTelegramStatus,
@@ -2394,6 +2395,8 @@ export default async function handler(request) {
         });
       }
       state.auditLog.unshift(auditEntry);
+      const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry);
+      state.operationalActions.unshift(...approvedActions);
       state.currentDraft = null;
       logUsageEvent(state, {
         type: 'recap.approved',
@@ -2407,13 +2410,48 @@ export default async function handler(request) {
       });
       await saveAppState(scope, state);
       await touchSharedOwnerActivity(scope, state, session);
-      return sendJson(200, { auditEntry });
+      return sendJson(200, { auditEntry, approvedActions });
     }
 
     if (request.method === 'GET' && pathname === '/api/audit') {
       const context = await loadWorkspaceContext(session);
       const { scope, state } = context;
       return sendJson(200, { auditLog: state.auditLog });
+    }
+
+    if (request.method === 'GET' && pathname === '/api/actions') {
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
+      if (!state.operationalActions.length && state.auditLog.length) {
+        state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry));
+        await saveAppState(scope, state);
+      }
+      const actions = state.operationalActions.map((action) => actionView(action));
+      return sendJson(200, { actions });
+    }
+
+    const actionRoute = pathname.match(/^\/api\/actions\/([^/]+)$/);
+    if (request.method === 'PATCH' && actionRoute) {
+      const context = await loadWorkspaceContext(session);
+      const { scope, state } = context;
+      const actionId = decodeURIComponent(actionRoute[1]);
+      const index = (state.operationalActions || []).findIndex((entry) => entry.id === actionId);
+      if (index < 0) return sendJson(404, { error: 'Action not found.' });
+      const body = await readJson(request);
+      state.operationalActions[index] = updateOperationalAction(state.operationalActions[index], body, {
+        name: sessionOwnerName(session),
+        email: session.email || '',
+      });
+      logUsageEvent(state, {
+        type: 'action.updated',
+        actorUserId: session.userId || '',
+        actorName: sessionOwnerName(session),
+        actorEmail: session.email || '',
+        summary: `${sessionOwnerName(session)} updated action: ${state.operationalActions[index].title}`,
+        details: { actionId, status: state.operationalActions[index].status, acknowledgement: state.operationalActions[index].acknowledgement },
+      });
+      await saveAppState(scope, state);
+      return sendJson(200, { action: actionView(state.operationalActions[index]) });
     }
 
     if (request.method === 'POST' && pathname === '/api/purge') {

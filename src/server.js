@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from './workflowTemplates.js';
+import { actionView, actionsFromApprovedRecap, updateOperationalAction } from './operationalActions.js';
 import { loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
 import { buildPendingVoiceNote, isVoiceMedia, transcribeVoiceNote } from './transcription.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from './connectors/mockWhatsApp.js';
@@ -68,6 +69,7 @@ const state = {
   currentDraft: null,
   capturedMessages: initialCapturedMessages,
   auditLog: [],
+  operationalActions: [],
   webhookStats: {
     received: 0,
     matchedApprovedGroup: 0,
@@ -779,13 +781,36 @@ async function handleApi(request, response) {
       posted,
     };
     state.auditLog.unshift(auditEntry);
+    const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry);
+    state.operationalActions.unshift(...approvedActions);
     state.currentDraft = null;
-    sendJson(response, 200, { auditEntry });
+    sendJson(response, 200, { auditEntry, approvedActions });
     return;
   }
 
   if (request.method === 'GET' && requestUrl.pathname === '/api/audit') {
     sendJson(response, 200, { auditLog: state.auditLog });
+    return;
+  }
+
+  if (request.method === 'GET' && requestUrl.pathname === '/api/actions') {
+    if (!state.operationalActions.length && state.auditLog.length) {
+      state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry));
+    }
+    sendJson(response, 200, { actions: state.operationalActions.map((action) => actionView(action)) });
+    return;
+  }
+
+  const actionRoute = requestUrl.pathname.match(/^\/api\/actions\/([^/]+)$/);
+  if (request.method === 'PATCH' && actionRoute) {
+    const actionId = decodeURIComponent(actionRoute[1]);
+    const index = state.operationalActions.findIndex((entry) => entry.id === actionId);
+    if (index < 0) {
+      sendJson(response, 404, { error: 'Action not found.' });
+      return;
+    }
+    state.operationalActions[index] = updateOperationalAction(state.operationalActions[index], await readBody(request), { name: 'Local user' });
+    sendJson(response, 200, { action: actionView(state.operationalActions[index]) });
     return;
   }
 

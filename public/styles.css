@@ -1579,6 +1579,168 @@ h2 {
   max-width: min(100%, 560px);
 }
 
+.actions-panel {
+  padding: 28px;
+  background: linear-gradient(145deg, #ffffff 0%, #f6fbf3 100%);
+  border: 1px solid rgba(36, 93, 56, 0.12);
+}
+
+.actions-heading {
+  align-items: flex-start;
+}
+
+.actions-heading .hint {
+  margin: 8px 0 0;
+}
+
+.action-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 16px;
+}
+
+.action-metrics article {
+  display: grid;
+  gap: 2px;
+  min-height: 82px;
+  padding: 15px;
+  border: 1px solid rgba(36, 93, 56, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.action-metrics strong {
+  color: var(--accent-dark);
+  font-size: 25px;
+}
+
+.action-metrics span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.action-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.action-filter {
+  padding: 8px 13px;
+  border: 1px solid rgba(36, 93, 56, 0.14);
+  border-radius: 999px;
+  background: #fff;
+  color: #516057;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.action-filter.active {
+  border-color: var(--accent-dark);
+  background: var(--accent-dark);
+  color: #fff;
+}
+
+.actions-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.action-card {
+  padding: 18px;
+  border: 1px solid rgba(36, 93, 56, 0.13);
+  border-left: 4px solid #9ae63e;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(21, 43, 28, 0.06);
+}
+
+.action-card.is-overdue,
+.action-card.is-escalated {
+  border-left-color: var(--earth);
+}
+
+.action-card-topline,
+.action-card-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-card-topline {
+  justify-content: space-between;
+}
+
+.action-state {
+  color: var(--accent-dark);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.is-overdue .action-state,
+.is-escalated .action-state {
+  color: var(--earth);
+}
+
+.action-source {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.action-card h3 {
+  margin: 10px 0 14px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.action-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.action-fields label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.action-fields input {
+  margin-top: 5px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.actions-empty {
+  padding: 22px;
+  border: 1px dashed rgba(36, 93, 56, 0.22);
+  border-radius: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .actions-panel { padding: 20px; }
+  .action-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .action-fields { grid-template-columns: 1fr; }
+  .action-card-controls .button { flex: 1 1 140px; }
+}
+
+@media (max-width: 420px) {
+  .actions-panel { padding: 17px; }
+  .action-metrics article { min-height: 74px; padding: 12px; }
+  .action-card { padding: 15px; }
+}
+
 .upgrade-button {
   background: linear-gradient(135deg, #f7c948, #f08c00);
   color: #1f1402;

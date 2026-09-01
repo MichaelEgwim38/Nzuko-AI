@@ -25,6 +25,8 @@ let selectedBillingInterval = 'monthly';
 let currentTelegramGroupId = '';
 let currentTelegramGroupName = '';
 let telegramPollTimer = null;
+let operationalActionsCache = [];
+let activeActionFilter = 'open';
 
 const workspaceTemplates = {
   'healthcare-operations': {
@@ -850,7 +852,7 @@ async function startApp() {
       approvedGroupId: currentApprovedGroupId,
     });
   }
-  await loadAudit();
+  await Promise.all([loadAudit(), loadActions()]);
   await loadAdminBilling();
 }
 
@@ -1441,7 +1443,7 @@ async function approveRecap() {
     const payload = await api('/api/recap/approve', { method: 'POST', body: '{}' });
     $('#approve-status').textContent = `Approved through ${payload.auditEntry.posted.provider || $('#connector-mode').value} at ${payload.auditEntry.approvedAt}.`;
     $('#recap-output').textContent = 'Generate a new report to preview the next structured output.';
-    await loadAudit();
+    await Promise.all([loadAudit(), loadActions()]);
     await loadStatus();
   } catch (error) {
     $('#approve-status').textContent = error.message;
@@ -1458,6 +1460,102 @@ async function loadAudit() {
   const payload = await api('/api/audit');
   auditEntriesCache = Array.isArray(payload.auditLog) ? payload.auditLog : [];
   renderAuditFeed();
+}
+
+function actionStateLabel(action) {
+  if (action.status === 'done') return 'Completed';
+  if (action.overdue) return 'Overdue';
+  if (action.escalated) return 'Escalated';
+  if (action.acknowledgement === 'acknowledged') return 'Acknowledged';
+  return 'Awaiting acknowledgement';
+}
+
+function renderActions() {
+  const list = $('#actions-list');
+  const status = $('#actions-status');
+  const metrics = $('#action-metrics');
+  if (!list || !status || !metrics) return;
+  const open = operationalActionsCache.filter((action) => action.status !== 'done');
+  const awaiting = open.filter((action) => action.acknowledgement !== 'acknowledged');
+  const overdue = open.filter((action) => action.overdue);
+  const escalated = open.filter((action) => action.escalated);
+  metrics.innerHTML = [
+    [open.length, 'Open'],
+    [awaiting.length, 'Awaiting acknowledgement'],
+    [overdue.length, 'Overdue'],
+    [escalated.length, 'Escalated'],
+  ].map(([count, label]) => `<article><strong>${count}</strong><span>${label}</span></article>`).join('');
+
+  const visible = operationalActionsCache.filter((action) => {
+    if (activeActionFilter === 'open') return action.status !== 'done';
+    if (activeActionFilter === 'overdue') return action.overdue;
+    if (activeActionFilter === 'done') return action.status === 'done';
+    return true;
+  });
+  status.textContent = operationalActionsCache.length
+    ? `${open.length} unresolved action${open.length === 1 ? '' : 's'} across approved reports.`
+    : 'No official actions yet. Generate and approve a report to create them.';
+  list.innerHTML = visible.length ? visible.map((action) => `
+    <article class="action-card ${action.overdue ? 'is-overdue' : ''} ${action.escalated ? 'is-escalated' : ''}" data-action-id="${escapeHtml(action.id)}">
+      <div class="action-card-topline">
+        <span class="action-state">${escapeHtml(actionStateLabel(action))}</span>
+        <span class="action-source">${escapeHtml(action.sourceGroupName || 'Approved report')}</span>
+      </div>
+      <h3>${escapeHtml(action.title)}</h3>
+      <div class="action-fields">
+        <label>Owner<input data-action-field="owner" value="${escapeHtml(action.owner || '')}" placeholder="Assign an owner" /></label>
+        <label>Due date<input data-action-field="dueDate" type="date" value="${escapeHtml(action.dueDate || '')}" /></label>
+      </div>
+      <div class="action-card-controls">
+        ${action.acknowledgement !== 'acknowledged' && action.status !== 'done' ? '<button class="button secondary compact-button" type="button" data-action-command="acknowledge">Acknowledge</button>' : ''}
+        ${action.status !== 'done' ? '<button class="button compact-button" type="button" data-action-command="complete">Mark complete</button>' : '<button class="button secondary compact-button" type="button" data-action-command="reopen">Reopen</button>'}
+        ${action.status !== 'done' ? `<button class="button ${action.escalated ? 'secondary' : 'danger'} compact-button" type="button" data-action-command="${action.escalated ? 'clear-escalation' : 'escalate'}">${action.escalated ? 'Clear escalation' : 'Escalate'}</button>` : ''}
+      </div>
+    </article>`).join('') : '<div class="actions-empty">Nothing matches this view.</div>';
+}
+
+async function loadActions() {
+  try {
+    const payload = await api('/api/actions');
+    operationalActionsCache = Array.isArray(payload.actions) ? payload.actions : [];
+    renderActions();
+  } catch (error) {
+    const status = $('#actions-status');
+    if (status) status.textContent = `Actions could not be loaded: ${error.message}`;
+  }
+}
+
+async function updateAction(actionId, changes) {
+  const payload = await api(`/api/actions/${encodeURIComponent(actionId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+  });
+  operationalActionsCache = operationalActionsCache.map((action) => action.id === payload.action.id ? payload.action : action);
+  renderActions();
+}
+
+async function handleActionInteraction(event) {
+  const card = event.target.closest('[data-action-id]');
+  if (!card) return;
+  const actionId = card.dataset.actionId;
+  try {
+    if (event.target.matches('[data-action-field]') && event.type === 'change') {
+      await updateAction(actionId, { [event.target.dataset.actionField]: event.target.value });
+      return;
+    }
+    const command = event.target.closest('[data-action-command]')?.dataset.actionCommand;
+    if (!command) return;
+    const changes = {
+      acknowledge: { acknowledgement: 'acknowledged' },
+      complete: { status: 'done' },
+      reopen: { status: 'open' },
+      escalate: { escalated: true, priority: 'urgent' },
+      'clear-escalation': { escalated: false, priority: 'normal' },
+    }[command];
+    await updateAction(actionId, changes);
+  } catch (error) {
+    $('#actions-status').textContent = `Action could not be updated: ${error.message}`;
+  }
 }
 
 function billingBadge(entry = {}) {
@@ -1649,6 +1747,14 @@ $('#generate-range').addEventListener('click', generateRangeRecap);
 $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
+$('#refresh-actions')?.addEventListener('click', loadActions);
+$('#actions-list')?.addEventListener('click', handleActionInteraction);
+$('#actions-list')?.addEventListener('change', handleActionInteraction);
+document.querySelectorAll('[data-action-filter]').forEach((button) => button.addEventListener('click', () => {
+  activeActionFilter = button.dataset.actionFilter;
+  document.querySelectorAll('[data-action-filter]').forEach((entry) => entry.classList.toggle('active', entry === button));
+  renderActions();
+}));
 $('#continue-google').addEventListener('click', continueWithGoogle);
 $('#sign-in-link').addEventListener('click', continueWithGoogle);
 document.querySelectorAll('[data-google-login]').forEach((button) => button.addEventListener('click', continueWithGoogle));
