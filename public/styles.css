@@ -722,43 +722,116 @@ textarea {
 }
 
 .login-footer {
-  min-height: 108px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 28px;
-  padding: 24px max(28px, calc((100% - 1120px) / 2));
-  background: #082f20;
+  background: #0d5638;
   color: rgba(255, 255, 255, 0.72);
+}
+
+.login-footer-main {
+  min-height: 170px;
+  display: grid;
+  grid-template-columns: 0.85fr 1.2fr 1fr;
+  align-items: center;
+  gap: 52px;
+  padding: 34px max(28px, calc((100% - 1120px) / 2));
 }
 
 .login-footer-brand {
   color: #fff;
-  font-size: 20px;
+  font-size: 27px;
   font-weight: 900;
 }
 
 .login-footer-brand .brand-lockup-icon {
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
 }
 
-.login-footer nav {
+.login-footer-brand div {
+  display: grid;
+  gap: 4px;
+}
+
+.login-footer-brand em {
+  color: #9ae63e;
+  font-style: normal;
+}
+
+.login-footer-brand small {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.login-footer-main nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 24px;
 }
 
-.login-footer a {
+.login-footer a,
+.login-footer-main nav button {
+  border: 0;
+  background: transparent;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+  padding: 0;
   text-decoration: none;
 }
 
-.login-footer p {
-  justify-self: end;
+.login-footer-main nav button {
+  cursor: pointer;
+}
+
+.login-footer-install {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+}
+
+.login-footer-install strong {
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.login-footer-install span {
+  font-size: 12px;
+}
+
+.login-footer-install button {
+  margin-top: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 9px;
+  background: #07130d;
+  color: #fff;
+  cursor: pointer;
+  padding: 11px 18px;
+  font-weight: 800;
+}
+
+.login-footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px max(28px, calc((100% - 1120px) / 2));
+  background: #052b1d;
+}
+
+.login-footer-bottom p {
   margin: 0;
   font-size: 12px;
+}
+
+.login-footer-bottom nav {
+  display: flex;
+  gap: 18px;
+}
+
+.login-footer-bottom a {
+  font-size: 11px;
 }
 
 .app-topbar {
@@ -3156,13 +3229,24 @@ pre {
   }
 
   .login-footer {
-    grid-template-columns: 1fr;
-    justify-items: start;
-    gap: 18px;
-    padding: 28px 20px;
+    padding: 0;
   }
 
-  .login-footer p {
-    justify-self: start;
+  .login-footer-main {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 36px 20px;
+  }
+
+  .login-footer-main nav {
+    gap: 18px;
+  }
+
+  .login-footer-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 20px;
   }
 }

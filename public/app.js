@@ -75,6 +75,7 @@ function isIosDevice() {
 function updateInstallButton() {
   const button = $('#install-app');
   const loginButton = $('#login-install-app');
+  const footerButton = $('#footer-install-app');
   const isStandalone = isStandaloneMode();
   const canShowIosHelp = isIosDevice();
   if (button) {
@@ -84,6 +85,10 @@ function updateInstallButton() {
   if (loginButton) {
     loginButton.hidden = Boolean(isStandalone);
     loginButton.textContent = deferredInstallPrompt ? 'Install app' : 'Get the app';
+  }
+  if (footerButton) {
+    footerButton.hidden = Boolean(isStandalone);
+    footerButton.textContent = deferredInstallPrompt ? 'Install Nzuko AI' : 'Get the web app';
   }
 }
 
@@ -1618,6 +1623,7 @@ $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#open-pricing')?.addEventListener('click', openPricing);
 $('#login-pricing')?.addEventListener('click', openPricing);
+$('#footer-pricing')?.addEventListener('click', openPricing);
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#start-free-trial')?.addEventListener('click', startFreeTrial);
@@ -1631,6 +1637,7 @@ $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
 $('#login-install-app')?.addEventListener('click', installApp);
+$('#footer-install-app')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#pricing-topup-cards')?.addEventListener('click', handlePlanAction);
 document.querySelectorAll('[data-billing-interval]').forEach((button) => {

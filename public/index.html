@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-35" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-36" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -113,16 +113,33 @@
       </section>
 
       <footer class="login-footer">
-        <div class="brand-lockup login-footer-brand" aria-label="Nzuko AI">
-          <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
-          <span>Nzuko AI</span>
+        <div class="login-footer-main">
+          <div class="brand-lockup login-footer-brand" aria-label="Nzuko AI">
+            <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
+            <div>
+              <span>Nzuko <em>AI</em></span>
+              <small>Conversations into clear action.</small>
+            </div>
+          </div>
+          <nav aria-label="Product and company links">
+            <a href="#login-auth">Product</a>
+            <button id="footer-pricing" type="button">Pricing</button>
+            <a href="mailto:egwim.michaels@gmail.com">Contact</a>
+            <a href="/terms.html">Legal</a>
+          </nav>
+          <section class="login-footer-install" aria-label="Install Nzuko AI">
+            <strong>TURN CONVERSATIONS INTO ACTION</strong>
+            <span>Take Nzuko AI wherever your work happens.</span>
+            <button id="footer-install-app" type="button">Get the web app</button>
+          </section>
         </div>
-        <nav aria-label="Legal and company links">
-          <a href="/privacy.html">Privacy</a>
-          <a href="/terms.html">Terms</a>
-          <a href="mailto:egwim.michaels@gmail.com">Contact</a>
-        </nav>
-        <p>Built by Rohari Group LTD</p>
+        <div class="login-footer-bottom">
+          <p>© 2026 Rohari Group LTD. Nzuko AI. All rights reserved.</p>
+          <nav aria-label="Policies">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+          </nav>
+        </div>
       </footer>
     </main>
 
@@ -649,7 +666,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260901-35" type="module"></script>
+    <script src="/app.js?v=20260901-36" type="module"></script>
   </body>
 </html>
 
