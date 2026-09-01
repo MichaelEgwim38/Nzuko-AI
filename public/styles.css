@@ -935,6 +935,70 @@ textarea {
   margin-top: 12px;
 }
 
+.contact-panel {
+  width: min(680px, calc(100% - 28px));
+}
+
+.contact-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.contact-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.contact-form label {
+  display: grid;
+  gap: 7px;
+  color: #304238;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  width: 100%;
+  border: 1px solid #cedbcb;
+  border-radius: 12px;
+  background: #fff;
+  color: #172318;
+  padding: 12px 13px;
+  font: inherit;
+}
+
+.contact-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.contact-form input:focus,
+.contact-form select:focus,
+.contact-form textarea:focus {
+  border-color: #6fae45;
+  outline: 3px solid rgba(111, 174, 69, 0.16);
+}
+
+.optional-label {
+  color: #7e8c82;
+  font-weight: 500;
+}
+
+.contact-submit {
+  width: fit-content;
+  min-width: 150px;
+}
+
+.contact-status {
+  min-height: 20px;
+  margin: 0;
+  font-weight: 700;
+}
+
 .login-footer-install button:hover,
 .login-footer-install button:focus-visible {
   border-color: #9ae63e;
@@ -3552,6 +3616,14 @@ pre {
 
   .provider-button {
     min-height: 54px;
+  }
+
+  .contact-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-submit {
+    width: 100%;
   }
 
   .mobile-quick-nav {

@@ -601,6 +601,38 @@ function setInstallHelpOpen(isOpen) {
   document.body.style.overflow = isOpen ? 'hidden' : '';
 }
 
+function setContactOpen(isOpen) {
+  const modal = $('#contact-modal');
+  if (!modal) return;
+  modal.hidden = !isOpen;
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+  if (isOpen) window.requestAnimationFrame(() => $('#contact-form input[name="name"]')?.focus());
+}
+
+async function submitContactForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = $('#submit-contact');
+  const status = $('#contact-status');
+  if (button) button.disabled = true;
+  if (status) status.textContent = 'Sending your message…';
+  try {
+    const body = new URLSearchParams(new FormData(form));
+    const response = await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    if (!response.ok) throw new Error('Message could not be sent.');
+    form.reset();
+    if (status) status.textContent = 'Thank you. Your message has been sent to Rohari Group.';
+  } catch (error) {
+    if (status) status.textContent = `${error.message || 'Message could not be sent.'} Please email info@roharigroup.com.`;
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 function setAdminOpen(isOpen) {
   const modal = $('#admin-billing-panel');
   if (!modal || !latestStatus?.admin?.isAdmin) return;
@@ -1628,6 +1660,7 @@ $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(fa
 $('#open-pricing')?.addEventListener('click', openPricing);
 $('#login-pricing')?.addEventListener('click', openPricing);
 $('#footer-pricing')?.addEventListener('click', openPricing);
+$('#open-contact')?.addEventListener('click', () => setContactOpen(true));
 $('#close-pricing')?.addEventListener('click', () => setPricingOpen(false));
 $('#pricing-backdrop')?.addEventListener('click', () => setPricingOpen(false));
 $('#start-free-trial')?.addEventListener('click', startFreeTrial);
@@ -1643,6 +1676,9 @@ $('#install-app')?.addEventListener('click', installApp);
 $('#login-install-app')?.addEventListener('click', () => setInstallHelpOpen(true));
 $('#footer-install-app')?.addEventListener('click', () => setInstallHelpOpen(true));
 $('#install-current-device')?.addEventListener('click', installApp);
+$('#close-contact')?.addEventListener('click', () => setContactOpen(false));
+$('#contact-backdrop')?.addEventListener('click', () => setContactOpen(false));
+$('#contact-form')?.addEventListener('submit', submitContactForm);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#pricing-topup-cards')?.addEventListener('click', handlePlanAction);
 document.querySelectorAll('[data-billing-interval]').forEach((button) => {
@@ -1674,6 +1710,7 @@ document.addEventListener('keydown', (event) => {
     setQuickGuideOpen(false);
     setPricingOpen(false);
     setInstallHelpOpen(false);
+    setContactOpen(false);
   }
 });
 

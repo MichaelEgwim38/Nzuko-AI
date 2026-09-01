@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-42" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-43" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -124,7 +124,7 @@
           <nav aria-label="Product and company links">
             <a href="#login-auth">Product</a>
             <button id="footer-pricing" type="button">Pricing</button>
-            <a href="mailto:egwim.michaels@gmail.com">Contact</a>
+            <button id="open-contact" type="button">Contact</button>
             <a href="/terms.html">Legal</a>
           </nav>
           <section class="login-footer-install" aria-label="Install Nzuko AI">
@@ -678,7 +678,52 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260901-42" type="module"></script>
+
+    <div id="contact-modal" class="quick-guide-modal" hidden>
+      <div id="contact-backdrop" class="quick-guide-backdrop"></div>
+      <section class="quick-guide-panel contact-panel" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+        <div class="quick-guide-header">
+          <div>
+            <p class="eyebrow">Contact Rohari Group</p>
+            <h2 id="contact-title">How can we help?</h2>
+          </div>
+          <button id="close-contact" class="button secondary compact-button" type="button">Close</button>
+        </div>
+        <p class="hint quick-guide-copy">Tell us about your team, question or support request. We&apos;ll reply by email.</p>
+        <form id="contact-form" class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="contact" />
+          <p class="visually-hidden"><label>Do not fill this out: <input name="bot-field" /></label></p>
+          <div class="contact-field-grid">
+            <label>Your name
+              <input name="name" autocomplete="name" required />
+            </label>
+            <label>Email address
+              <input name="email" type="email" autocomplete="email" required />
+            </label>
+          </div>
+          <label>Organisation <span class="optional-label">Optional</span>
+            <input name="organisation" autocomplete="organization" />
+          </label>
+          <label>What can we help with?
+            <select name="topic" required>
+              <option value="">Choose a topic</option>
+              <option>Product enquiry</option>
+              <option>Sales and pricing</option>
+              <option>Technical support</option>
+              <option>Partnership</option>
+              <option>Privacy or data question</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Message
+            <textarea name="message" rows="5" maxlength="3000" required placeholder="How can Nzuko AI or Rohari Group help?"></textarea>
+          </label>
+          <button id="submit-contact" class="button contact-submit" type="submit">Send message</button>
+          <p id="contact-status" class="hint contact-status" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+    <script src="/app.js?v=20260901-43" type="module"></script>
   </body>
 </html>
 
