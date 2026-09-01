@@ -84,11 +84,11 @@ function updateInstallButton() {
   }
   if (loginButton) {
     loginButton.hidden = Boolean(isStandalone);
-    loginButton.textContent = deferredInstallPrompt ? 'Install app' : 'Get the app';
+    loginButton.textContent = 'Get the app';
   }
   if (footerButton) {
     footerButton.hidden = Boolean(isStandalone);
-    footerButton.textContent = 'Install Nzuko AI';
+    footerButton.textContent = 'Get the app';
   }
 }
 
