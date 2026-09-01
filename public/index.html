@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-38" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-39" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -130,7 +130,10 @@
           <section class="login-footer-install" aria-label="Install Nzuko AI">
             <strong>TURN CONVERSATIONS INTO ACTION</strong>
             <span>Take Nzuko AI wherever your work happens.</span>
-            <button id="footer-install-app" type="button">Get the web app</button>
+            <div class="footer-install-actions">
+              <img src="/assets/nzuko-install-qr.svg" alt="QR code to open Nzuko AI on a phone" />
+              <button id="footer-install-app" type="button">Install Nzuko AI</button>
+            </div>
           </section>
         </div>
         <div class="login-footer-bottom">
@@ -636,6 +639,14 @@
           <button id="close-install-help" class="button secondary compact-button" type="button">Close</button>
         </div>
         <p class="hint quick-guide-copy">Install the workspace for faster access and an app-like experience on Android and iPhone.</p>
+        <section class="install-qr-card" aria-labelledby="install-qr-title">
+          <img src="/assets/nzuko-install-qr.svg" alt="QR code linking to https://nzukoai.com" />
+          <div>
+            <h3 id="install-qr-title">Install on your phone</h3>
+            <p>Scan this QR code with your phone camera, open Nzuko AI, then confirm installation using the instructions below.</p>
+            <a href="https://nzukoai.com" target="_blank" rel="noreferrer">Open nzukoai.com</a>
+          </div>
+        </section>
         <div class="quick-guide-grid">
           <section>
             <h3>Android</h3>
@@ -666,7 +677,7 @@
         </div>
       </section>
     </div>
-    <script src="/app.js?v=20260901-38" type="module"></script>
+    <script src="/app.js?v=20260901-39" type="module"></script>
   </body>
 </html>
 

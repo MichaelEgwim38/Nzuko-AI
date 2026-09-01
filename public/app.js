@@ -88,7 +88,7 @@ function updateInstallButton() {
   }
   if (footerButton) {
     footerButton.hidden = Boolean(isStandalone);
-    footerButton.textContent = deferredInstallPrompt ? 'Install Nzuko AI' : 'Get the web app';
+    footerButton.textContent = 'Install Nzuko AI';
   }
 }
 

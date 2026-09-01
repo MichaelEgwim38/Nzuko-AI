@@ -875,6 +875,57 @@ textarea {
   transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
+.footer-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.footer-install-actions img {
+  width: 72px;
+  height: 72px;
+  border: 5px solid #fff;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.install-qr-card {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: 22px 0 26px;
+  border: 1px solid #d7e4d4;
+  border-radius: 20px;
+  background: #f5fbf1;
+  padding: 20px;
+}
+
+.install-qr-card img {
+  width: 180px;
+  height: 180px;
+  border: 8px solid #fff;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(18, 55, 31, 0.1);
+}
+
+.install-qr-card h3 {
+  margin: 0;
+}
+
+.install-qr-card p {
+  margin: 9px 0;
+  color: #59685f;
+  line-height: 1.55;
+}
+
+.install-qr-card a {
+  color: #245d38;
+  font-weight: 800;
+}
+
 .login-footer-install button:hover,
 .login-footer-install button:focus-visible {
   border-color: #9ae63e;
@@ -3343,7 +3394,13 @@ pre {
   }
 
   .login-footer-install button {
-    width: 100%;
+    flex: 1;
+  }
+
+  .install-qr-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
   }
 
   .login-footer-bottom {
@@ -3401,5 +3458,14 @@ pre {
     min-height: 40px;
     display: inline-flex;
     align-items: center;
+  }
+
+  .footer-install-actions {
+    width: 100%;
+  }
+
+  .footer-install-actions img {
+    width: 62px;
+    height: 62px;
   }
 }
