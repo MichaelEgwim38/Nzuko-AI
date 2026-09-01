@@ -4340,15 +4340,13 @@ pre {
   }
 
   .landing-mode-list {
-    width: calc(100vw - 16px);
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    margin-left: 0;
-    padding: 3px 16px 18px 0;
-    scroll-padding-left: 0;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    overflow: visible;
+    margin: 0;
+    padding: 0 0 18px;
   }
 
   .landing-mode-list::-webkit-scrollbar,
@@ -4357,13 +4355,45 @@ pre {
   }
 
   .landing-mode-card {
-    min-width: min(280px, 78vw);
-    min-height: 92px;
-    flex: 0 0 auto;
-    grid-template-columns: 62px minmax(0, 1fr);
+    min-width: 0;
+    min-height: 118px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 5px;
     border-radius: 18px;
-    padding: 11px;
-    scroll-snap-align: start;
+    padding: 12px;
+  }
+
+  .landing-mode-card:first-child {
+    grid-column: 1 / -1;
+    min-height: 104px;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 13px;
+  }
+
+  .landing-mode-card img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .landing-mode-card:first-child img {
+    width: 72px;
+    height: 72px;
+  }
+
+  .landing-mode-card strong {
+    font-size: 13px;
+    line-height: 1.22;
+  }
+
+  .landing-mode-card small {
+    margin-top: 3px;
+    font-size: 10px;
+    line-height: 1.3;
   }
 
   .landing-mode-card > span:last-child {
@@ -4373,6 +4403,24 @@ pre {
   .landing-mode-card.active {
     border-width: 2px;
     box-shadow: 0 13px 28px rgba(29, 76, 38, 0.11);
+  }
+
+  .landing-mode-card.active::after {
+    content: "Selected";
+    margin-top: auto;
+    border-radius: 999px;
+    background: #dff5ce;
+    color: #2c6d28;
+    padding: 4px 7px;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .landing-mode-card:first-child.active::after {
+    grid-column: 2;
+    width: fit-content;
   }
 
   .mode-demo {
