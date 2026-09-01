@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-46" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-47" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -319,9 +319,19 @@
                 </details>
                 <div class="button-row">
                   <button id="start-waha" class="button">Start session</button>
+                  <button id="show-pairing" class="button mobile-connect-control" type="button">Connect on this phone</button>
                   <button id="show-qr" class="button secondary">Get QR code</button>
                   <button id="switch-waha-user" class="button secondary">Disconnect and switch WhatsApp</button>
                   <button id="load-groups" class="button">Load WhatsApp groups</button>
+                </div>
+                <div id="pairing-box" class="pairing-box mobile-connect-control" hidden>
+                  <label>
+                    WhatsApp number
+                    <input id="pairing-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. 447700900123" />
+                  </label>
+                  <p class="hint">Include the country code and omit the leading + or 0.</p>
+                  <button id="request-pairing-code" class="button" type="button">Get secure pairing code</button>
+                  <div id="pairing-result" class="pairing-result" hidden></div>
                 </div>
                 <div id="qr-box" class="qr-box">Click Get QR code, then scan it with WhatsApp Linked Devices.</div>
                 <p class="hint">Use Disconnect and switch WhatsApp when changing users.</p>
@@ -353,6 +363,7 @@
                     <p class="hint connect-copy">Link the Telegram account used for this workspace, then choose an authorised group.</p>
                     <div class="button-row">
                       <button id="start-telegram" class="button" type="button">Get Telegram QR</button>
+                      <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
                       <button id="load-telegram-groups" class="button secondary" type="button">Load Telegram groups</button>
                       <button id="disconnect-telegram" class="button secondary" type="button">Disconnect Telegram</button>
                     </div>
@@ -750,7 +761,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260901-46" type="module"></script>
+    <script src="/app.js?v=20260901-47" type="module"></script>
   </body>
 </html>
 

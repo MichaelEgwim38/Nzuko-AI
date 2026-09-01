@@ -62,6 +62,15 @@ export async function getWahaQr({ baseUrl, session, apiKey }) {
   return parseWahaResponse(response);
 }
 
+export async function requestWahaPairingCode({ baseUrl, session, apiKey, phoneNumber }) {
+  const response = await fetch(`${normaliseBaseUrl(baseUrl)}/api/${encodeURIComponent(session)}/auth/request-code`, {
+    method: 'POST',
+    headers: wahaHeaders(apiKey),
+    body: JSON.stringify({ phoneNumber }),
+  });
+  return parseWahaResponse(response);
+}
+
 export async function listGroupsFromWaha({ baseUrl, session, apiKey, limit = 100 }) {
   const groupsResponse = await fetch(
     `${normaliseBaseUrl(baseUrl)}/api/${encodeURIComponent(session)}/groups`,

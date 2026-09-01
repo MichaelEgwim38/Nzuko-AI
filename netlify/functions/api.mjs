@@ -36,6 +36,7 @@ import {
   listGroupsFromWaha,
   logoutWahaSession,
   postRecapToWaha,
+  requestWahaPairingCode,
   startWahaSession,
 } from '../../src/connectors/waha.js';
 import { applyWorkspaceWahaSettings, selectWahaWorker } from '../../src/workspaceSession.js';
@@ -1969,6 +1970,33 @@ export default async function handler(request) {
         apiKey: state.settings.wahaApiKey,
       });
       return sendJson(200, { qr });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/waha/pairing-code') {
+      const context = await loadWorkspaceContext(session);
+      const { scope, state, trial, ownerSummary } = context;
+      ensureTrialAllowed(trial);
+      ensureSharedOwnerAllowed(ownerSummary, session);
+      await claimSharedOwner(scope, state, session);
+      const body = await readJson(request);
+      const phoneNumber = String(body.phoneNumber || '').replace(/\D/g, '');
+      if (phoneNumber.length < 8 || phoneNumber.length > 15) {
+        return sendJson(400, { error: 'Enter the WhatsApp number in international format, including the country code.' });
+      }
+      const settings = managedSettings(state.settings, context.workspace);
+      await ensureManagedWahaSession({ settings, requestUrl, scope });
+      try {
+        await startWahaSession({ baseUrl: settings.wahaBaseUrl, session: settings.wahaSession, apiKey: settings.wahaApiKey });
+      } catch (error) {
+        if (!/already|422|conflict|scan_qr/i.test(String(error.message || ''))) throw error;
+      }
+      const result = await requestWahaPairingCode({
+        baseUrl: settings.wahaBaseUrl,
+        session: settings.wahaSession,
+        apiKey: settings.wahaApiKey,
+        phoneNumber,
+      });
+      return sendJson(200, { code: result?.code || '', phoneNumber });
     }
 
     if (request.method === 'POST' && pathname === '/api/telegram/start') {

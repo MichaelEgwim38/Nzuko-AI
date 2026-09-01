@@ -82,6 +82,22 @@ function isIosDevice() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
 }
 
+function isMobileDevice() {
+  return window.matchMedia?.('(max-width: 760px)')?.matches || /android|iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
+}
+
+function configureConnectionExperience() {
+  const mobile = isMobileDevice();
+  document.body.classList.toggle('mobile-connection-experience', mobile);
+  document.querySelectorAll('.mobile-connect-control').forEach((element) => {
+    if (element.id !== 'open-telegram-login') element.hidden = !mobile;
+  });
+  if (mobile) {
+    $('#show-qr').textContent = 'Use QR on another device';
+    $('#start-telegram').textContent = 'Connect Telegram';
+  }
+}
+
 function updateInstallButton() {
   const button = $('#install-app');
   const loginButton = $('#login-install-app');
@@ -1140,6 +1156,38 @@ async function showQr() {
   }
 }
 
+function showPairingBox() {
+  const box = $('#pairing-box');
+  box.hidden = !box.hidden;
+  if (!box.hidden) $('#pairing-phone')?.focus();
+}
+
+async function requestPairingCode() {
+  const phoneNumber = $('#pairing-phone').value.trim();
+  const result = $('#pairing-result');
+  result.hidden = false;
+  result.textContent = 'Preparing your secure WhatsApp pairing code…';
+  try {
+    await saveSettings();
+    const payload = await api('/api/waha/pairing-code', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+    if (!payload.code) throw new Error('WhatsApp did not return a pairing code. Use the QR fallback instead.');
+    result.innerHTML = `
+      <span>Your pairing code</span>
+      <strong>${escapeHtml(payload.code)}</strong>
+      <ol>
+        <li>Open WhatsApp on this phone.</li>
+        <li>Go to Linked Devices and choose <b>Link with phone number instead</b>.</li>
+        <li>Enter the code above, then return to Nzuko AI.</li>
+      </ol>`;
+    setHintMessage('waha-status', 'Pairing code ready. Complete the three steps shown, then load your WhatsApp groups.');
+  } catch (error) {
+    result.textContent = `Pairing code unavailable: ${error.message}`;
+  }
+}
+
 async function loadGroups() {
   try {
     await saveSettings();
@@ -1178,6 +1226,11 @@ async function loadGroups() {
 
 function renderTelegramStatus(payload = {}) {
   clearTimeout(telegramPollTimer);
+  const openTelegram = $('#open-telegram-login');
+  if (openTelegram) {
+    openTelegram.hidden = !isMobileDevice() || !payload.loginUrl;
+    openTelegram.href = payload.loginUrl || '#';
+  }
   $('#telegram-password-box').hidden = !payload.passwordRequired;
   if (payload.connected) {
     $('#telegram-summary-status').textContent = 'Connected';
@@ -1762,6 +1815,8 @@ $('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false))
 $('#check-waha').addEventListener('click', checkWaha);
 $('#start-waha').addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
+$('#show-pairing')?.addEventListener('click', showPairingBox);
+$('#request-pairing-code')?.addEventListener('click', requestPairingCode);
 $('#switch-waha-user').addEventListener('click', switchWahaUser);
 $('#load-groups').addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
@@ -1864,6 +1919,7 @@ clearDraftFields();
 paymentQueryState = readPaymentQueryState();
 await registerServiceWorker();
 updateInstallButton();
+configureConnectionExperience();
 const auth = await api('/api/auth/status');
 authConfig = auth.auth || null;
 if (auth.authenticated) {

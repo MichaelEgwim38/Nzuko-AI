@@ -1028,6 +1028,55 @@ textarea {
   }
 }
 
+.pairing-box {
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid rgba(111, 174, 69, 0.35);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f8fff3, #ffffff);
+}
+
+.pairing-box label {
+  margin-top: 0;
+}
+
+.pairing-result {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 15px;
+  background: #eaf8df;
+  color: #173d27;
+}
+
+.pairing-result > span {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pairing-result > strong {
+  font-size: clamp(26px, 8vw, 38px);
+  letter-spacing: 0.12em;
+}
+
+.pairing-result ol {
+  margin: 7px 0 0;
+  padding-left: 22px;
+  line-height: 1.65;
+}
+
+@media (max-width: 760px) {
+  .mobile-connection-experience #qr-box:not(:has(img)) {
+    display: none;
+  }
+
+  .pairing-box .button {
+    width: 100%;
+  }
+}
+
 .login-footer-bottom {
   display: flex;
   align-items: center;

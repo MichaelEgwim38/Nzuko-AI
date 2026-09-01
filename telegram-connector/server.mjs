@@ -56,6 +56,7 @@ function publicState(entry) {
     status: entry.status,
     connected: entry.status === 'connected',
     qr: entry.qr || '',
+    loginUrl: entry.loginUrl || '',
     qrExpiresAt: entry.qrExpiresAt || null,
     passwordRequired: entry.status === 'password_required',
     passwordHint: entry.passwordHint || '',
@@ -71,7 +72,7 @@ async function entryFor(name) {
     connectionRetries: 5,
     autoReconnect: true,
   });
-  const entry = { name: sessionName, client, status: 'disconnected', qr: '', error: '', loginPromise: null };
+  const entry = { name: sessionName, client, status: 'disconnected', qr: '', loginUrl: '', error: '', loginPromise: null };
   sessions.set(sessionName, entry);
   return entry;
 }
@@ -83,6 +84,7 @@ async function connectExisting(entry) {
   entry.status = 'connected';
   entry.account = { id: String(me.id), name: [me.firstName, me.lastName].filter(Boolean).join(' ') || me.username || 'Telegram user', username: me.username || '' };
   entry.qr = '';
+  entry.loginUrl = '';
   return true;
 }
 
@@ -96,6 +98,7 @@ async function startQrLogin(entry) {
     {
       qrCode: async ({ token, expires }) => {
         const uri = `tg://login?token=${token.toString('base64url')}`;
+        entry.loginUrl = uri;
         entry.qr = await QRCode.toDataURL(uri, { width: 320, margin: 2 });
         entry.qrExpiresAt = new Date(expires * 1000).toISOString();
         entry.status = 'qr_ready';
@@ -115,6 +118,7 @@ async function startQrLogin(entry) {
     entry.status = 'connected';
     entry.account = { id: String(user.id), name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Telegram user', username: user.username || '' };
     entry.qr = '';
+    entry.loginUrl = '';
   }).catch((error) => {
     entry.status = 'error';
     entry.error = error.message || String(error);

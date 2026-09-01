@@ -18,6 +18,7 @@ import {
   getWahaStatus,
   listGroupsFromWaha,
   postRecapToWaha,
+  requestWahaPairingCode,
   startWahaSession,
 } from './connectors/waha.js';
 
@@ -569,6 +570,23 @@ async function handleApi(request, response) {
       apiKey: state.settings.wahaApiKey,
     });
     sendJson(response, 200, { qr });
+    return;
+  }
+
+  if (request.method === 'POST' && requestUrl.pathname === '/api/waha/pairing-code') {
+    const payload = await readBody(request);
+    const phoneNumber = String(payload.phoneNumber || '').replace(/\D/g, '');
+    if (phoneNumber.length < 8 || phoneNumber.length > 15) {
+      sendJson(response, 400, { error: 'Enter the WhatsApp number in international format, including the country code.' });
+      return;
+    }
+    const result = await requestWahaPairingCode({
+      baseUrl: state.settings.wahaBaseUrl,
+      session: state.settings.wahaSession,
+      apiKey: state.settings.wahaApiKey,
+      phoneNumber,
+    });
+    sendJson(response, 200, { code: result?.code || '', phoneNumber });
     return;
   }
 
