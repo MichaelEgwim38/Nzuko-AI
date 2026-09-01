@@ -66,6 +66,31 @@ const workspaceTemplates = {
   },
 };
 
+const landingModeExamples = {
+  'property-facilities': {
+    conversation: '“The boiler at Oak House is losing pressure again. James will inspect it tomorrow and report back by 2pm.”',
+    report: [['Issue', 'Boiler losing pressure'], ['Location', 'Oak House'], ['Owner', 'James'], ['Deadline', 'Tomorrow, 2pm']],
+  },
+  'healthcare-operations': {
+    conversation: '“The evening rota is short by one person. Amara will call the agency and confirm cover before 4pm.”',
+    report: [['Operational issue', 'Evening rota short'], ['Action', 'Contact staffing agency'], ['Owner', 'Amara'], ['Deadline', 'Today, 4pm']],
+  },
+  'field-service': {
+    conversation: '“Unit 14 is repaired, but the replacement valve still needs ordering. Leon will send the part number this afternoon.”',
+    report: [['Job', 'Unit 14 repair'], ['Status', 'Repair completed'], ['Outstanding', 'Order replacement valve'], ['Owner', 'Leon']],
+  },
+  'community-charity': {
+    conversation: '“We agreed to hold the food-drive on Saturday. Ruth will book the hall and Daniel will organise six volunteers.”',
+    report: [['Decision', 'Food-drive on Saturday'], ['Venue owner', 'Ruth'], ['Volunteer owner', 'Daniel'], ['Requirement', 'Six volunteers']],
+  },
+  personal: {
+    conversation: '“I need to send the application by Friday, call the dentist tomorrow and follow up with Maya about the invoice.”',
+    report: [['Priority', 'Submit application'], ['Deadline', 'Friday'], ['Reminder', 'Call dentist tomorrow'], ['Follow-up', 'Maya — invoice']],
+  },
+};
+
+let selectedLandingMode = 'property-facilities';
+
 const actionModeCopy = {
   'healthcare-operations': { eyebrow: 'Approved shift actions', heading: 'Keep every handover accountable', owner: 'Responsible staff member', empty: 'Approved handover actions will appear here.' },
   'property-facilities': { eyebrow: 'Approved site actions', heading: 'Keep every site issue moving', owner: 'Owner or contractor', empty: 'Approved faults, visits and follow-ups will appear here.' },
@@ -742,6 +767,7 @@ async function api(path, options = {}) {
 
 function showLogin(message = '') {
   $('#login-screen').hidden = false;
+  $('#source-screen').hidden = true;
   $('#purpose-screen').hidden = true;
   $('#app-shell').hidden = true;
   const status = $('#login-status');
@@ -765,8 +791,73 @@ function showPilotInterest() {
 
 function showApp() {
   $('#login-screen').hidden = true;
+  $('#source-screen').hidden = true;
   $('#purpose-screen').hidden = true;
   $('#app-shell').hidden = false;
+}
+
+function renderLandingMode(modeId) {
+  const template = workspaceTemplates[modeId];
+  const example = landingModeExamples[modeId];
+  if (!template || !example) return;
+  selectedLandingMode = modeId;
+  document.querySelectorAll('[data-landing-mode]').forEach((button) => {
+    const selected = button.dataset.landingMode === modeId;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+  $('#mode-demo-label').textContent = template.name;
+  $('#mode-demo-conversation').textContent = example.conversation;
+  $('#mode-demo-report').innerHTML = example.report.map(([label, value]) => `<p><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
+  $('#try-selected-mode').innerHTML = `Try ${escapeHtml(template.name)} free <span aria-hidden="true">→</span>`;
+}
+
+function scrollToModeDiscovery() {
+  $('#mode-discovery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function startSelectedMode() {
+  window.localStorage.setItem('nzuko-pending-mode', selectedLandingMode);
+  await continueWithGoogle();
+}
+
+function showSourceScreen() {
+  const template = workspaceTemplates[currentWorkspaceTemplate];
+  $('#login-screen').hidden = true;
+  $('#purpose-screen').hidden = true;
+  $('#app-shell').hidden = true;
+  $('#source-screen').hidden = false;
+  if ($('#source-mode-icon')) $('#source-mode-icon').src = template?.icon || '/assets/purpose/personal-productivity.png';
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+async function chooseConversationSource(event) {
+  const source = event.currentTarget.dataset.sourceChoice;
+  showApp();
+  if (source === 'whatsapp') {
+    window.location.hash = 'connect';
+    $('#connect .connection-disclosure').open = true;
+  } else if (source === 'telegram') {
+    window.location.hash = 'telegram-connect';
+    $('#telegram-connect .connection-disclosure').open = true;
+  } else if (source === 'upload') {
+    window.location.hash = 'messages';
+    window.setTimeout(() => $('#voice-notes')?.focus(), 250);
+  } else if (source === 'paste') {
+    window.location.hash = 'messages';
+    window.setTimeout(() => $('#chat-text')?.focus(), 250);
+  } else if (source === 'sample') {
+    window.location.hash = 'messages';
+    try {
+      const payload = await api('/api/sample');
+      $('#chat-text').value = payload.chatText || '';
+      $('#voice-notes').value = payload.voiceNotes || '';
+      await generateRecap();
+      window.location.hash = 'review';
+    } catch (error) {
+      setHintMessage('import-status', `The sample could not be loaded: ${error.message}`);
+    }
+  }
 }
 
 function setPurposeScreenOpen(isOpen) {
@@ -774,6 +865,7 @@ function setPurposeScreenOpen(isOpen) {
   const appShell = $('#app-shell');
   if (!purposeScreen || !appShell) return;
   purposeScreen.hidden = !isOpen;
+  $('#source-screen').hidden = true;
   appShell.hidden = isOpen;
   $('#purpose-back').hidden = !currentWorkspaceTemplate;
   if (isOpen) {
@@ -897,10 +989,16 @@ async function loadStatus() {
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   setWorkflowSelection(status.settings.workflowType || 'meeting-minutes');
   $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
-  currentWorkspaceTemplate = status.settings.workspaceTemplate || '';
+  const pendingWorkspaceTemplate = window.localStorage.getItem('nzuko-pending-mode') || '';
+  const shouldApplyPendingTemplate = !status.settings.workspaceTemplate && Boolean(workspaceTemplates[pendingWorkspaceTemplate]);
+  currentWorkspaceTemplate = status.settings.workspaceTemplate || (shouldApplyPendingTemplate ? pendingWorkspaceTemplate : '');
+  if (shouldApplyPendingTemplate) {
+    const pendingTemplate = workspaceTemplates[currentWorkspaceTemplate];
+    setWorkflowSelection(pendingTemplate.workflowType);
+    $('#workflow-custom-instructions').value = pendingTemplate.instructions;
+  }
   renderWorkspaceTemplate();
   renderWorkspacePurposeSummary();
-  setPurposeScreenOpen(!currentWorkspaceTemplate);
   $('#outbound-webhook-url').value = status.settings.outboundWebhookUrl || '';
   $('#outbound-webhook-enabled').checked = Boolean(status.settings.outboundWebhookEnabled);
   $('#outbound-webhook-secret').value = '';
@@ -925,6 +1023,13 @@ async function loadStatus() {
   $('#approve-status').textContent = managedWahaWorkspace
     ? 'Review the draft, then approve it when you are ready to post or export it.'
     : 'Posting uses the currently selected connector mode.';
+  if (shouldApplyPendingTemplate) {
+    await saveWorkflow();
+    window.localStorage.removeItem('nzuko-pending-mode');
+    showSourceScreen();
+  } else {
+    setPurposeScreenOpen(!currentWorkspaceTemplate);
+  }
 }
 
 function selectedWorkflowType() {
@@ -976,8 +1081,7 @@ async function chooseWorkspaceTemplate(event) {
     await saveWorkflow();
     renderWorkspacePurposeSummary();
     setHintMessage('workflow-status', `${template.name} selected. Your reports are now configured for this workspace.`);
-    setPurposeScreenOpen(false);
-    window.location.hash = 'connect';
+    showSourceScreen();
   } catch (error) {
     setHintMessage('workflow-status', error.message);
   }
@@ -1810,6 +1914,11 @@ $('#test-integration')?.addEventListener('click', testIntegration);
 $('#save-workflow').addEventListener('click', saveWorkflow);
 $('#workflow-type').addEventListener('change', () => setWorkflowSelection(selectedWorkflowType()));
 document.querySelectorAll('.purpose-card').forEach((card) => card.addEventListener('click', chooseWorkspaceTemplate));
+document.querySelectorAll('[data-landing-mode]').forEach((card) => card.addEventListener('click', () => renderLandingMode(card.dataset.landingMode)));
+document.querySelectorAll('[data-mode-discovery]').forEach((button) => button.addEventListener('click', scrollToModeDiscovery));
+document.querySelectorAll('[data-source-choice]').forEach((button) => button.addEventListener('click', chooseConversationSource));
+$('#try-selected-mode')?.addEventListener('click', startSelectedMode);
+$('#source-skip')?.addEventListener('click', showApp);
 $('#change-workspace-purpose')?.addEventListener('click', () => setPurposeScreenOpen(true));
 $('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false));
 $('#check-waha').addEventListener('click', checkWaha);

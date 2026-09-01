@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-47" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-48" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -27,7 +27,7 @@
         <div class="login-header-actions">
           <button id="login-pricing" class="login-header-link" type="button">Pricing</button>
           <button id="login-install-app" class="login-header-link login-install-button" type="button">Get the app</button>
-          <button class="login-header-cta" type="button" data-google-login>Get started free</button>
+          <button class="login-header-cta" type="button" data-mode-discovery>Get started free</button>
         </div>
       </header>
 
@@ -42,7 +42,7 @@
             <span>Voice notes</span>
             <span>Team reports</span>
           </div>
-          <button class="login-primary-cta" type="button" data-google-login>Start your free trial <span aria-hidden="true">→</span></button>
+          <button class="login-primary-cta" type="button" data-mode-discovery>See Nzuko AI in your world <span aria-hidden="true">→</span></button>
           <p class="login-audience"><strong>Built for real-world coordination:</strong> operations teams, field services, communities and everyday productivity.</p>
         </div>
 
@@ -112,6 +112,41 @@
         </section>
       </section>
 
+      <section id="mode-discovery" class="landing-modes" aria-labelledby="landing-modes-heading">
+        <div class="landing-section-heading">
+          <p class="eyebrow">Made for the way real work happens</p>
+          <h2 id="landing-modes-heading">How will you use Nzuko AI?</h2>
+          <p>Choose a mode to see how Nzuko AI turns an everyday conversation into a useful, accountable outcome.</p>
+        </div>
+        <div class="landing-mode-layout">
+          <div class="landing-mode-list" role="tablist" aria-label="Explore Nzuko Modes">
+            <button class="landing-mode-card active" type="button" role="tab" aria-selected="true" data-landing-mode="property-facilities"><img src="/assets/purpose/property-facilities.png" alt="" /><span><strong>Property &amp; facilities</strong><small>Faults, visits and maintenance</small></span><span aria-hidden="true">→</span></button>
+            <button class="landing-mode-card" type="button" role="tab" aria-selected="false" data-landing-mode="healthcare-operations"><img src="/assets/purpose/healthcare-operations.png" alt="" /><span><strong>Healthcare operations</strong><small>Administrative handovers and actions</small></span><span aria-hidden="true">→</span></button>
+            <button class="landing-mode-card" type="button" role="tab" aria-selected="false" data-landing-mode="field-service"><img src="/assets/purpose/field-service.png" alt="" /><span><strong>Field service</strong><small>Job updates, blockers and next steps</small></span><span aria-hidden="true">→</span></button>
+            <button class="landing-mode-card" type="button" role="tab" aria-selected="false" data-landing-mode="community-charity"><img src="/assets/purpose/community-charity.png" alt="" /><span><strong>Community &amp; charity</strong><small>Decisions, volunteers and follow-ups</small></span><span aria-hidden="true">→</span></button>
+            <button class="landing-mode-card" type="button" role="tab" aria-selected="false" data-landing-mode="personal"><img src="/assets/purpose/personal-productivity.png" alt="" /><span><strong>Personal productivity</strong><small>Commitments, reminders and progress</small></span><span aria-hidden="true">→</span></button>
+          </div>
+          <article class="mode-demo" aria-live="polite">
+            <div class="mode-demo-topline"><span id="mode-demo-label">Property &amp; facilities</span><span class="mode-demo-status"><i></i> Structured by Nzuko AI</span></div>
+            <div class="mode-demo-flow">
+              <section class="mode-demo-input"><span class="mode-demo-step">01 · Conversation</span><blockquote id="mode-demo-conversation">“The boiler at Oak House is losing pressure again. James will inspect it tomorrow and report back by 2pm.”</blockquote><div class="mode-demo-channels"><span>WhatsApp</span><span>Telegram</span><span>Voice note</span></div></section>
+              <div class="mode-demo-transform" aria-hidden="true"><span>✦</span><small>NZUKO AI</small></div>
+              <section class="mode-demo-output"><span class="mode-demo-step">02 · Clear outcome</span><div id="mode-demo-report" class="mode-report-list"><p><span>Issue</span><strong>Boiler losing pressure</strong></p><p><span>Location</span><strong>Oak House</strong></p><p><span>Owner</span><strong>James</strong></p><p><span>Deadline</span><strong>Tomorrow, 2pm</strong></p></div></section>
+            </div>
+            <button id="try-selected-mode" class="mode-demo-cta" type="button">Try Property &amp; facilities free <span aria-hidden="true">→</span></button>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-journey" aria-labelledby="journey-heading">
+        <div class="landing-section-heading"><p class="eyebrow">Simple by design</p><h2 id="journey-heading">From conversation to action in three steps</h2></div>
+        <div class="journey-grid">
+          <article><span class="journey-symbol">💬</span><small>01</small><h3>Bring the conversation</h3><p>Connect a channel, paste material or explore a ready-made sample.</p></article>
+          <article><span class="journey-symbol">✦</span><small>02</small><h3>Nzuko AI structures it</h3><p>Turn discussion into decisions, responsibilities, deadlines and concerns.</p></article>
+          <article><span class="journey-symbol">✓</span><small>03</small><h3>Review and move</h3><p>Keep a human in control, approve the report and follow every action through.</p></article>
+        </div>
+      </section>
+
       <footer class="login-footer">
         <div class="login-footer-main">
           <div class="brand-lockup login-footer-brand" aria-label="Nzuko AI">
@@ -144,6 +179,32 @@
           </nav>
         </div>
       </footer>
+    </main>
+
+    <main id="source-screen" class="source-onboarding" hidden>
+      <nav class="purpose-onboarding-nav" aria-label="Conversation setup">
+        <div class="brand-lockup purpose-brand" aria-label="Nzuko AI">
+          <img class="brand-lockup-icon" src="/assets/nzuko-mark.svg" alt="" />
+          <div class="brand-lockup-copy">
+            <div class="brand-lockup-wordmark"><span class="brand-word">Nzuko</span> <span class="brand-ai">AI</span></div>
+            <div class="brand-lockup-tagline">CONVERSATIONS. <span>ACTIONS.</span> CLARITY.</div>
+          </div>
+        </div>
+      </nav>
+      <section class="source-onboarding-card" aria-labelledby="source-heading">
+        <div class="source-heading-row">
+          <div><p class="eyebrow">Your workspace is ready</p><h1 id="source-heading">Where are your conversations?</h1><p>Choose one way to begin. Connections are optional and can always be added later.</p></div>
+          <img id="source-mode-icon" src="/assets/purpose/personal-productivity.png" alt="" />
+        </div>
+        <div class="source-choice-grid">
+          <button type="button" data-source-choice="whatsapp"><span class="source-symbol source-whatsapp">◉</span><strong>Connect WhatsApp</strong><small>Use a linked device securely</small><i>→</i></button>
+          <button type="button" data-source-choice="telegram"><span class="source-symbol source-telegram">➤</span><strong>Connect Telegram</strong><small>Open Telegram and approve</small><i>→</i></button>
+          <button type="button" data-source-choice="upload"><span class="source-symbol">♫</span><strong>Add a voice-note transcript</strong><small>Paste a transcript to begin</small><i>→</i></button>
+          <button type="button" data-source-choice="paste"><span class="source-symbol">▤</span><strong>Paste a conversation</strong><small>Use text from any channel</small><i>→</i></button>
+          <button type="button" data-source-choice="sample"><span class="source-symbol">✦</span><strong>Try a sample</strong><small>See a result immediately</small><i>→</i></button>
+        </div>
+        <button id="source-skip" class="source-skip" type="button">Go to my dashboard and do this later</button>
+      </section>
     </main>
 
     <main id="purpose-screen" class="purpose-onboarding" hidden>
@@ -761,7 +822,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260901-47" type="module"></script>
+    <script src="/app.js?v=20260901-48" type="module"></script>
   </body>
 </html>
 
