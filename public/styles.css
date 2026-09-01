@@ -1600,6 +1600,10 @@ h2 {
   margin: 22px 0 16px;
 }
 
+.action-metrics.personal-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .action-metrics article {
   display: grid;
   gap: 2px;
@@ -1731,6 +1735,7 @@ h2 {
 @media (max-width: 760px) {
   .actions-panel { padding: 20px; }
   .action-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .action-metrics.personal-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .action-fields { grid-template-columns: 1fr; }
   .action-card-controls .button { flex: 1 1 140px; }
 }
@@ -1738,6 +1743,7 @@ h2 {
 @media (max-width: 420px) {
   .actions-panel { padding: 17px; }
   .action-metrics article { min-height: 74px; padding: 12px; }
+  .action-metrics.personal-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .action-card { padding: 15px; }
 }
 

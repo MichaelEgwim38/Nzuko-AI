@@ -34,8 +34,10 @@ function inferredDueDate(value = '', approvedAt = new Date().toISOString()) {
   return null;
 }
 
-export function actionsFromApprovedRecap(recap = {}, auditEntry = {}) {
+export function actionsFromApprovedRecap(recap = {}, auditEntry = {}, options = {}) {
   const approvedAt = auditEntry.approvedAt || new Date().toISOString();
+  const workspaceTemplate = String(options.workspaceTemplate || auditEntry.workspaceTemplate || '').trim();
+  const personal = workspaceTemplate === 'personal';
   return (Array.isArray(recap.actions) ? recap.actions : [])
     .map((value, index) => {
       const { owner, title } = ownerAndTitle(value);
@@ -43,17 +45,19 @@ export function actionsFromApprovedRecap(recap = {}, auditEntry = {}) {
       return {
         id: `action-${String(auditEntry.id || Date.now()).replace(/[^a-zA-Z0-9_-]/g, '-')}-${index}`,
         title,
-        owner,
+        owner: owner || (personal ? 'Me' : ''),
         dueDate: inferredDueDate(value, approvedAt),
         priority: urgentPattern.test(value) ? 'urgent' : 'normal',
         status: 'open',
-        acknowledgement: 'pending',
+        acknowledgement: personal ? 'acknowledged' : 'pending',
         escalated: urgentPattern.test(value),
         sourceReportId: auditEntry.id || '',
         sourceGroupName: auditEntry.groupName || recap.groupName || '',
+        workspaceTemplate,
         createdAt: approvedAt,
         updatedAt: approvedAt,
-        acknowledgedAt: null,
+        acknowledgedAt: personal ? approvedAt : null,
+        acknowledgedBy: personal ? 'Me' : '',
         completedAt: null,
       };
     })

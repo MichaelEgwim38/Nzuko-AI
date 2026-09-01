@@ -19,6 +19,17 @@ test('keeps placeholder action text out of the official register', () => {
   assert.deepEqual(actionsFromApprovedRecap({ actions: ['No action item with owner found. Add owner and deadline if the group has one.'] }), []);
 });
 
+test('personal mode defaults ownership to Me and skips team acknowledgement', () => {
+  const [action] = actionsFromApprovedRecap(
+    { actions: ['Call the solicitor tomorrow.'] },
+    { id: 'audit-personal', approvedAt: '2026-09-01T10:00:00.000Z' },
+    { workspaceTemplate: 'personal' },
+  );
+  assert.equal(action.owner, 'Me');
+  assert.equal(action.acknowledgement, 'acknowledged');
+  assert.equal(action.workspaceTemplate, 'personal');
+});
+
 test('acknowledges, completes and derives overdue status', () => {
   const original = { id: 'a1', title: 'Inspect alarm', status: 'open', acknowledgement: 'pending', dueDate: '2026-08-30' };
   const acknowledged = updateOperationalAction(original, { acknowledgement: 'acknowledged' }, { name: 'Egwim' });

@@ -66,6 +66,14 @@ const workspaceTemplates = {
   },
 };
 
+const actionModeCopy = {
+  'healthcare-operations': { eyebrow: 'Approved shift actions', heading: 'Keep every handover accountable', owner: 'Responsible staff member', empty: 'Approved handover actions will appear here.' },
+  'property-facilities': { eyebrow: 'Approved site actions', heading: 'Keep every site issue moving', owner: 'Owner or contractor', empty: 'Approved faults, visits and follow-ups will appear here.' },
+  'field-service': { eyebrow: 'Approved job actions', heading: 'Move every job to completion', owner: 'Technician or owner', empty: 'Approved job actions and next steps will appear here.' },
+  'community-charity': { eyebrow: 'Approved community actions', heading: 'Keep every commitment moving', owner: 'Volunteer or owner', empty: 'Approved meeting commitments will appear here.' },
+  personal: { eyebrow: 'My approved actions', heading: 'Turn conversations into progress', owner: 'Owner', empty: 'Your approved reminders and follow-ups will appear here.' },
+};
+
 function isStandaloneMode() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
 }
@@ -921,6 +929,23 @@ function renderWorkspacePurposeSummary() {
   const heroIcon = $('#dashboard-purpose-icon');
   if (name) name.textContent = template?.name || 'Choose your Nzuko Mode';
   if (heroIcon) heroIcon.src = template?.icon || '/assets/purpose/personal-productivity.png';
+  renderActionMode();
+}
+
+function renderActionMode() {
+  const copy = actionModeCopy[currentWorkspaceTemplate] || {
+    eyebrow: 'Approved operational actions',
+    heading: 'Keep every commitment moving',
+    owner: 'Owner',
+    empty: 'Approved report actions will appear here.',
+  };
+  if ($('#actions-eyebrow')) $('#actions-eyebrow').textContent = copy.eyebrow;
+  if ($('#actions-heading')) $('#actions-heading').textContent = copy.heading;
+  if ($('#actions-description')) $('#actions-description').textContent = currentWorkspaceTemplate === 'personal'
+    ? 'Your actions become official only after you approve the source report.'
+    : 'Actions become official only after a person approves the source report.';
+  $('#acknowledgement-metric')?.toggleAttribute('hidden', currentWorkspaceTemplate === 'personal');
+  renderActions();
 }
 
 async function chooseWorkspaceTemplate(event) {
@@ -1479,12 +1504,15 @@ function renderActions() {
   const awaiting = open.filter((action) => action.acknowledgement !== 'acknowledged');
   const overdue = open.filter((action) => action.overdue);
   const escalated = open.filter((action) => action.escalated);
-  metrics.innerHTML = [
+  const personal = currentWorkspaceTemplate === 'personal';
+  const metricItems = [
     [open.length, 'Open'],
-    [awaiting.length, 'Awaiting acknowledgement'],
+    ...(!personal ? [[awaiting.length, 'Awaiting acknowledgement']] : []),
     [overdue.length, 'Overdue'],
     [escalated.length, 'Escalated'],
-  ].map(([count, label]) => `<article><strong>${count}</strong><span>${label}</span></article>`).join('');
+  ];
+  metrics.classList.toggle('personal-metrics', personal);
+  metrics.innerHTML = metricItems.map(([count, label]) => `<article><strong>${count}</strong><span>${label}</span></article>`).join('');
 
   const visible = operationalActionsCache.filter((action) => {
     if (activeActionFilter === 'open') return action.status !== 'done';
@@ -1492,9 +1520,10 @@ function renderActions() {
     if (activeActionFilter === 'done') return action.status === 'done';
     return true;
   });
+  const modeCopy = actionModeCopy[currentWorkspaceTemplate];
   status.textContent = operationalActionsCache.length
     ? `${open.length} unresolved action${open.length === 1 ? '' : 's'} across approved reports.`
-    : 'No official actions yet. Generate and approve a report to create them.';
+    : `${modeCopy?.empty || 'No official actions yet.'} Generate and approve a report to create them.`;
   list.innerHTML = visible.length ? visible.map((action) => `
     <article class="action-card ${action.overdue ? 'is-overdue' : ''} ${action.escalated ? 'is-escalated' : ''}" data-action-id="${escapeHtml(action.id)}">
       <div class="action-card-topline">
@@ -1503,11 +1532,11 @@ function renderActions() {
       </div>
       <h3>${escapeHtml(action.title)}</h3>
       <div class="action-fields">
-        <label>Owner<input data-action-field="owner" value="${escapeHtml(action.owner || '')}" placeholder="Assign an owner" /></label>
+        <label>${escapeHtml(modeCopy?.owner || 'Owner')}<input data-action-field="owner" value="${escapeHtml(action.owner || (personal ? 'Me' : ''))}" placeholder="${personal ? 'Me' : 'Assign an owner'}" /></label>
         <label>Due date<input data-action-field="dueDate" type="date" value="${escapeHtml(action.dueDate || '')}" /></label>
       </div>
       <div class="action-card-controls">
-        ${action.acknowledgement !== 'acknowledged' && action.status !== 'done' ? '<button class="button secondary compact-button" type="button" data-action-command="acknowledge">Acknowledge</button>' : ''}
+        ${!personal && action.acknowledgement !== 'acknowledged' && action.status !== 'done' ? '<button class="button secondary compact-button" type="button" data-action-command="acknowledge">Acknowledge</button>' : ''}
         ${action.status !== 'done' ? '<button class="button compact-button" type="button" data-action-command="complete">Mark complete</button>' : '<button class="button secondary compact-button" type="button" data-action-command="reopen">Reopen</button>'}
         ${action.status !== 'done' ? `<button class="button ${action.escalated ? 'secondary' : 'danger'} compact-button" type="button" data-action-command="${action.escalated ? 'clear-escalation' : 'escalate'}">${action.escalated ? 'Clear escalation' : 'Escalate'}</button>` : ''}
       </div>

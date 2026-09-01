@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260901-45" />
+    <link rel="stylesheet" href="/styles.css?v=20260901-46" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -255,15 +255,15 @@
               <section class="panel actions-panel" id="actions">
                 <div class="section-heading actions-heading">
                   <div>
-                    <p class="eyebrow">Approved operational actions</p>
-                    <h2>Keep every commitment moving</h2>
-                    <p class="hint">Actions appear here only after a person approves the source report.</p>
+                    <p id="actions-eyebrow" class="eyebrow">Approved operational actions</p>
+                    <h2 id="actions-heading">Keep every commitment moving</h2>
+                    <p id="actions-description" class="hint">Actions appear here only after a person approves the source report.</p>
                   </div>
                   <button id="refresh-actions" class="button secondary compact-button" type="button">Refresh</button>
                 </div>
                 <div id="action-metrics" class="action-metrics" aria-label="Action overview">
                   <article><strong>0</strong><span>Open</span></article>
-                  <article><strong>0</strong><span>Awaiting acknowledgement</span></article>
+                  <article id="acknowledgement-metric"><strong>0</strong><span>Awaiting acknowledgement</span></article>
                   <article><strong>0</strong><span>Overdue</span></article>
                   <article><strong>0</strong><span>Escalated</span></article>
                 </div>
@@ -750,7 +750,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260901-45" type="module"></script>
+    <script src="/app.js?v=20260901-46" type="module"></script>
   </body>
 </html>
 

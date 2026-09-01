@@ -778,10 +778,11 @@ async function handleApi(request, response) {
       approvedAt: new Date().toISOString(),
       groupName: state.settings.approvedGroupName,
       recap: state.currentDraft.recap,
+      workspaceTemplate: state.settings.workspaceTemplate || '',
       posted,
     };
     state.auditLog.unshift(auditEntry);
-    const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry);
+    const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry, state.settings);
     state.operationalActions.unshift(...approvedActions);
     state.currentDraft = null;
     sendJson(response, 200, { auditEntry, approvedActions });
@@ -795,7 +796,7 @@ async function handleApi(request, response) {
 
   if (request.method === 'GET' && requestUrl.pathname === '/api/actions') {
     if (!state.operationalActions.length && state.auditLog.length) {
-      state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry));
+      state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry, state.settings));
     }
     sendJson(response, 200, { actions: state.operationalActions.map((action) => actionView(action)) });
     return;

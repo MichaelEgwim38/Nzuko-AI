@@ -2381,6 +2381,7 @@ export default async function handler(request) {
         approvedAt: new Date().toISOString(),
         groupName: state.settings.approvedGroupName,
         recap: state.currentDraft.recap,
+        workspaceTemplate: state.settings.workspaceTemplate || '',
         posted,
       };
       if (state.settings.outboundWebhookEnabled && state.settings.outboundWebhookUrl) {
@@ -2395,7 +2396,7 @@ export default async function handler(request) {
         });
       }
       state.auditLog.unshift(auditEntry);
-      const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry);
+      const approvedActions = actionsFromApprovedRecap(auditEntry.recap, auditEntry, state.settings);
       state.operationalActions.unshift(...approvedActions);
       state.currentDraft = null;
       logUsageEvent(state, {
@@ -2423,7 +2424,7 @@ export default async function handler(request) {
       const context = await loadWorkspaceContext(session);
       const { scope, state } = context;
       if (!state.operationalActions.length && state.auditLog.length) {
-        state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry));
+        state.operationalActions = state.auditLog.flatMap((entry) => actionsFromApprovedRecap(entry.recap, entry, state.settings));
         await saveAppState(scope, state);
       }
       const actions = state.operationalActions.map((action) => actionView(action));
