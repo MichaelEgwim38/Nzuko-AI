@@ -76,6 +76,7 @@ function updateInstallButton() {
   const button = $('#install-app');
   const loginButton = $('#login-install-app');
   const footerButton = $('#footer-install-app');
+  const currentDeviceButton = $('#install-current-device');
   const isStandalone = isStandaloneMode();
   const canShowIosHelp = isIosDevice();
   if (button) {
@@ -89,6 +90,9 @@ function updateInstallButton() {
   if (footerButton) {
     footerButton.hidden = Boolean(isStandalone);
     footerButton.textContent = 'Get the app';
+  }
+  if (currentDeviceButton) {
+    currentDeviceButton.hidden = !deferredInstallPrompt || Boolean(isStandalone);
   }
 }
 
@@ -1636,8 +1640,9 @@ $('#admin-backdrop')?.addEventListener('click', () => setAdminOpen(false));
 $('#billing-admin-list')?.addEventListener('click', handleBillingAdminAction);
 $('#manage-billing')?.addEventListener('click', openBillingPortal);
 $('#install-app')?.addEventListener('click', installApp);
-$('#login-install-app')?.addEventListener('click', installApp);
-$('#footer-install-app')?.addEventListener('click', installApp);
+$('#login-install-app')?.addEventListener('click', () => setInstallHelpOpen(true));
+$('#footer-install-app')?.addEventListener('click', () => setInstallHelpOpen(true));
+$('#install-current-device')?.addEventListener('click', installApp);
 $('#pricing-plan-cards')?.addEventListener('click', handlePlanAction);
 $('#pricing-topup-cards')?.addEventListener('click', handlePlanAction);
 document.querySelectorAll('[data-billing-interval]').forEach((button) => {

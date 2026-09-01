@@ -926,6 +926,11 @@ textarea {
   font-weight: 800;
 }
 
+.install-qr-card .install-current-device {
+  width: fit-content;
+  margin-top: 12px;
+}
+
 .login-footer-install button:hover,
 .login-footer-install button:focus-visible {
   border-color: #9ae63e;
@@ -3401,6 +3406,10 @@ pre {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
+  }
+
+  .install-qr-card .install-current-device {
+    width: 100%;
   }
 
   .login-footer-bottom {
