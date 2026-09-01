@@ -549,10 +549,16 @@ textarea {
 .login-header-link,
 .login-header-cta,
 .login-primary-cta {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
   cursor: pointer;
   font-weight: 800;
+  line-height: 1.1;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .login-header-link {
@@ -801,6 +807,7 @@ textarea {
 }
 
 .login-footer-install button {
+  min-height: 44px;
   margin-top: 5px;
   border: 1px solid rgba(255, 255, 255, 0.74);
   border-radius: 9px;
@@ -3195,6 +3202,7 @@ pre {
 
   .login-header-actions {
     gap: 7px;
+    flex: 0 1 auto;
   }
 
   .login-install-button {
@@ -3217,6 +3225,11 @@ pre {
   .login-aside-copy {
     font-size: 16px;
     line-height: 1.6;
+  }
+
+  .login-primary-cta {
+    width: 100%;
+    min-height: 52px;
   }
 
   .auth-card {
@@ -3243,10 +3256,64 @@ pre {
     gap: 18px;
   }
 
+  .login-footer-install button {
+    width: 100%;
+  }
+
   .login-footer-bottom {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
     padding: 16px 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .login-header-brand {
+    gap: 7px;
+  }
+
+  .login-header-brand .brand-lockup-wordmark {
+    font-size: 17px;
+  }
+
+  .login-header-actions {
+    margin-left: auto;
+  }
+
+  .login-install-button,
+  .login-header-cta {
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+
+  .login-value-line {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .provider-button {
+    min-height: 52px;
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+
+  .login-footer-main nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .login-footer-main nav a,
+  .login-footer-main nav button {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
   }
 }
