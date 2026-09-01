@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact Nzuko AI</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main>
+      <h1>Contact Nzuko AI</h1>
+      <form name="contact" method="POST" action="/contact.html" data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="contact" />
+        <p hidden><label>Do not fill this out: <input name="bot-field" /></label></p>
+        <label>Your name <input name="name" required /></label>
+        <label>Email address <input name="email" type="email" required /></label>
+        <label>Organisation <input name="organisation" /></label>
+        <label>Topic <input name="topic" required /></label>
+        <label>Message <textarea name="message" required></textarea></label>
+        <button type="submit">Send message</button>
+      </form>
+      <p><a href="/">Return to Nzuko AI</a></p>
+    </main>
+  </body>
+</html>

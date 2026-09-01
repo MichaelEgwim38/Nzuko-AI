@@ -618,7 +618,7 @@ async function submitContactForm(event) {
   if (status) status.textContent = 'Sending your message…';
   try {
     const body = new URLSearchParams(new FormData(form));
-    const response = await fetch('/', {
+    const response = await fetch('/contact.html', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
