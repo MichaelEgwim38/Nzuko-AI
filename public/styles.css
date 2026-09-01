@@ -559,6 +559,7 @@ textarea {
   line-height: 1.1;
   text-decoration: none;
   white-space: nowrap;
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
 .login-header-link {
@@ -573,11 +574,34 @@ textarea {
   color: #c9f795;
 }
 
+.login-header-link:hover,
+.login-header-link:focus-visible {
+  border-color: #fff;
+  background: #fff;
+  color: #082f20;
+  transform: translateY(-2px);
+}
+
+.login-install-button:hover,
+.login-install-button:focus-visible {
+  border-color: #9ae63e;
+  background: #9ae63e;
+  color: #153018;
+  box-shadow: 0 9px 24px rgba(154, 230, 62, 0.22);
+}
+
 .login-header-cta {
   border: 0;
   background: #9ae63e;
   color: #153018;
   padding: 11px 20px;
+}
+
+.login-header-cta:hover,
+.login-header-cta:focus-visible {
+  background: #b0f65b;
+  box-shadow: 0 10px 26px rgba(154, 230, 62, 0.3);
+  transform: translateY(-2px) scale(1.02);
 }
 
 .login-stage {
@@ -662,6 +686,22 @@ textarea {
 .login-primary-cta span {
   color: #9ae63e;
   font-size: 20px;
+}
+
+.login-primary-cta:hover,
+.login-primary-cta:focus-visible {
+  background: #12633f;
+  box-shadow: 0 14px 30px rgba(8, 47, 32, 0.22);
+  transform: translateY(-3px);
+}
+
+.login-primary-cta:hover span,
+.login-primary-cta:focus-visible span {
+  transform: translateX(4px);
+}
+
+.login-primary-cta span {
+  transition: transform 180ms ease;
 }
 
 .login-audience {
@@ -790,6 +830,22 @@ textarea {
   cursor: pointer;
 }
 
+.login-footer-main nav a,
+.login-footer-main nav button,
+.login-footer-bottom a {
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.login-footer-main nav a:hover,
+.login-footer-main nav a:focus-visible,
+.login-footer-main nav button:hover,
+.login-footer-main nav button:focus-visible,
+.login-footer-bottom a:hover,
+.login-footer-bottom a:focus-visible {
+  color: #b9f578;
+  transform: translateY(-1px);
+}
+
 .login-footer-install {
   display: grid;
   justify-items: start;
@@ -816,6 +872,36 @@ textarea {
   cursor: pointer;
   padding: 11px 18px;
   font-weight: 800;
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.login-footer-install button:hover,
+.login-footer-install button:focus-visible {
+  border-color: #9ae63e;
+  background: #9ae63e;
+  color: #102819;
+  box-shadow: 0 10px 24px rgba(3, 24, 15, 0.24);
+  transform: translateY(-2px);
+}
+
+.login-header-link:active,
+.login-header-cta:active,
+.login-primary-cta:active,
+.login-footer-install button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-header-link,
+  .login-header-cta,
+  .login-primary-cta,
+  .login-primary-cta span,
+  .login-footer-install button,
+  .login-footer-main nav a,
+  .login-footer-main nav button,
+  .login-footer-bottom a {
+    transition: none;
+  }
 }
 
 .login-footer-bottom {
