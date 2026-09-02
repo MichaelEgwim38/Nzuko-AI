@@ -872,6 +872,7 @@ function publicApiRoute(pathname) {
   return pathname === '/api/auth/status' ||
     pathname === '/api/auth/social-session' ||
     pathname === '/api/auth/logout' ||
+    pathname === '/api/plans' ||
     pathname === '/api/webhooks/waha' ||
     pathname === '/api/webhooks/stripe';
 }
@@ -1402,6 +1403,22 @@ export default async function handler(request) {
       await saveUsers(users.map((entry) => ensureRecordDefaults(entry)));
       await saveAppState(legacySharedScope, state);
       return sendJson(200, { ok: true });
+    }
+
+    if (request.method === 'GET' && pathname === '/api/plans') {
+      return sendJson(200, {
+        publicPricing: true,
+        trial: {
+          isSubscribed: false,
+          canUseApp: true,
+        },
+        billing: {
+          plans: listPaidPlans(),
+          topUps: [],
+          usage: {},
+          customerPortalAvailable: false,
+        },
+      });
     }
 
     const session = readUserSession(request);

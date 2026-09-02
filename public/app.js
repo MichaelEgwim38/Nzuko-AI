@@ -348,6 +348,7 @@ function renderWorkspaceStatus(status = {}) {
 }
 
 function renderBillingPlans(status = {}) {
+  const publicPricing = Boolean(status.publicPricing);
   const trial = status.trial || {};
   const billing = status.billing || {};
   const container = $('#pricing-plan-cards');
@@ -379,7 +380,7 @@ function renderBillingPlans(status = {}) {
   }
 
   if (trialRow) {
-    trialRow.hidden = trial.isSubscribed || !trial.canUseApp;
+    trialRow.hidden = publicPricing || trial.isSubscribed || !trial.canUseApp;
   }
 
   if (!container || !summary) return;
@@ -405,6 +406,8 @@ function renderBillingPlans(status = {}) {
     summary.textContent = usageNotes.length
       ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
       : `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
+  } else if (publicPricing) {
+    summary.textContent = 'Choose a plan after your free trial. Sign in with Google to create your workspace—no card required.';
   } else if (trial.canUseApp) {
     summary.textContent = 'You are on the free trial. Choose Personal for your own follow-ups, Starter for a small team or Pro for busy operations.';
   } else {
@@ -418,7 +421,9 @@ function renderBillingPlans(status = {}) {
         checkoutEnabled: plan.checkoutEnabled,
       };
       const isCurrent = Boolean(plan.isCurrent && trial.isSubscribed);
-      const buttonLabel = isCurrent
+      const buttonLabel = publicPricing
+        ? `Start free with ${plan.name}`
+        : isCurrent
         ? 'Current plan'
         : trial.isSubscribed
           ? 'Manage in billing'
@@ -439,10 +444,10 @@ function renderBillingPlans(status = {}) {
           <button
             class="button${isCurrent ? ' secondary' : ''}"
             type="button"
-            data-plan-action="${trial.isSubscribed ? 'manage' : 'checkout'}"
+            data-plan-action="${publicPricing ? 'signin' : trial.isSubscribed ? 'manage' : 'checkout'}"
             data-plan-id="${escapeHtml(plan.id || '')}"
             data-billing-interval="${escapeHtml(selectedBillingInterval)}"
-            ${!trial.isSubscribed && !selectedPrice.checkoutEnabled ? 'disabled' : ''}
+            ${!publicPricing && !trial.isSubscribed && !selectedPrice.checkoutEnabled ? 'disabled' : ''}
             ${isCurrent ? 'disabled' : ''}
           >${escapeHtml(buttonLabel)}</button>
         </article>
@@ -638,7 +643,12 @@ async function openPricing() {
   if (container) container.textContent = 'Loading current plans…';
   if (summary) summary.textContent = 'Checking your trial and subscription options.';
   try {
-    await loadStatus();
+    if (latestStatus?.user?.userId) {
+      await loadStatus();
+    } else {
+      const publicPlans = await api('/api/plans');
+      renderBillingPlans(publicPlans);
+    }
   } catch (error) {
     if (container) container.textContent = 'Plans could not be loaded.';
     if (summary) summary.textContent = error.message || 'Please close this window and try again.';
@@ -743,6 +753,11 @@ async function handlePlanAction(event) {
   const button = event.target.closest('[data-plan-action]');
   if (!button) return;
   const action = button.dataset.planAction;
+  if (action === 'signin') {
+    setPricingOpen(false);
+    await continueWithGoogle();
+    return;
+  }
   if (action === 'checkout') {
     await startCheckout(button.dataset.planId, button.dataset.billingInterval);
     return;
