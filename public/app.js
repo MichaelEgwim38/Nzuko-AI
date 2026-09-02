@@ -1261,11 +1261,27 @@ async function switchWahaUser() {
 }
 
 async function showQr() {
+  const button = $('#show-qr');
+  const originalLabel = button?.textContent || 'Get QR code';
   try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Preparing QRâ€¦';
+    }
     await saveSettings();
-    const payload = await api('/api/waha/qr');
-    if (!payload.qr?.data || !payload.qr?.mimetype) {
-      $('#qr-box').textContent = 'QR is not available yet. Start or restart the session on another screen and try again.';
+    await api('/api/waha/start', { method: 'POST', body: '{}' });
+    let payload = null;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (attempt) await new Promise((resolve) => window.setTimeout(resolve, 750));
+      try {
+        payload = await api('/api/waha/qr');
+        if (payload.qr?.data && payload.qr?.mimetype) break;
+      } catch (error) {
+        if (attempt === 3) throw error;
+      }
+    }
+    if (!payload?.qr?.data || !payload?.qr?.mimetype) {
+      $('#qr-box').textContent = 'The QR is still being prepared. Please select Get QR code again.';
       return;
     }
     $('#qr-box').innerHTML = `
@@ -1275,6 +1291,11 @@ async function showQr() {
     setHintMessage('waha-status', 'QR loaded. Scan it now with WhatsApp Linked Devices while the QR stays open.');
   } catch (error) {
     $('#qr-box').textContent = `QR failed: ${error.message}`;
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
   }
 }
 
@@ -1940,7 +1961,7 @@ $('#source-skip')?.addEventListener('click', showApp);
 $('#change-workspace-purpose')?.addEventListener('click', () => setPurposeScreenOpen(true));
 $('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false));
 $('#check-waha').addEventListener('click', checkWaha);
-$('#start-waha').addEventListener('click', startWaha);
+$('#start-waha')?.addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
 $('#show-pairing')?.addEventListener('click', showPairingBox);
 $('#request-pairing-code')?.addEventListener('click', requestPairingCode);
