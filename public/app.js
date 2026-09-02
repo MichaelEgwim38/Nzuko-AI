@@ -801,6 +801,7 @@ function renderLandingMode(modeId) {
   const example = landingModeExamples[modeId];
   if (!template || !example) return;
   selectedLandingMode = modeId;
+  if ($('#mode-discovery')) $('#mode-discovery').dataset.activeMode = modeId;
   document.querySelectorAll('[data-landing-mode]').forEach((button) => {
     const selected = button.dataset.landingMode === modeId;
     button.classList.toggle('active', selected);
@@ -827,6 +828,7 @@ function showSourceScreen() {
   $('#purpose-screen').hidden = true;
   $('#app-shell').hidden = true;
   $('#source-screen').hidden = false;
+  $('#source-screen').dataset.activeMode = currentWorkspaceTemplate || 'personal';
   if ($('#source-mode-icon')) $('#source-mode-icon').src = template?.icon || '/assets/purpose/personal-productivity.png';
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -1037,6 +1039,7 @@ function selectedWorkflowType() {
 }
 
 function renderWorkspaceTemplate() {
+  document.body.dataset.nzukoMode = currentWorkspaceTemplate || 'personal';
   document.querySelectorAll('.purpose-card').forEach((card) => {
     const selected = card.dataset.workspaceTemplate === currentWorkspaceTemplate;
     card.classList.toggle('selected', selected);

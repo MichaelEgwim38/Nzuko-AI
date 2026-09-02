@@ -4707,3 +4707,215 @@ pre {
     animation: none;
   }
 }
+
+/* Distinct Nzuko Mode colour identities */
+.landing-modes,
+.source-onboarding,
+body[data-nzuko-mode="property-facilities"] {
+  --mode-accent: #76b82a;
+  --mode-accent-strong: #4e8619;
+  --mode-dark: #12361f;
+  --mode-soft: #edf8df;
+  --mode-glow: rgba(118, 184, 42, 0.22);
+}
+
+.landing-modes[data-active-mode="healthcare-operations"],
+.source-onboarding[data-active-mode="healthcare-operations"],
+body[data-nzuko-mode="healthcare-operations"] {
+  --mode-accent: #13a89e;
+  --mode-accent-strong: #08786f;
+  --mode-dark: #083d3a;
+  --mode-soft: #e2f8f4;
+  --mode-glow: rgba(19, 168, 158, 0.22);
+}
+
+.landing-modes[data-active-mode="field-service"],
+.source-onboarding[data-active-mode="field-service"],
+body[data-nzuko-mode="field-service"] {
+  --mode-accent: #e88d26;
+  --mode-accent-strong: #a95c0d;
+  --mode-dark: #4b2910;
+  --mode-soft: #fff1dc;
+  --mode-glow: rgba(232, 141, 38, 0.24);
+}
+
+.landing-modes[data-active-mode="community-charity"],
+.source-onboarding[data-active-mode="community-charity"],
+body[data-nzuko-mode="community-charity"] {
+  --mode-accent: #8157ce;
+  --mode-accent-strong: #5b32a7;
+  --mode-dark: #2f1d50;
+  --mode-soft: #f0eaff;
+  --mode-glow: rgba(129, 87, 206, 0.22);
+}
+
+.landing-modes[data-active-mode="personal"],
+.source-onboarding[data-active-mode="personal"],
+body[data-nzuko-mode="personal"] {
+  --mode-accent: #3f75db;
+  --mode-accent-strong: #2755ad;
+  --mode-dark: #172f5a;
+  --mode-soft: #e8f0ff;
+  --mode-glow: rgba(63, 117, 219, 0.22);
+}
+
+.landing-mode-card[data-landing-mode="property-facilities"],
+.purpose-card[data-workspace-template="property-facilities"] { --card-accent: #76b82a; --card-soft: #edf8df; }
+.landing-mode-card[data-landing-mode="healthcare-operations"],
+.purpose-card[data-workspace-template="healthcare-operations"] { --card-accent: #13a89e; --card-soft: #e2f8f4; }
+.landing-mode-card[data-landing-mode="field-service"],
+.purpose-card[data-workspace-template="field-service"] { --card-accent: #e88d26; --card-soft: #fff1dc; }
+.landing-mode-card[data-landing-mode="community-charity"],
+.purpose-card[data-workspace-template="community-charity"] { --card-accent: #8157ce; --card-soft: #f0eaff; }
+.landing-mode-card[data-landing-mode="personal"],
+.purpose-card[data-workspace-template="personal"] { --card-accent: #3f75db; --card-soft: #e8f0ff; }
+
+.landing-mode-card {
+  box-shadow: inset 4px 0 0 var(--card-accent, #76b82a);
+}
+
+.landing-mode-card:hover,
+.landing-mode-card:focus-visible {
+  border-color: var(--card-accent, #76b82a);
+  background: var(--card-soft, #edf8df);
+}
+
+.landing-mode-card.active {
+  border-color: var(--mode-accent);
+  background: var(--mode-soft);
+  box-shadow: inset 5px 0 0 var(--mode-accent), 0 14px 34px var(--mode-glow);
+}
+
+.landing-mode-card.active > span:last-child,
+.landing-modes .mode-demo-step,
+.landing-modes .mode-demo-topline {
+  color: var(--mode-accent);
+}
+
+.landing-mode-card.active::after {
+  background: var(--mode-soft);
+  color: var(--mode-accent-strong);
+}
+
+.mode-demo {
+  border-color: var(--mode-accent);
+  background:
+    radial-gradient(circle at 86% 4%, var(--mode-glow), transparent 32%),
+    linear-gradient(145deg, var(--mode-dark), #071710);
+  box-shadow: 0 28px 70px var(--mode-glow);
+}
+
+.mode-demo::before {
+  background: var(--mode-glow);
+}
+
+.mode-demo-status i,
+.mode-demo-transform span,
+.mode-demo-cta {
+  background: var(--mode-accent);
+}
+
+.mode-demo-transform span,
+.mode-demo-cta {
+  color: #fff;
+}
+
+.mode-demo-output {
+  border-color: var(--mode-accent);
+  background: var(--mode-soft);
+}
+
+.mode-demo-output .mode-demo-step,
+.mode-report-list span {
+  color: var(--mode-accent-strong);
+}
+
+.mode-report-list p {
+  border-color: var(--mode-glow);
+}
+
+.purpose-card {
+  box-shadow: inset 0 4px 0 var(--card-accent, #76b82a);
+}
+
+.purpose-card:hover,
+.purpose-card:focus-visible {
+  border-color: var(--card-accent, #76b82a);
+  background: var(--card-soft, #edf8df);
+}
+
+.purpose-card.selected {
+  border-color: var(--card-accent, #76b82a);
+  background: var(--card-soft, #edf8df);
+  box-shadow: inset 0 5px 0 var(--card-accent, #76b82a), 0 18px 38px rgba(20, 46, 27, 0.11);
+}
+
+.purpose-card .purpose-card-action {
+  color: var(--card-accent, #4e8619);
+}
+
+.source-onboarding {
+  background:
+    radial-gradient(circle at 76% 17%, var(--mode-glow), transparent 30%),
+    linear-gradient(150deg, var(--mode-dark), #09140e 68%);
+}
+
+.source-onboarding-card {
+  border: 1px solid var(--mode-glow);
+}
+
+.source-onboarding-card .eyebrow,
+.source-choice-grid button i,
+.source-skip {
+  color: var(--mode-accent-strong);
+}
+
+.source-choice-grid button:hover,
+.source-choice-grid button:focus-visible {
+  border-color: var(--mode-accent);
+  background: var(--mode-soft);
+  box-shadow: 0 14px 30px var(--mode-glow);
+}
+
+.source-choice-grid button:not(:first-child):not(:nth-child(2)) .source-symbol {
+  background: linear-gradient(145deg, var(--mode-soft), #fff);
+  color: var(--mode-accent-strong);
+}
+
+body[data-nzuko-mode] .dashboard-hero {
+  border-color: var(--mode-glow);
+  background:
+    radial-gradient(circle at 88% 18%, var(--mode-glow), transparent 32%),
+    linear-gradient(135deg, #fff, var(--mode-soft));
+}
+
+body[data-nzuko-mode] .hero-purpose-action,
+body[data-nzuko-mode] .upgrade-button,
+body[data-nzuko-mode] .action-filter.active {
+  border-color: var(--mode-accent);
+  background: var(--mode-accent);
+  color: #fff;
+}
+
+body[data-nzuko-mode] .dashboard-hero .eyebrow,
+body[data-nzuko-mode] .panel .eyebrow,
+body[data-nzuko-mode] .connection-summary-status {
+  color: var(--mode-accent-strong);
+}
+
+body[data-nzuko-mode] .dashboard-section-nav a.active,
+body[data-nzuko-mode] .mobile-quick-nav a:focus-visible,
+body[data-nzuko-mode] .mobile-quick-nav a:active {
+  background: var(--mode-soft);
+  color: var(--mode-accent-strong);
+}
+
+@media (max-width: 760px) {
+  .landing-mode-card {
+    box-shadow: inset 0 4px 0 var(--card-accent, #76b82a);
+  }
+
+  .landing-mode-card.active {
+    box-shadow: inset 0 5px 0 var(--mode-accent), 0 13px 28px var(--mode-glow);
+  }
+}
