@@ -1515,7 +1515,7 @@ async function loadTelegramMessages(range = {}) {
     $('#input-source').value = 'telegram';
     setHintMessage('telegram-status', `Loaded ${payload.messages?.length || 0} Telegram messages for review.`);
     location.hash = '#messages';
-    return true;
+    return payload;
   } catch (error) { setHintMessage('telegram-status', error.message); return false; }
 }
 
@@ -1617,7 +1617,7 @@ async function pullWahaMessages(range = {}) {
       ? `${payload.warning}. History is not available from WAHA right now; live capture only shows new messages received after the app is running. Captured now: ${payload.messages.length}.`
       : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`);
     location.hash = '#messages';
-    return true;
+    return payload;
   } catch (error) {
     setHintMessage('waha-status', `Pull failed: ${error.message}`);
     return false;
@@ -1636,12 +1636,12 @@ function setMessagePeriodOpen(isOpen, source = messagePeriodSource) {
   $('#message-custom-dates').hidden = selectedMessagePeriod !== 'custom';
   $('#message-period-channel').textContent = `${messagePeriodSource === 'telegram' ? 'Telegram' : 'WhatsApp'} messages`;
   updateMessagePeriodButton();
-  setHintMessage('message-period-status', '');
+  setHintMessage('message-period-status', 'Creating the draft uses one report from your allowance. Nothing is approved or shared automatically.');
 }
 
 function updateMessagePeriodButton() {
   const labels = { today: 'today', week: 'this week', month: 'this month', custom: 'these dates' };
-  $('#confirm-message-period').textContent = `Load ${messagePeriodSource === 'telegram' ? 'Telegram' : 'WhatsApp'} messages from ${labels[selectedMessagePeriod]}`;
+  $('#confirm-message-period').textContent = `Load ${messagePeriodSource === 'telegram' ? 'Telegram' : 'WhatsApp'} & create draft · ${labels[selectedMessagePeriod]}`;
 }
 
 function selectMessagePeriod(event) {
@@ -1665,8 +1665,19 @@ async function confirmMessagePeriod() {
   const loaded = messagePeriodSource === 'telegram' ? await loadTelegramMessages(range) : await pullWahaMessages(range);
   button.disabled = false;
   if (loaded) {
+    if (!loaded.messages?.length) {
+      updateMessagePeriodButton();
+      return setHintMessage('message-period-status', 'No messages were found for this period. Choose another period and try again.');
+    }
     window.localStorage.setItem(`nzuko-message-period-${messagePeriodSource}`, selectedMessagePeriod);
     setMessagePeriodOpen(false);
+    try {
+      await generateRecap();
+      location.hash = '#review';
+    } catch (error) {
+      setHintMessage('import-status', `Messages were loaded, but the draft could not be created: ${error.message}`);
+      location.hash = '#messages';
+    }
   } else {
     updateMessagePeriodButton();
     setHintMessage('message-period-status', 'Messages could not be loaded. Check the connection message and try again.');

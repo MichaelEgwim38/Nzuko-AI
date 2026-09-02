@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-65" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-66" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -496,9 +496,9 @@
               </section>
 
               <section class="panel" id="messages">
-                <p class="eyebrow">Conversation input</p>
-                <h2>Add today&apos;s operational material</h2>
-                <p class="hint">For files, copied conversations or transcripts that are not loaded directly from a connected group.</p>
+                <p class="eyebrow">Manual input</p>
+                <h2>Add material manually</h2>
+                <p class="hint">A separate option for files, copied conversations or existing transcripts. Messages loaded from WhatsApp or Telegram will also appear here if you need to inspect or edit them.</p>
                 <div class="conversation-import">
                   <label>
                     Source
@@ -657,7 +657,7 @@
           </div>
           <button id="close-message-period" class="button secondary compact-button" type="button">Close</button>
         </div>
-        <p class="hint quick-guide-copy">Choose a useful period. You can review everything before generating a report.</p>
+        <p class="hint quick-guide-copy">Choose a useful period. Nzuko AI will load the messages, create one draft and take you straight to review.</p>
         <div class="period-choice-grid" role="radiogroup" aria-label="Message period">
           <button class="period-choice active" type="button" data-message-period="today"><strong>Today</strong><small>Messages from today</small></button>
           <button class="period-choice" type="button" data-message-period="week"><strong>This week</strong><small>Since Monday</small></button>
@@ -668,8 +668,8 @@
           <label>From<input id="message-period-from" type="date" /></label>
           <label>To<input id="message-period-to" type="date" /></label>
         </div>
-        <p id="message-period-status" class="hint" aria-live="polite"></p>
-        <button id="confirm-message-period" class="button period-load-button" type="button">Load messages from today</button>
+        <p id="message-period-status" class="hint" aria-live="polite">Creating the draft uses one report from your allowance. Nothing is approved or shared automatically.</p>
+        <button id="confirm-message-period" class="button period-load-button" type="button">Load messages &amp; create draft · today</button>
       </section>
     </div>
 
@@ -701,8 +701,8 @@
               <li>Choose the voice-note language.</li>
               <li>Click Load messages.</li>
               <li>Select Today, This week, This month or your own dates.</li>
-              <li>Review the loaded material.</li>
-              <li>Generate the report.</li>
+              <li>Nzuko AI loads the material and creates a draft.</li>
+              <li>Review and approve the report.</li>
             </ol>
           </section>
           <section>
@@ -852,7 +852,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-65" type="module"></script>
+    <script src="/app.js?v=20260903-66" type="module"></script>
   </body>
 </html>
 
