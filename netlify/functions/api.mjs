@@ -984,6 +984,25 @@ function splitMessageText(messages) {
   };
 }
 
+function messageTimeMs(message = {}) {
+  const value = message.timestamp ?? message.date ?? message.receivedAt ?? message.createdAt;
+  if (typeof value === 'number') return value < 10_000_000_000 ? value * 1000 : value;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric < 10_000_000_000 ? numeric * 1000 : numeric;
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function messagesWithinRange(messages = [], range = {}) {
+  const from = range.from ? new Date(range.from).getTime() : null;
+  const to = range.to ? new Date(range.to).getTime() : null;
+  return messages.filter((message) => {
+    const timestamp = messageTimeMs(message);
+    if (timestamp === null) return true;
+    return (!from || timestamp >= from) && (!to || timestamp <= to);
+  });
+}
+
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -2053,15 +2072,17 @@ export default async function handler(request) {
     if (request.method === 'POST' && pathname === '/api/telegram/pull') {
       const context = await loadWorkspaceContext(session);
       const { scope, state, trial, users, userRecord } = context;
+      const body = await readBody(request);
+      const range = selectedDateRange({ preset: body.preset, from: body.from, to: body.to });
       ensureTrialAllowed(trial);
       if (!state.settings.telegramConsentConfirmed) return sendJson(403, { error: 'Confirm permission before loading Telegram group messages.' });
       if (!state.settings.telegramGroupId) return sendJson(400, { error: 'Choose a Telegram group first.' });
       const payload = await getTelegramMessages({
         ...telegramOptions(state),
         chatId: state.settings.telegramGroupId,
-        limit: 200,
+        limit: 1000,
       });
-      let messages = payload.messages || [];
+      let messages = messagesWithinRange(payload.messages || [], range);
       const unmeteredTelegramVoiceMessages = await unmeteredVoiceMessages(scope, messages);
       const unmeteredTelegramVoiceIds = new Set(unmeteredTelegramVoiceMessages.map(messageIdentifier).filter(Boolean));
       const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(unmeteredTelegramVoiceMessages);
@@ -2083,9 +2104,14 @@ export default async function handler(request) {
           scope,
         });
       }
-      messages = await loadCapturedMessages(scope, { groupId: state.settings.telegramGroupId, limit: 500 });
+      messages = await loadCapturedMessages(scope, {
+        groupId: state.settings.telegramGroupId,
+        from: range.from,
+        to: range.to,
+        limit: 1000,
+      });
       const { chatText, voiceNotes } = splitMessageText(messages);
-      return sendJson(200, { messages, chatText, voiceNotes });
+      return sendJson(200, { messages, chatText, voiceNotes, range });
     }
 
     if (request.method === 'GET' && pathname === '/api/sample') {
@@ -2211,16 +2237,14 @@ export default async function handler(request) {
       }
 
       const body = await readBody(request);
+      const range = selectedDateRange({ preset: body.preset, from: body.from, to: body.to });
       let messages;
       let warning = '';
       try {
-        messages = await getGroupMessagesFromWaha({
-          baseUrl: state.settings.wahaBaseUrl,
-          session: state.settings.wahaSession,
-          apiKey: state.settings.wahaApiKey,
-          chatId: state.settings.approvedGroupId,
-          limit: Number(body.limit || 100),
-          downloadMedia: true,
+        messages = await pullWahaMessagesForRange({
+          settings: state.settings,
+          range,
+          limit: Number(body.limit || 1000),
         });
         const transcriptionMinuteCount = transcriptionMinutesForVoiceMessages(await unmeteredVoiceMessages(scope, messages));
         if (transcriptionMinuteCount) {
@@ -2233,12 +2257,16 @@ export default async function handler(request) {
         }
         messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
+          from: range.from,
+          to: range.to,
           limit: Number(body.limit || 100),
         });
       } catch (error) {
         warning = `WAHA history pull failed, so showing live-captured messages only: ${error.message}`;
         messages = await loadCapturedMessages(scope, {
           groupId: state.settings.approvedGroupId,
+          from: range.from,
+          to: range.to,
           limit: Number(body.limit || 100),
         });
       }
@@ -2257,6 +2285,7 @@ export default async function handler(request) {
         messages,
         chatText,
         voiceNotes,
+        range,
         warning: warning || 'Voice notes are queued for background transcription and may appear after a short delay.',
       });
     }

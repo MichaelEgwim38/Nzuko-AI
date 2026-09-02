@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-64" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-65" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -495,29 +495,6 @@
                 </details>
               </section>
 
-              <section class="panel connected-report-panel" id="connected-reports">
-                <div class="section-heading">
-                  <div>
-                    <p class="eyebrow">Connected history</p>
-                    <h2>Create a report from saved messages</h2>
-                    <p class="hint">Use messages already brought in from your approved WhatsApp or Telegram groups.</p>
-                  </div>
-                  <span class="report-flow-icon" aria-hidden="true">✦</span>
-                </div>
-                <div class="range-tools">
-                  <div class="field-grid">
-                    <label>Reporting period<select id="summary-preset"><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option><option value="year">This year</option><option value="custom">Custom dates</option></select></label>
-                    <label>From<input id="summary-from" type="date" /></label>
-                    <label>To<input id="summary-to" type="date" /></label>
-                  </div>
-                  <div class="button-row">
-                    <button id="load-period-messages" class="button secondary">Preview messages</button>
-                    <button id="generate-range" class="button">Generate period report</button>
-                  </div>
-                  <p class="hint" id="range-status">Choose a period to use saved messages from your approved groups.</p>
-                </div>
-              </section>
-
               <section class="panel" id="messages">
                 <p class="eyebrow">Conversation input</p>
                 <h2>Add today&apos;s operational material</h2>
@@ -667,6 +644,35 @@
       </section>
     </div>
 
+    <div id="message-period-modal" class="quick-guide-modal" hidden>
+      <div id="message-period-backdrop" class="quick-guide-backdrop"></div>
+      <section class="quick-guide-panel message-period-panel" role="dialog" aria-modal="true" aria-labelledby="message-period-title">
+        <div class="quick-guide-header">
+          <div class="period-modal-heading">
+            <span class="period-calendar-object" aria-hidden="true">🗓️</span>
+            <div>
+              <p class="eyebrow" id="message-period-channel">Load messages</p>
+              <h2 id="message-period-title">Which messages should Nzuko AI load?</h2>
+            </div>
+          </div>
+          <button id="close-message-period" class="button secondary compact-button" type="button">Close</button>
+        </div>
+        <p class="hint quick-guide-copy">Choose a useful period. You can review everything before generating a report.</p>
+        <div class="period-choice-grid" role="radiogroup" aria-label="Message period">
+          <button class="period-choice active" type="button" data-message-period="today"><strong>Today</strong><small>Messages from today</small></button>
+          <button class="period-choice" type="button" data-message-period="week"><strong>This week</strong><small>Since Monday</small></button>
+          <button class="period-choice" type="button" data-message-period="month"><strong>This month</strong><small>Since the first day</small></button>
+          <button class="period-choice" type="button" data-message-period="custom"><strong>Choose dates</strong><small>Set your own range</small></button>
+        </div>
+        <div id="message-custom-dates" class="message-custom-dates" hidden>
+          <label>From<input id="message-period-from" type="date" /></label>
+          <label>To<input id="message-period-to" type="date" /></label>
+        </div>
+        <p id="message-period-status" class="hint" aria-live="polite"></p>
+        <button id="confirm-message-period" class="button period-load-button" type="button">Load messages from today</button>
+      </section>
+    </div>
+
     <div id="quick-guide-modal" class="quick-guide-modal" hidden>
       <div id="quick-guide-backdrop" class="quick-guide-backdrop"></div>
       <section class="quick-guide-panel" role="dialog" aria-modal="true" aria-labelledby="quick-guide-title">
@@ -683,21 +689,20 @@
             <h3>Start here</h3>
             <ol>
               <li>Sign in to Nzuko AI.</li>
-              <li>Click Start session.</li>
-              <li>Get the QR code.</li>
-              <li>Open WhatsApp on your phone and go to Linked Devices.</li>
-              <li>Scan the QR.</li>
+              <li>Choose your Nzuko Mode.</li>
+              <li>Open WhatsApp or Telegram connection.</li>
+              <li>Connect with the QR code.</li>
+              <li>Choose an authorised group.</li>
             </ol>
           </section>
           <section>
-            <h3>Load your group</h3>
+            <h3>Load messages</h3>
             <ol>
-              <li>Click Load WhatsApp groups.</li>
-              <li>Choose the group you want to use.</li>
-              <li>Choose the summary period you want to use.</li>
-              <li>Get messages for that period.</li>
-              <li>Generate the recap.</li>
-              <li>Select voice-note language before generating a recap.</li>
+              <li>Choose the voice-note language.</li>
+              <li>Click Load messages.</li>
+              <li>Select Today, This week, This month or your own dates.</li>
+              <li>Review the loaded material.</li>
+              <li>Generate the report.</li>
             </ol>
           </section>
           <section>
@@ -847,7 +852,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-64" type="module"></script>
+    <script src="/app.js?v=20260902-65" type="module"></script>
   </body>
 </html>
 

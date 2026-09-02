@@ -631,32 +631,34 @@ async function handleApi(request, response) {
     }
 
     const body = await readBody(request);
+    const range = selectedDateRange({ preset: body.preset, from: body.from, to: body.to });
     let messages;
     let warning = '';
     try {
-      messages = await getGroupMessagesFromWaha({
-        baseUrl: state.settings.wahaBaseUrl,
-        session: state.settings.wahaSession,
-        apiKey: state.settings.wahaApiKey,
-        chatId: state.settings.approvedGroupId,
-        limit: Number(body.limit || 100),
+      messages = await pullWahaMessagesForRange({
+        range,
+        limit: Number(body.limit || 1000),
       });
       for (const message of messages) {
         await captureMappedWahaMessage(message);
       }
       messages = await loadCapturedMessages({
         groupId: state.settings.approvedGroupId,
+        from: range.from,
+        to: range.to,
         limit: Number(body.limit || 100),
       });
     } catch (error) {
       warning = `WAHA history pull failed, so showing live-captured messages only: ${error.message}`;
       messages = await loadCapturedMessages({
         groupId: state.settings.approvedGroupId,
+        from: range.from,
+        to: range.to,
         limit: Number(body.limit || 100),
       });
     }
     const { chatText, voiceNotes } = splitMessageText(messages);
-    sendJson(response, 200, { messages, chatText, voiceNotes, warning });
+    sendJson(response, 200, { messages, chatText, voiceNotes, warning, range });
     return;
   }
 

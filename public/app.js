@@ -27,6 +27,8 @@ let currentTelegramGroupName = '';
 let telegramPollTimer = null;
 let operationalActionsCache = [];
 let activeActionFilter = 'open';
+let messagePeriodSource = '';
+let selectedMessagePeriod = 'today';
 
 const workspaceTemplates = {
   'healthcare-operations': {
@@ -342,7 +344,7 @@ function renderWorkspaceStatus(status = {}) {
 
   ['save-settings', 'check-waha', 'switch-waha-user'].forEach((id) => setButtonDisabled(id, !canUseApp));
   ['start-waha', 'show-qr'].forEach((id) => setButtonDisabled(id, !canClaimSession));
-  ['load-groups', 'configure-webhook', 'load-period-messages', 'generate-range', 'generate', 'approve', 'purge'].forEach((id) =>
+  ['load-groups', 'configure-webhook', 'load-whatsapp-messages', 'load-telegram-messages', 'generate', 'approve', 'purge'].forEach((id) =>
     setButtonDisabled(id, !canOperateLive)
   );
 }
@@ -1505,15 +1507,16 @@ async function chooseTelegramGroup(event) {
   await loadTelegramGroups();
 }
 
-async function loadTelegramMessages() {
+async function loadTelegramMessages(range = {}) {
   try {
-    const payload = await api('/api/telegram/pull', { method: 'POST', body: '{}' });
+    const payload = await api('/api/telegram/pull', { method: 'POST', body: JSON.stringify(range) });
     $('#chat-text').value = payload.chatText || '';
     $('#voice-notes').value = payload.voiceNotes || '';
     $('#input-source').value = 'telegram';
     setHintMessage('telegram-status', `Loaded ${payload.messages?.length || 0} Telegram messages for review.`);
     location.hash = '#messages';
-  } catch (error) { setHintMessage('telegram-status', error.message); }
+    return true;
+  } catch (error) { setHintMessage('telegram-status', error.message); return false; }
 }
 
 async function disconnectTelegram() {
@@ -1603,10 +1606,10 @@ async function removeApprovedGroup(event) {
   setHintMessage('waha-status', `${currentApprovedGroups.length} of ${currentGroupLimit} WhatsApp groups connected.`);
 }
 
-async function pullWahaMessages() {
+async function pullWahaMessages(range = {}) {
   try {
     await saveSettings();
-    const payload = await api('/api/waha/pull', { method: 'POST', body: JSON.stringify({ limit: 100 }) });
+    const payload = await api('/api/waha/pull', { method: 'POST', body: JSON.stringify({ limit: 1000, ...range }) });
     $('#chat-text').value = payload.chatText;
     $('#voice-notes').value = payload.voiceNotes || '';
     $('#input-source').value = 'whatsapp';
@@ -1614,83 +1617,59 @@ async function pullWahaMessages() {
       ? `${payload.warning}. History is not available from WAHA right now; live capture only shows new messages received after the app is running. Captured now: ${payload.messages.length}.`
       : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`);
     location.hash = '#messages';
+    return true;
   } catch (error) {
     setHintMessage('waha-status', `Pull failed: ${error.message}`);
+    return false;
   }
 }
 
-async function pullTodayMessages() {
-  try {
-    await saveSettings();
-    const payload = await api('/api/waha/pull-today', { method: 'POST', body: '{}' });
-    $('#chat-text').value = payload.chatText;
-    $('#voice-notes').value = payload.voiceNotes || '';
-    $('#summary-preset').value = 'today';
-    setHintMessage('waha-status', payload.historyAvailable
-      ? `Pulled ${payload.messages.length} WhatsApp message(s) from today and saved them. Voice-note transcription may finish shortly after this load.`
-      : `WAHA cannot read today's earlier WhatsApp history in the current session. Loaded ${payload.messages.length} locally stored message(s) from today. Next fix: re-scan the NOWEB QR or import an exported chat.`);
-    $('#range-status').textContent = `Today period loaded: ${payload.messages.length} stored message(s).`;
-  } catch (error) {
-    setHintMessage('waha-status', `Today's pull failed: ${error.message}`);
+function setMessagePeriodOpen(isOpen, source = messagePeriodSource) {
+  const modal = $('#message-period-modal');
+  if (!modal) return;
+  if (source) messagePeriodSource = source;
+  modal.hidden = !isOpen;
+  document.body.classList.toggle('modal-open', isOpen);
+  if (!isOpen) return;
+  selectedMessagePeriod = window.localStorage.getItem(`nzuko-message-period-${messagePeriodSource}`) || 'today';
+  document.querySelectorAll('[data-message-period]').forEach((button) => button.classList.toggle('active', button.dataset.messagePeriod === selectedMessagePeriod));
+  $('#message-custom-dates').hidden = selectedMessagePeriod !== 'custom';
+  $('#message-period-channel').textContent = `${messagePeriodSource === 'telegram' ? 'Telegram' : 'WhatsApp'} messages`;
+  updateMessagePeriodButton();
+  setHintMessage('message-period-status', '');
+}
+
+function updateMessagePeriodButton() {
+  const labels = { today: 'today', week: 'this week', month: 'this month', custom: 'these dates' };
+  $('#confirm-message-period').textContent = `Load ${messagePeriodSource === 'telegram' ? 'Telegram' : 'WhatsApp'} messages from ${labels[selectedMessagePeriod]}`;
+}
+
+function selectMessagePeriod(event) {
+  selectedMessagePeriod = event.currentTarget.dataset.messagePeriod;
+  document.querySelectorAll('[data-message-period]').forEach((button) => button.classList.toggle('active', button === event.currentTarget));
+  $('#message-custom-dates').hidden = selectedMessagePeriod !== 'custom';
+  updateMessagePeriodButton();
+}
+
+async function confirmMessagePeriod() {
+  const range = { preset: selectedMessagePeriod };
+  if (selectedMessagePeriod === 'custom') {
+    range.from = $('#message-period-from').value;
+    range.to = $('#message-period-to').value;
+    if (!range.from || !range.to) return setHintMessage('message-period-status', 'Choose both a start date and an end date.');
+    if (range.from > range.to) return setHintMessage('message-period-status', 'The start date must be before the end date.');
   }
-}
-
-function rangeParams() {
-  const preset = $('#summary-preset').value;
-  const params = new URLSearchParams({ preset, limit: '1000' });
-  if (preset === 'custom') {
-    if ($('#summary-from').value) params.set('from', $('#summary-from').value);
-    if ($('#summary-to').value) params.set('to', $('#summary-to').value);
-  }
-  return params;
-}
-
-function rangePayload() {
-  const preset = $('#summary-preset').value;
-  return {
-    preset,
-    from: preset === 'custom' ? $('#summary-from').value : '',
-    to: preset === 'custom' ? $('#summary-to').value : '',
-  };
-}
-
-async function loadStoredRange() {
-  try {
-    const payload = await api(`/api/messages/range?${rangeParams().toString()}`);
-    $('#chat-text').value = payload.chatText;
-    $('#voice-notes').value = payload.voiceNotes || '';
-    $('#range-status').textContent = `Loaded ${payload.messages.length} stored message(s) for this period.`;
-  } catch (error) {
-    $('#range-status').textContent = `Stored period load failed: ${error.message}`;
-  }
-}
-
-async function loadPeriodMessages() {
-  const preset = $('#summary-preset').value;
-  if (preset === 'today') {
-    await pullTodayMessages();
-    return;
-  }
-  await loadStoredRange();
-}
-
-async function generateRangeRecap() {
-  try {
-    const payload = await api('/api/recap/generate', {
-      method: 'POST',
-      body: JSON.stringify({
-        useStoredRange: true,
-        range: rangePayload(),
-        limit: 1000,
-      }),
-    });
-    $('#recap-output').textContent = payload.draft.recap.text;
-    $('#draft-workflow-name').textContent = `${payload.draft.recap.workflowName || workflowName()} draft`;
-    $('#approve-status').textContent = 'Period draft ready. Review before approving.';
-    $('#range-status').textContent = 'Generated from stored approved-group messages for the selected period.';
-    await loadStatus();
-  } catch (error) {
-    $('#range-status').textContent = `Period recap failed: ${error.message}`;
+  const button = $('#confirm-message-period');
+  button.disabled = true;
+  button.textContent = 'Loading messages…';
+  const loaded = messagePeriodSource === 'telegram' ? await loadTelegramMessages(range) : await pullWahaMessages(range);
+  button.disabled = false;
+  if (loaded) {
+    window.localStorage.setItem(`nzuko-message-period-${messagePeriodSource}`, selectedMessagePeriod);
+    setMessagePeriodOpen(false);
+  } else {
+    updateMessagePeriodButton();
+    setHintMessage('message-period-status', 'Messages could not be loaded. Check the connection message and try again.');
   }
 }
 
@@ -2040,12 +2019,14 @@ $('#group-list').addEventListener('click', chooseGroup);
 $('#start-telegram')?.addEventListener('click', startTelegram);
 $('#load-telegram-groups')?.addEventListener('click', loadTelegramGroups);
 $('#submit-telegram-password')?.addEventListener('click', submitTelegramPassword);
-$('#load-telegram-messages')?.addEventListener('click', loadTelegramMessages);
-$('#load-whatsapp-messages')?.addEventListener('click', pullWahaMessages);
+$('#load-telegram-messages')?.addEventListener('click', () => setMessagePeriodOpen(true, 'telegram'));
+$('#load-whatsapp-messages')?.addEventListener('click', () => setMessagePeriodOpen(true, 'whatsapp'));
 $('#disconnect-telegram')?.addEventListener('click', disconnectTelegram);
 $('#configure-webhook').addEventListener('click', configureWebhook);
-$('#load-period-messages').addEventListener('click', loadPeriodMessages);
-$('#generate-range').addEventListener('click', generateRangeRecap);
+document.querySelectorAll('[data-message-period]').forEach((button) => button.addEventListener('click', selectMessagePeriod));
+$('#confirm-message-period')?.addEventListener('click', confirmMessagePeriod);
+$('#close-message-period')?.addEventListener('click', () => setMessagePeriodOpen(false));
+$('#message-period-backdrop')?.addEventListener('click', () => setMessagePeriodOpen(false));
 $('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
