@@ -3360,6 +3360,15 @@ pre {
   border: 1px solid var(--line);
 }
 
+.connector-language-control {
+  max-width: 430px;
+  margin-top: 14px;
+}
+
+.connector-language-control label {
+  margin-top: 0;
+}
+
 .connector-capture-tools {
   margin-top: 16px;
 }
