@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-63" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-64" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -349,7 +349,7 @@
                     <span id="connection-summary-status" class="connection-summary-status">Setup required</span>
                   </summary>
                   <div class="connection-disclosure-content">
-                <p class="hint connect-copy">Link the WhatsApp account used for this workspace, then choose an authorised group.</p>
+                <p class="hint connect-copy">Connect once, choose the conversation you are authorised to use, then bring its messages into your workspace.</p>
                 <details class="advanced-tools managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <summary>Technical connector settings</summary>
                   <label>
@@ -374,11 +374,13 @@
                     <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
                   </label>
                 </details>
+                <div class="connector-step">
+                  <div class="connector-step-heading"><span>1</span><div><strong>Connect WhatsApp</strong><small>Use a QR code, or pair directly on mobile.</small></div></div>
                 <div class="button-row">
                   <button id="show-pairing" class="button mobile-connect-control" type="button">Connect on this phone</button>
                   <button id="show-qr" class="button">Get QR code</button>
-                  <button id="load-groups" class="button secondary">Choose a group</button>
-                  <button id="switch-waha-user" class="button secondary" type="button">Disconnect WhatsApp</button>
+                  <button id="switch-waha-user" class="button quiet-button" type="button">Disconnect</button>
+                </div>
                 </div>
                 <div id="pairing-box" class="pairing-box mobile-connect-control" hidden>
                   <label>
@@ -393,24 +395,31 @@
                 <div class="link-row managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
-                <div id="group-list" class="group-list">WhatsApp group not loaded yet.</div>
+                <div class="connector-step">
+                  <div class="connector-step-heading"><span>2</span><div><strong>Choose a group</strong><small>Select the conversation Nzuko AI should work with.</small></div></div>
+                  <button id="load-groups" class="button secondary">Choose a group</button>
+                <div id="group-list" class="group-list">No WhatsApp group selected yet.</div>
                 <div class="connection-confirmation compact-connection-confirmation">
                   <label>
                     Selected group
-                    <input id="group-name" placeholder="Your selected WhatsApp group will appear here" />
+                    <input id="group-name" placeholder="Your selected WhatsApp group will appear here" readonly />
                   </label>
                   <label class="check-row">
                     <input id="consent-confirmed" type="checkbox" />
-                    <span>I have permission to summarise this group and will review reports before sharing.</span>
+                    <span>I have permission to use this group and will review reports before sharing.</span>
                   </label>
                 </div>
-                <div class="connector-language-control">
-                  <label>
-                    WhatsApp voice-note language
+                </div>
+                <div class="connector-step connector-import-step">
+                  <div class="connector-step-heading"><span>3</span><div><strong>Bring in messages</strong><small>Choose the voice-note language, then load the selected group.</small></div></div>
+                  <div class="connector-load-row">
+                  <label class="connector-language-control">
+                    Voice-note language
                     <select id="whatsapp-transcribe-language"></select>
                   </label>
+                  <button id="load-whatsapp-messages" class="button" type="button" disabled>Load WhatsApp messages</button>
+                  </div>
                 </div>
-                <button id="load-whatsapp-messages" class="button" type="button" disabled>Load selected WhatsApp messages</button>
                 <details class="advanced-tools connector-capture-tools">
                   <summary>Advanced capture tools</summary>
                   <p class="hint">Enable live capture if you want Nzuko AI to keep receiving new WhatsApp messages after setup.</p>
@@ -434,12 +443,14 @@
                     <span id="telegram-summary-status" class="connection-summary-status">Setup required</span>
                   </summary>
                   <div class="connection-disclosure-content">
-                    <p class="hint connect-copy">Link the Telegram account used for this workspace, then choose an authorised group.</p>
+                    <p class="hint connect-copy">Connect once, choose the conversation you are authorised to use, then bring its messages into your workspace.</p>
+                    <div class="connector-step">
+                      <div class="connector-step-heading"><span>1</span><div><strong>Connect Telegram</strong><small>Scan a secure QR code from Telegram Devices.</small></div></div>
                     <div class="button-row">
                       <button id="start-telegram" class="button" type="button">Get QR code</button>
                       <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
-                      <button id="load-telegram-groups" class="button secondary" type="button">Choose a group</button>
-                      <button id="disconnect-telegram" class="button secondary" type="button">Disconnect Telegram</button>
+                      <button id="disconnect-telegram" class="button quiet-button" type="button">Disconnect</button>
+                    </div>
                     </div>
                     <div id="telegram-qr-box" class="qr-box">Click Get QR code, then scan it from Telegram Settings → Devices.</div>
                     <div id="telegram-password-box" hidden>
@@ -449,7 +460,10 @@
                       </label>
                       <button id="submit-telegram-password" class="button" type="button">Continue connection</button>
                     </div>
-                    <div id="telegram-group-list" class="group-list">Telegram group not loaded yet.</div>
+                    <div class="connector-step">
+                      <div class="connector-step-heading"><span>2</span><div><strong>Choose a group</strong><small>Select the conversation Nzuko AI should work with.</small></div></div>
+                      <button id="load-telegram-groups" class="button secondary" type="button">Choose a group</button>
+                    <div id="telegram-group-list" class="group-list">No Telegram group selected yet.</div>
                     <div class="connection-confirmation compact-connection-confirmation">
                       <label>
                         Selected group
@@ -457,16 +471,20 @@
                       </label>
                       <label class="check-row">
                         <input id="telegram-consent-confirmed" type="checkbox" />
-                        <span>I have permission to summarise this group and will review reports before sharing.</span>
+                        <span>I have permission to use this group and will review reports before sharing.</span>
                       </label>
                     </div>
-                    <div class="connector-language-control">
-                      <label>
-                        Telegram voice-note language
+                    </div>
+                    <div class="connector-step connector-import-step">
+                      <div class="connector-step-heading"><span>3</span><div><strong>Bring in messages</strong><small>Choose the voice-note language, then load the selected group.</small></div></div>
+                      <div class="connector-load-row">
+                      <label class="connector-language-control">
+                        Voice-note language
                         <select id="telegram-transcribe-language"></select>
                       </label>
+                      <button id="load-telegram-messages" class="button" type="button" disabled>Load Telegram messages</button>
+                      </div>
                     </div>
-                    <button id="load-telegram-messages" class="button" type="button" disabled>Load selected Telegram messages</button>
                     <details class="advanced-tools connector-capture-tools">
                       <summary>Advanced capture tools</summary>
                       <p class="hint">Telegram keeps its group history available. Use Load selected Telegram messages whenever you want to bring the latest conversation into Nzuko AI.</p>
@@ -477,9 +495,33 @@
                 </details>
               </section>
 
+              <section class="panel connected-report-panel" id="connected-reports">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Connected history</p>
+                    <h2>Create a report from saved messages</h2>
+                    <p class="hint">Use messages already brought in from your approved WhatsApp or Telegram groups.</p>
+                  </div>
+                  <span class="report-flow-icon" aria-hidden="true">✦</span>
+                </div>
+                <div class="range-tools">
+                  <div class="field-grid">
+                    <label>Reporting period<select id="summary-preset"><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option><option value="year">This year</option><option value="custom">Custom dates</option></select></label>
+                    <label>From<input id="summary-from" type="date" /></label>
+                    <label>To<input id="summary-to" type="date" /></label>
+                  </div>
+                  <div class="button-row">
+                    <button id="load-period-messages" class="button secondary">Preview messages</button>
+                    <button id="generate-range" class="button">Generate period report</button>
+                  </div>
+                  <p class="hint" id="range-status">Choose a period to use saved messages from your approved groups.</p>
+                </div>
+              </section>
+
               <section class="panel" id="messages">
                 <p class="eyebrow">Conversation input</p>
                 <h2>Add today&apos;s operational material</h2>
+                <p class="hint">For files, copied conversations or transcripts that are not loaded directly from a connected group.</p>
                 <div class="conversation-import">
                   <label>
                     Source
@@ -499,42 +541,15 @@
                 </div>
                 <p id="import-status" class="hint">Upload a TXT, JSON or CSV export, or paste conversation text below. Review all imported content before processing.</p>
                 <label>
-                  Conversation text
-                  <textarea id="chat-text" rows="9"></textarea>
+                  Paste conversation text
+                  <textarea id="chat-text" rows="7" placeholder="Paste messages, an email thread or meeting notes here"></textarea>
                 </label>
                 <label>
-                  Voice-note transcripts
-                  <textarea id="voice-notes" rows="6"></textarea>
+                  Paste voice-note transcripts <span class="optional-label">Optional</span>
+                  <textarea id="voice-notes" rows="4" placeholder="Paste an existing transcript here"></textarea>
                 </label>
-                <div class="range-tools">
-                  <div class="field-grid">
-                    <label>
-                      Summary period
-                      <select id="summary-preset">
-                        <option value="today">Today</option>
-                        <option value="week">This week</option>
-                        <option value="month">This month</option>
-                        <option value="year">This year</option>
-                        <option value="custom">Custom dates</option>
-                      </select>
-                    </label>
-                    <label>
-                      From
-                      <input id="summary-from" type="date" />
-                    </label>
-                    <label>
-                      To
-                      <input id="summary-to" type="date" />
-                    </label>
-                  </div>
-                  <div class="button-row">
-                    <button id="load-period-messages" class="button secondary">Get messages for this period</button>
-                    <button id="generate-range" class="button">Generate period report</button>
-                  </div>
-                  <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
-                </div>
                 <div class="button-row">
-                  <button id="generate" class="button">Generate report</button>
+                  <button id="generate" class="button">Generate report from this material</button>
                   <button id="purge" class="button secondary">Clear raw draft</button>
                 </div>
               </section>
@@ -832,7 +847,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-63" type="module"></script>
+    <script src="/app.js?v=20260902-64" type="module"></script>
   </body>
 </html>
 
