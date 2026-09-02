@@ -457,12 +457,15 @@ function renderBillingPlans(status = {}) {
 }
 
 function syncLanguageOptions(options = [], selected = 'auto') {
-  const select = $('#transcribe-language');
-  if (!select || !options.length) return;
-  select.innerHTML = options
-    .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
-    .join('');
-  select.value = selected;
+  if (!options.length) return;
+  ['whatsapp-transcribe-language', 'telegram-transcribe-language'].forEach((id) => {
+    const select = $(`#${id}`);
+    if (!select) return;
+    select.innerHTML = options
+      .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+      .join('');
+    select.value = selected;
+  });
 }
 
 function escapeHtml(value) {
@@ -1004,6 +1007,7 @@ async function loadStatus() {
     : 'Setup required';
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
+  setButtonDisabled('load-whatsapp-messages', !currentApprovedGroupId || !status.settings.consentConfirmed);
   setWorkflowSelection(status.settings.workflowType || 'meeting-minutes');
   $('#workflow-custom-instructions').value = status.settings.workflowCustomInstructions || '';
   const pendingWorkspaceTemplate = window.localStorage.getItem('nzuko-pending-mode') || '';
@@ -1134,7 +1138,7 @@ function settingsPayload(extra = {}) {
     approvedGroups: currentApprovedGroups,
     consentConfirmed: $('#consent-confirmed').checked,
     connectorMode: $('#connector-mode').value,
-    transcribeLanguage: $('#transcribe-language').value,
+    transcribeLanguage: $('#whatsapp-transcribe-language')?.value || 'auto',
     workflowType: selectedWorkflowType(),
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
     workspaceTemplate: currentWorkspaceTemplate,
@@ -1200,6 +1204,7 @@ async function saveConnectorConsent(event) {
         ? 'Permission saved. You can now load messages from the selected Telegram group.'
         : 'Permission is required before Telegram messages can be loaded.');
     } else {
+      setButtonDisabled('load-whatsapp-messages', !currentApprovedGroupId || !confirmed);
       setHintMessage('settings-status', confirmed
         ? 'Permission saved automatically.'
         : 'Permission is required before WhatsApp messages can be processed.');
@@ -1207,6 +1212,22 @@ async function saveConnectorConsent(event) {
   } catch (error) {
     event.currentTarget.checked = !event.currentTarget.checked;
     setHintMessage(isTelegram ? 'telegram-status' : 'settings-status', `Permission could not be saved: ${error.message}`);
+  }
+}
+
+async function saveTranscriptionLanguage(event) {
+  const selected = event.currentTarget.value || 'auto';
+  ['whatsapp-transcribe-language', 'telegram-transcribe-language'].forEach((id) => {
+    const select = $(`#${id}`);
+    if (select) select.value = selected;
+  });
+  try {
+    await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+    setHintMessage(event.currentTarget.id.startsWith('telegram') ? 'telegram-status' : 'waha-status',
+      `Voice-note language saved: ${event.currentTarget.selectedOptions?.[0]?.textContent || 'Auto detect'}.`);
+  } catch (error) {
+    setHintMessage(event.currentTarget.id.startsWith('telegram') ? 'telegram-status' : 'waha-status',
+      `Language could not be saved: ${error.message}`);
   }
 }
 
@@ -1531,6 +1552,7 @@ async function chooseGroup(event) {
   currentApprovedGroupId = payload.settings.approvedGroupId;
   currentApprovedGroups = payload.settings.approvedGroups || [];
   $('#group-name').value = payload.settings.approvedGroupName;
+  setButtonDisabled('load-whatsapp-messages', !payload.settings.consentConfirmed);
   document.querySelectorAll('.group-option').forEach((option) => {
     const approved = currentApprovedGroups.some((group) => group.id === option.dataset.groupId);
     const active = option.dataset.groupId === payload.settings.approvedGroupId;
@@ -1572,6 +1594,7 @@ async function removeApprovedGroup(event) {
   currentApprovedGroups = payload.settings.approvedGroups || [];
   currentApprovedGroupId = payload.settings.approvedGroupId || '';
   $('#group-name').value = payload.settings.approvedGroupName || '';
+  setButtonDisabled('load-whatsapp-messages', !currentApprovedGroupId || !payload.settings.consentConfirmed);
   collapseGroupList(payload.settings);
   setHintMessage('waha-status', `${currentApprovedGroups.length} of ${currentGroupLimit} WhatsApp groups connected.`);
 }
@@ -1582,9 +1605,11 @@ async function pullWahaMessages() {
     const payload = await api('/api/waha/pull', { method: 'POST', body: JSON.stringify({ limit: 100 }) });
     $('#chat-text').value = payload.chatText;
     $('#voice-notes').value = payload.voiceNotes || '';
+    $('#input-source').value = 'whatsapp';
     setHintMessage('waha-status', payload.warning
       ? `${payload.warning}. History is not available from WAHA right now; live capture only shows new messages received after the app is running. Captured now: ${payload.messages.length}.`
       : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`);
+    location.hash = '#messages';
   } catch (error) {
     setHintMessage('waha-status', `Pull failed: ${error.message}`);
   }
@@ -1985,6 +2010,8 @@ async function handleBillingAdminAction(event) {
 $('#save-settings')?.addEventListener('click', saveSettings);
 $('#consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#telegram-consent-confirmed')?.addEventListener('change', saveConnectorConsent);
+$('#whatsapp-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
+$('#telegram-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
 $('#conversation-file')?.addEventListener('change', importConversationFile);
 $('#save-integration')?.addEventListener('click', saveIntegration);
 $('#test-integration')?.addEventListener('click', testIntegration);
@@ -2010,6 +2037,7 @@ $('#start-telegram')?.addEventListener('click', startTelegram);
 $('#load-telegram-groups')?.addEventListener('click', loadTelegramGroups);
 $('#submit-telegram-password')?.addEventListener('click', submitTelegramPassword);
 $('#load-telegram-messages')?.addEventListener('click', loadTelegramMessages);
+$('#load-whatsapp-messages')?.addEventListener('click', pullWahaMessages);
 $('#disconnect-telegram')?.addEventListener('click', disconnectTelegram);
 $('#configure-webhook').addEventListener('click', configureWebhook);
 $('#load-period-messages').addEventListener('click', loadPeriodMessages);

@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-59" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-60" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -403,7 +403,12 @@
                     <input id="consent-confirmed" type="checkbox" />
                     <span>I have permission to summarise this group and will review reports before sharing.</span>
                   </label>
+                  <label>
+                    Voice-note language
+                    <select id="whatsapp-transcribe-language"></select>
+                  </label>
                 </div>
+                <button id="load-whatsapp-messages" class="button" type="button" disabled>Load selected WhatsApp messages</button>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
                   </div>
@@ -445,8 +450,12 @@
                         <input id="telegram-consent-confirmed" type="checkbox" />
                         <span>I have permission to summarise this group and will review reports before sharing.</span>
                       </label>
+                      <label>
+                        Voice-note language
+                        <select id="telegram-transcribe-language"></select>
+                      </label>
                     </div>
-                    <button id="load-telegram-messages" class="button" type="button">Load selected Telegram messages</button>
+                    <button id="load-telegram-messages" class="button" type="button" disabled>Load selected Telegram messages</button>
                     <p id="telegram-status" class="hint">Telegram operates independently from your WhatsApp connection.</p>
                   </div>
                 </details>
@@ -481,23 +490,6 @@
                   Voice-note transcripts
                   <textarea id="voice-notes" rows="6"></textarea>
                 </label>
-                <label class="priority-field">
-                  <span class="priority-field-label">Select voice-note language</span>
-                  <select id="transcribe-language">
-                    <option value="auto">Auto detect</option>
-                    <option value="en">English</option>
-                    <option value="pl">Polish</option>
-                    <option value="ro">Romanian</option>
-                    <option value="pa">Punjabi</option>
-                    <option value="ur">Urdu</option>
-                    <option value="igbo">Igbo</option>
-                    <option value="yoruba">Yoruba</option>
-                    <option value="zimbabwe-shona">Zimbabwe (Shona)</option>
-                    <option value="ghana-twi">Ghana (Twi)</option>
-                    <option value="india-hindi">India (Hindi)</option>
-                  </select>
-                </label>
-                <p class="hint">Choose the voice-note language before generating a recap. If you are unsure, leave it on Auto detect.</p>
                 <div class="range-tools">
                   <div class="field-grid">
                     <label>
@@ -831,7 +823,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-59" type="module"></script>
+    <script src="/app.js?v=20260902-60" type="module"></script>
   </body>
 </html>
 
