@@ -1024,6 +1024,7 @@ async function loadStatus() {
     : 'Create a strong secret for signature verification';
   currentTelegramGroupId = status.settings.telegramGroupId || '';
   currentTelegramGroupName = status.settings.telegramGroupName || '';
+  $('#telegram-group-name').value = currentTelegramGroupName;
   $('#telegram-summary-status').textContent = currentTelegramGroupId ? `Group: ${currentTelegramGroupName}` : 'Setup required';
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
@@ -1441,6 +1442,7 @@ async function loadTelegramGroups() {
 async function chooseTelegramGroup(event) {
   currentTelegramGroupId = event.currentTarget.dataset.groupId;
   currentTelegramGroupName = event.currentTarget.dataset.groupName;
+  $('#telegram-group-name').value = currentTelegramGroupName;
   await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
   $('#telegram-summary-status').textContent = `Group: ${currentTelegramGroupName}`;
   setHintMessage('telegram-status', `Selected Telegram group: ${currentTelegramGroupName}. Confirm permission below before loading messages.`);
@@ -1464,6 +1466,7 @@ async function disconnectTelegram() {
     await api('/api/telegram/logout', { method: 'POST', body: '{}' });
     currentTelegramGroupId = '';
     currentTelegramGroupName = '';
+    $('#telegram-group-name').value = '';
     $('#telegram-group-list').textContent = 'Telegram group not loaded yet.';
     $('#telegram-qr-box').textContent = 'Telegram disconnected. Click Get Telegram QR to connect another account.';
     $('#telegram-summary-status').textContent = 'Setup required';

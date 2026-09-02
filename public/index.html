@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-57" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-58" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -437,6 +437,12 @@
                       <button id="submit-telegram-password" class="button" type="button">Continue connection</button>
                     </div>
                     <div id="telegram-group-list" class="group-list">Telegram group not loaded yet.</div>
+                    <div class="connection-confirmation compact-connection-confirmation">
+                      <label>
+                        Selected group
+                        <input id="telegram-group-name" placeholder="Your selected Telegram group will appear here" readonly />
+                      </label>
+                    </div>
                     <button id="load-telegram-messages" class="button" type="button">Load selected Telegram messages</button>
                     <p id="telegram-status" class="hint">Telegram operates independently from your WhatsApp connection.</p>
                   </div>
@@ -822,7 +828,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-57" type="module"></script>
+    <script src="/app.js?v=20260902-58" type="module"></script>
   </body>
 </html>
 
