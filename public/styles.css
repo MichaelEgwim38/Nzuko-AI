@@ -3360,6 +3360,20 @@ pre {
   border: 1px solid var(--line);
 }
 
+.connector-capture-tools {
+  margin-top: 16px;
+}
+
+.connector-capability-note {
+  width: fit-content;
+  margin: 12px 0 0;
+  border-radius: 999px;
+  background: #edf7e8;
+  color: var(--accent-dark);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
 @media (max-width: 680px) {
   .purpose-onboarding {
     padding-inline: 14px;

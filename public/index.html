@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-61" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-62" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -409,6 +409,13 @@
                   </label>
                 </div>
                 <button id="load-whatsapp-messages" class="button" type="button" disabled>Load selected WhatsApp messages</button>
+                <details class="advanced-tools connector-capture-tools">
+                  <summary>Advanced capture tools</summary>
+                  <p class="hint">Enable live capture if you want Nzuko AI to keep receiving new WhatsApp messages after setup.</p>
+                  <div class="button-row advanced-button-row">
+                    <button id="configure-webhook" class="button secondary" type="button">Enable live capture</button>
+                  </div>
+                </details>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
                   </div>
@@ -456,6 +463,11 @@
                       </label>
                     </div>
                     <button id="load-telegram-messages" class="button" type="button" disabled>Load selected Telegram messages</button>
+                    <details class="advanced-tools connector-capture-tools">
+                      <summary>Advanced capture tools</summary>
+                      <p class="hint">Telegram keeps its group history available. Use Load selected Telegram messages whenever you want to bring the latest conversation into Nzuko AI.</p>
+                      <p class="connector-capability-note"><strong>No separate live-capture setup is required.</strong></p>
+                    </details>
                     <p id="telegram-status" class="hint">Telegram operates independently from your WhatsApp connection.</p>
                   </div>
                 </details>
@@ -517,13 +529,6 @@
                   </div>
                   <p class="hint" id="range-status">Stored summaries use messages captured by Nzuko AI from the approved group.</p>
                 </div>
-                <details class="advanced-tools">
-                  <summary>Advanced capture tools</summary>
-                  <p class="hint">Use live capture only if you want Nzuko AI to keep watching for new messages after setup.</p>
-                  <div class="button-row advanced-button-row">
-                    <button id="configure-webhook" class="button secondary" type="button">Enable live capture</button>
-                  </div>
-                </details>
                 <div class="button-row">
                   <button id="generate" class="button">Generate report</button>
                   <button id="purge" class="button secondary">Clear raw draft</button>
@@ -823,7 +828,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-61" type="module"></script>
+    <script src="/app.js?v=20260902-62" type="module"></script>
   </body>
 </html>
 
