@@ -3330,63 +3330,6 @@ pre {
   padding-top: 24px;
 }
 
-.connection-intro h3 {
-  margin: 5px 0 0;
-  font-size: clamp(20px, 2vw, 27px);
-}
-
-.connection-intro .hint {
-  margin-top: 7px;
-}
-
-.connection-journey {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.connection-step {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #f8fbf6;
-  padding: 12px;
-}
-
-.connection-step > span {
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: var(--accent);
-  color: #102016;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.connection-step strong,
-.connection-step small {
-  display: block;
-}
-
-.connection-step small {
-  margin-top: 2px;
-  color: #737a74;
-  font-size: 11px;
-  line-height: 1.25;
-}
-
-.connection-primary-actions {
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--line);
-}
-
 .connection-confirmation {
   margin-top: 16px;
   border-radius: 18px;
@@ -3394,17 +3337,8 @@ pre {
   padding: 2px 16px 16px;
 }
 
-.connection-support {
-  margin-top: 18px;
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-
-.connection-support > summary {
-  cursor: pointer;
-  color: #687169;
-  font-size: 13px;
-  font-weight: 750;
+.compact-connection-confirmation {
+  border: 1px solid var(--line);
 }
 
 @media (max-width: 680px) {
@@ -3453,26 +3387,6 @@ pre {
 
   .connection-disclosure-content {
     padding-top: 18px;
-  }
-
-  .connection-journey {
-    gap: 6px;
-  }
-
-  .connection-step {
-    display: grid;
-    justify-items: center;
-    gap: 6px;
-    padding: 10px 5px;
-    text-align: center;
-  }
-
-  .connection-step small {
-    display: none;
-  }
-
-  .connection-primary-actions .button {
-    flex: 1 1 100%;
   }
 
   .connection-confirmation {
