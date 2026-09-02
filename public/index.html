@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-52" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-54" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -349,12 +349,11 @@
                     <span id="connection-summary-status" class="connection-summary-status">Setup required</span>
                   </summary>
                   <div class="connection-disclosure-content">
-                <button id="check-waha" class="button secondary compact-button" type="button" hidden>Check WAHA</button>
-                <p class="hint connect-copy">Connect the WhatsApp account you want to use for this workspace.</p>
-                <label>
-                  Selected WhatsApp group
-                  <input id="group-name" placeholder="Shows after you load and choose one of the available WhatsApp groups" />
-                </label>
+                <div class="connection-intro">
+                  <p class="eyebrow">Three quick steps</p>
+                  <h3>Link WhatsApp to this workspace</h3>
+                  <p class="hint connect-copy">Start the secure connection, scan once, then choose the group Nzuko AI should organise.</p>
+                </div>
                 <details class="advanced-tools managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <summary>Technical connector settings</summary>
                   <label>
@@ -379,12 +378,16 @@
                     <input id="waha-api-key" type="password" placeholder="Only if WAHA requires X-Api-Key" />
                   </label>
                 </details>
-                <div class="button-row">
-                  <button id="start-waha" class="button">Start session</button>
+                <div class="connection-journey" aria-label="WhatsApp connection steps">
+                  <article class="connection-step"><span>1</span><div><strong>Start</strong><small>Prepare your private connection</small></div></article>
+                  <article class="connection-step"><span>2</span><div><strong>Scan</strong><small>Link from WhatsApp Devices</small></div></article>
+                  <article class="connection-step"><span>3</span><div><strong>Choose</strong><small>Select an authorised group</small></div></article>
+                </div>
+                <div class="button-row connection-primary-actions">
+                  <button id="start-waha" class="button">Start connection</button>
                   <button id="show-pairing" class="button mobile-connect-control" type="button">Connect on this phone</button>
                   <button id="show-qr" class="button secondary">Get QR code</button>
-                  <button id="switch-waha-user" class="button secondary">Disconnect and switch WhatsApp</button>
-                  <button id="load-groups" class="button">Load WhatsApp groups</button>
+                  <button id="load-groups" class="button secondary">Choose a group</button>
                 </div>
                 <div id="pairing-box" class="pairing-box mobile-connect-control" hidden>
                   <label>
@@ -396,16 +399,29 @@
                   <div id="pairing-result" class="pairing-result" hidden></div>
                 </div>
                 <div id="qr-box" class="qr-box">Click Get QR code, then scan it with WhatsApp Linked Devices.</div>
-                <p class="hint">Use Disconnect and switch WhatsApp when changing users.</p>
                 <div class="link-row managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
                 <div id="group-list" class="group-list">WhatsApp group not loaded yet.</div>
-                <label class="check-row">
-                  <input id="consent-confirmed" type="checkbox" />
-                  <span>I have permission to summarise the selected group and I will review drafts before sharing.</span>
-                </label>
-                <button id="save-settings" class="button">Save workspace settings</button>
+                <div class="connection-confirmation">
+                  <label>
+                    Selected group
+                    <input id="group-name" placeholder="Your selected WhatsApp group will appear here" />
+                  </label>
+                  <label class="check-row">
+                    <input id="consent-confirmed" type="checkbox" />
+                    <span>I have permission to summarise this group and will review reports before sharing.</span>
+                  </label>
+                  <button id="save-settings" class="button">Confirm group</button>
+                </div>
+                <details class="connection-support">
+                  <summary>Switch account or troubleshoot</summary>
+                  <div class="button-row">
+                    <button id="switch-waha-user" class="button secondary" type="button">Disconnect WhatsApp</button>
+                    <button id="check-waha" class="button secondary compact-button" type="button" hidden>Check connection</button>
+                  </div>
+                  <p class="hint">Disconnect only when replacing the WhatsApp account used by this workspace.</p>
+                </details>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
                   </div>
@@ -823,7 +839,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-53" type="module"></script>
+    <script src="/app.js?v=20260902-54" type="module"></script>
   </body>
 </html>
 
