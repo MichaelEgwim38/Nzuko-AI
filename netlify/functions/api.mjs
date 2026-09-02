@@ -2075,7 +2075,11 @@ export default async function handler(request) {
         await captureMappedWahaMessage({
           message,
           requestUrl,
-          settings: { ...state.settings, approvedGroupId: state.settings.telegramGroupId },
+          settings: {
+            ...state.settings,
+            approvedGroupId: state.settings.telegramGroupId,
+            transcribeLanguage: state.settings.telegramTranscribeLanguage || 'auto',
+          },
           scope,
         });
       }
@@ -2110,6 +2114,9 @@ export default async function handler(request) {
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage
           : state.settings.transcribeLanguage,
+        telegramTranscribeLanguage: isValidTranscriptionLanguage(body.telegramTranscribeLanguage)
+          ? body.telegramTranscribeLanguage
+          : state.settings.telegramTranscribeLanguage || 'auto',
         workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
         workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
         workspaceTemplate: body.workspaceTemplate === undefined

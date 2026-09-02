@@ -456,9 +456,12 @@ function renderBillingPlans(status = {}) {
     .join('');
 }
 
-function syncLanguageOptions(options = [], selected = 'auto') {
+function syncLanguageOptions(options = [], whatsappSelected = 'auto', telegramSelected = 'auto') {
   if (!options.length) return;
-  ['whatsapp-transcribe-language', 'telegram-transcribe-language'].forEach((id) => {
+  [
+    ['whatsapp-transcribe-language', whatsappSelected],
+    ['telegram-transcribe-language', telegramSelected],
+  ].forEach(([id, selected]) => {
     const select = $(`#${id}`);
     if (!select) return;
     select.innerHTML = options
@@ -1037,7 +1040,11 @@ async function loadStatus() {
   $('#waha-base-url').readOnly = managedWahaWorkspace;
   $('#waha-session').readOnly = managedWahaWorkspace;
   $('#waha-api-key').disabled = managedWahaWorkspace;
-  syncLanguageOptions(status.transcription?.languageOptions || [], status.settings.transcribeLanguage || status.transcription?.language || 'auto');
+  syncLanguageOptions(
+    status.transcription?.languageOptions || [],
+    status.settings.transcribeLanguage || status.transcription?.language || 'auto',
+    status.settings.telegramTranscribeLanguage || 'auto'
+  );
   $('#waha-api-key').placeholder = status.settings.wahaApiKey ? 'API key configured' : 'Only if WAHA requires X-Api-Key';
   if (status.transcription && !status.transcription.openaiKeyConfigured) {
     setHintMessage('waha-status', 'WAHA is connected. Add OPENAI_API_KEY before real voice-note transcription will run.');
@@ -1139,6 +1146,7 @@ function settingsPayload(extra = {}) {
     consentConfirmed: $('#consent-confirmed').checked,
     connectorMode: $('#connector-mode').value,
     transcribeLanguage: $('#whatsapp-transcribe-language')?.value || 'auto',
+    telegramTranscribeLanguage: $('#telegram-transcribe-language')?.value || 'auto',
     workflowType: selectedWorkflowType(),
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
     workspaceTemplate: currentWorkspaceTemplate,
@@ -1216,15 +1224,11 @@ async function saveConnectorConsent(event) {
 }
 
 async function saveTranscriptionLanguage(event) {
-  const selected = event.currentTarget.value || 'auto';
-  ['whatsapp-transcribe-language', 'telegram-transcribe-language'].forEach((id) => {
-    const select = $(`#${id}`);
-    if (select) select.value = selected;
-  });
   try {
     await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+    const connectorName = event.currentTarget.id.startsWith('telegram') ? 'Telegram' : 'WhatsApp';
     setHintMessage(event.currentTarget.id.startsWith('telegram') ? 'telegram-status' : 'waha-status',
-      `Voice-note language saved: ${event.currentTarget.selectedOptions?.[0]?.textContent || 'Auto detect'}.`);
+      `${connectorName} voice-note language saved: ${event.currentTarget.selectedOptions?.[0]?.textContent || 'Auto detect'}.`);
   } catch (error) {
     setHintMessage(event.currentTarget.id.startsWith('telegram') ? 'telegram-status' : 'waha-status',
       `Language could not be saved: ${error.message}`);

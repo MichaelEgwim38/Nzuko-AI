@@ -84,6 +84,7 @@ export function defaultSettings() {
     wahaApiKey: process.env.WAHA_API_KEY || '',
     wahaWorkerId: '',
     transcribeLanguage: process.env.TRANSCRIBE_LANGUAGE || 'auto',
+    telegramTranscribeLanguage: process.env.TELEGRAM_TRANSCRIBE_LANGUAGE || 'auto',
     workflowType: 'meeting-minutes',
     workflowCustomInstructions: '',
     workspaceTemplate: '',
