@@ -1025,6 +1025,8 @@ async function loadStatus() {
   currentTelegramGroupId = status.settings.telegramGroupId || '';
   currentTelegramGroupName = status.settings.telegramGroupName || '';
   $('#telegram-group-name').value = currentTelegramGroupName;
+  $('#telegram-consent-confirmed').checked = Boolean(status.settings.telegramConsentConfirmed);
+  setButtonDisabled('load-telegram-messages', !currentTelegramGroupId || !status.settings.telegramConsentConfirmed);
   $('#telegram-summary-status').textContent = currentTelegramGroupId ? `Group: ${currentTelegramGroupName}` : 'Setup required';
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
@@ -1140,6 +1142,7 @@ function settingsPayload(extra = {}) {
     outboundWebhookEnabled: Boolean($('#outbound-webhook-enabled')?.checked),
     telegramGroupId: currentTelegramGroupId,
     telegramGroupName: currentTelegramGroupName,
+    telegramConsentConfirmed: $('#telegram-consent-confirmed')?.checked || false,
     retentionDays: 14,
     ...extra,
   };
@@ -1178,6 +1181,33 @@ async function saveSettings() {
     ? 'Workspace settings saved. Recaps can be approved after you select a WhatsApp group.'
     : 'Consent must be confirmed before approving a recap.');
   await loadStatus();
+}
+
+async function saveConnectorConsent(event) {
+  const isTelegram = event.currentTarget.id === 'telegram-consent-confirmed';
+  try {
+    const payload = await api('/api/settings', {
+      method: 'POST',
+      body: JSON.stringify(settingsPayload()),
+    });
+    const confirmed = isTelegram
+      ? Boolean(payload.settings.telegramConsentConfirmed)
+      : Boolean(payload.settings.consentConfirmed);
+    event.currentTarget.checked = confirmed;
+    if (isTelegram) {
+      setButtonDisabled('load-telegram-messages', !currentTelegramGroupId || !confirmed);
+      setHintMessage('telegram-status', confirmed
+        ? 'Permission saved. You can now load messages from the selected Telegram group.'
+        : 'Permission is required before Telegram messages can be loaded.');
+    } else {
+      setHintMessage('settings-status', confirmed
+        ? 'Permission saved automatically.'
+        : 'Permission is required before WhatsApp messages can be processed.');
+    }
+  } catch (error) {
+    event.currentTarget.checked = !event.currentTarget.checked;
+    setHintMessage(isTelegram ? 'telegram-status' : 'settings-status', `Permission could not be saved: ${error.message}`);
+  }
 }
 
 async function importConversationFile(event) {
@@ -1445,6 +1475,7 @@ async function chooseTelegramGroup(event) {
   $('#telegram-group-name').value = currentTelegramGroupName;
   await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
   $('#telegram-summary-status').textContent = `Group: ${currentTelegramGroupName}`;
+  setButtonDisabled('load-telegram-messages', !$('#telegram-consent-confirmed').checked);
   setHintMessage('telegram-status', `Selected Telegram group: ${currentTelegramGroupName}. Confirm permission below before loading messages.`);
   await loadTelegramGroups();
 }
@@ -1467,6 +1498,8 @@ async function disconnectTelegram() {
     currentTelegramGroupId = '';
     currentTelegramGroupName = '';
     $('#telegram-group-name').value = '';
+    $('#telegram-consent-confirmed').checked = false;
+    setButtonDisabled('load-telegram-messages', true);
     $('#telegram-group-list').textContent = 'Telegram group not loaded yet.';
     $('#telegram-qr-box').textContent = 'Telegram disconnected. Click Get Telegram QR to connect another account.';
     $('#telegram-summary-status').textContent = 'Setup required';
@@ -1949,7 +1982,9 @@ async function handleBillingAdminAction(event) {
   await Promise.all([loadStatus(), loadAdminBilling(true)]);
 }
 
-$('#save-settings').addEventListener('click', saveSettings);
+$('#save-settings')?.addEventListener('click', saveSettings);
+$('#consent-confirmed')?.addEventListener('change', saveConnectorConsent);
+$('#telegram-consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#conversation-file')?.addEventListener('change', importConversationFile);
 $('#save-integration')?.addEventListener('click', saveIntegration);
 $('#test-integration')?.addEventListener('click', testIntegration);

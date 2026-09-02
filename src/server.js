@@ -57,6 +57,7 @@ const state = {
     approvedGroupId: initialApprovedGroupId,
     approvedGroupName: process.env.APPROVED_GROUP_NAME || '',
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
+    telegramConsentConfirmed: false,
     retentionDays: Number(process.env.RETENTION_DAYS || 14),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',

@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-58" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-59" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -403,7 +403,6 @@
                     <input id="consent-confirmed" type="checkbox" />
                     <span>I have permission to summarise this group and will review reports before sharing.</span>
                   </label>
-                  <button id="save-settings" class="button">Confirm group</button>
                 </div>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
@@ -441,6 +440,10 @@
                       <label>
                         Selected group
                         <input id="telegram-group-name" placeholder="Your selected Telegram group will appear here" readonly />
+                      </label>
+                      <label class="check-row">
+                        <input id="telegram-consent-confirmed" type="checkbox" />
+                        <span>I have permission to summarise this group and will review reports before sharing.</span>
                       </label>
                     </div>
                     <button id="load-telegram-messages" class="button" type="button">Load selected Telegram messages</button>
@@ -828,7 +831,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-58" type="module"></script>
+    <script src="/app.js?v=20260902-59" type="module"></script>
   </body>
 </html>
 

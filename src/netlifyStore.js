@@ -92,6 +92,7 @@ export function defaultSettings() {
     outboundWebhookEnabled: false,
     telegramGroupId: '',
     telegramGroupName: '',
+    telegramConsentConfirmed: false,
   };
 }
 

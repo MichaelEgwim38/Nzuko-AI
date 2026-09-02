@@ -2045,6 +2045,7 @@ export default async function handler(request) {
       const result = await logoutTelegramSession(telegramOptions(context.state));
       context.state.settings.telegramGroupId = '';
       context.state.settings.telegramGroupName = '';
+      context.state.settings.telegramConsentConfirmed = false;
       await saveAppState(context.scope, context.state);
       return sendJson(200, result);
     }
@@ -2053,7 +2054,7 @@ export default async function handler(request) {
       const context = await loadWorkspaceContext(session);
       const { scope, state, trial, users, userRecord } = context;
       ensureTrialAllowed(trial);
-      if (!state.settings.consentConfirmed) return sendJson(403, { error: 'Confirm permission before loading Telegram group messages.' });
+      if (!state.settings.telegramConsentConfirmed) return sendJson(403, { error: 'Confirm permission before loading Telegram group messages.' });
       if (!state.settings.telegramGroupId) return sendJson(400, { error: 'Choose a Telegram group first.' });
       const payload = await getTelegramMessages({
         ...telegramOptions(state),
@@ -2127,6 +2128,9 @@ export default async function handler(request) {
           : Boolean(body.outboundWebhookEnabled),
         telegramGroupId: body.telegramGroupId === undefined ? state.settings.telegramGroupId || '' : String(body.telegramGroupId || '').trim(),
         telegramGroupName: body.telegramGroupName === undefined ? state.settings.telegramGroupName || '' : String(body.telegramGroupName || '').trim().slice(0, 200),
+        telegramConsentConfirmed: body.telegramConsentConfirmed === undefined
+          ? Boolean(state.settings.telegramConsentConfirmed)
+          : Boolean(body.telegramConsentConfirmed),
       };
       state.settings = applyApprovedGroups(state.settings, requestedGroups);
       if (body.approvedGroupId) {
@@ -2148,6 +2152,21 @@ export default async function handler(request) {
           details: {
             approvedGroupId: state.settings.approvedGroupId || '',
             approvedGroupName: state.settings.approvedGroupName || '',
+          },
+        });
+      }
+      if (Boolean(previousSettings.telegramConsentConfirmed) !== Boolean(state.settings.telegramConsentConfirmed)) {
+        logUsageEvent(state, {
+          type: 'workspace.telegram_consent_updated',
+          actorUserId: session.userId || '',
+          actorName: sessionOwnerName(session),
+          actorEmail: session.email || '',
+          summary: state.settings.telegramConsentConfirmed
+            ? `${sessionOwnerName(session)} confirmed permission to summarize the selected Telegram group.`
+            : `${sessionOwnerName(session)} cleared Telegram permission-to-summarize confirmation.`,
+          details: {
+            telegramGroupId: state.settings.telegramGroupId || '',
+            telegramGroupName: state.settings.telegramGroupName || '',
           },
         });
       }
