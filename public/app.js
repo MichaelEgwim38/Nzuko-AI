@@ -1960,7 +1960,7 @@ $('#try-selected-mode')?.addEventListener('click', startSelectedMode);
 $('#source-skip')?.addEventListener('click', showApp);
 $('#change-workspace-purpose')?.addEventListener('click', () => setPurposeScreenOpen(true));
 $('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false));
-$('#check-waha').addEventListener('click', checkWaha);
+$('#check-waha')?.addEventListener('click', checkWaha);
 $('#start-waha')?.addEventListener('click', startWaha);
 $('#show-qr').addEventListener('click', showQr);
 $('#show-pairing')?.addEventListener('click', showPairingBox);

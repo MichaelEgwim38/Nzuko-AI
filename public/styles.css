@@ -3293,10 +3293,12 @@ pre {
 }
 
 .connection-disclosure > summary {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  padding-right: 34px;
   cursor: pointer;
   list-style: none;
 }
@@ -3328,6 +3330,23 @@ pre {
 
 .connection-disclosure-content {
   padding-top: 24px;
+}
+
+.connection-disclosure > summary::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 180ms ease;
+}
+
+.connection-disclosure[open] > summary::after {
+  transform: translateY(-25%) rotate(225deg);
 }
 
 .connection-confirmation {
@@ -3379,6 +3398,11 @@ pre {
   .connection-disclosure > summary {
     align-items: flex-start;
     flex-direction: column;
+    padding-right: 32px;
+  }
+
+  .connection-disclosure > summary::after {
+    top: 18px;
   }
 
   .connection-disclosure > summary strong {

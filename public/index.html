@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260902-56" />
+    <link rel="stylesheet" href="/styles.css?v=20260902-57" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -405,7 +405,6 @@
                   </label>
                   <button id="save-settings" class="button">Confirm group</button>
                 </div>
-                <button id="check-waha" class="button secondary compact-button" type="button" hidden>Check connection</button>
                 <p class="hint" id="settings-status" hidden></p>
                 <p class="hint" id="waha-status" hidden></p>
                   </div>
@@ -424,12 +423,12 @@
                   <div class="connection-disclosure-content">
                     <p class="hint connect-copy">Link the Telegram account used for this workspace, then choose an authorised group.</p>
                     <div class="button-row">
-                      <button id="start-telegram" class="button" type="button">Get Telegram QR</button>
+                      <button id="start-telegram" class="button" type="button">Get QR code</button>
                       <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
-                      <button id="load-telegram-groups" class="button secondary" type="button">Load Telegram groups</button>
+                      <button id="load-telegram-groups" class="button secondary" type="button">Choose a group</button>
                       <button id="disconnect-telegram" class="button secondary" type="button">Disconnect Telegram</button>
                     </div>
-                    <div id="telegram-qr-box" class="qr-box">Click Get Telegram QR, then scan it from Telegram Settings → Devices.</div>
+                    <div id="telegram-qr-box" class="qr-box">Click Get QR code, then scan it from Telegram Settings → Devices.</div>
                     <div id="telegram-password-box" hidden>
                       <label>
                         Telegram two-step verification password
@@ -823,7 +822,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260902-56" type="module"></script>
+    <script src="/app.js?v=20260902-57" type="module"></script>
   </body>
 </html>
 
