@@ -865,23 +865,25 @@ async function chooseConversationSource(event) {
   } else if (source === 'telegram') {
     window.location.hash = 'telegram-connect';
     $('#telegram-connect .connection-disclosure').open = true;
-  } else if (source === 'upload') {
-    window.location.hash = 'messages';
-    window.setTimeout(() => $('#voice-notes')?.focus(), 250);
-  } else if (source === 'paste') {
-    window.location.hash = 'messages';
-    window.setTimeout(() => $('#chat-text')?.focus(), 250);
   } else if (source === 'sample') {
-    window.location.hash = 'messages';
-    try {
-      const payload = await api('/api/sample');
-      $('#chat-text').value = payload.chatText || '';
-      $('#voice-notes').value = payload.voiceNotes || '';
-      await generateRecap();
-      window.location.hash = 'review';
-    } catch (error) {
-      setHintMessage('import-status', `The sample could not be loaded: ${error.message}`);
-    }
+    await runSampleReport();
+  }
+}
+
+async function runSampleReport() {
+  showApp();
+  setQuickGuideOpen(false);
+  try {
+    const payload = await api('/api/sample');
+    $('#chat-text').value = payload.chatText || '';
+    $('#voice-notes').value = payload.voiceNotes || '';
+    $('#input-source').value = 'other';
+    await generateRecap();
+    window.location.hash = 'review';
+  } catch (error) {
+    setHintMessage('import-status', `The sample could not be loaded: ${error.message}`);
+    $('#source-material-review').open = true;
+    window.location.hash = 'review';
   }
 }
 
@@ -1138,7 +1140,7 @@ function setWorkflowSelection(type) {
   }
   $('#custom-workflow-field').hidden = selectedWorkflowType() !== 'custom';
   $('#draft-workflow-name').textContent = `${workflowName()} draft`;
-  $('#generate').textContent = `Generate ${workflowName().toLowerCase()}`;
+  if ($('#generate')) $('#generate').textContent = `Generate ${workflowName().toLowerCase()}`;
 }
 
 function settingsPayload(extra = {}) {
@@ -1514,7 +1516,6 @@ async function loadTelegramMessages(range = {}) {
     $('#voice-notes').value = payload.voiceNotes || '';
     $('#input-source').value = 'telegram';
     setHintMessage('telegram-status', `Loaded ${payload.messages?.length || 0} Telegram messages for review.`);
-    location.hash = '#messages';
     return payload;
   } catch (error) { setHintMessage('telegram-status', error.message); return false; }
 }
@@ -1616,7 +1617,6 @@ async function pullWahaMessages(range = {}) {
     setHintMessage('waha-status', payload.warning
       ? `${payload.warning}. History is not available from WAHA right now; live capture only shows new messages received after the app is running. Captured now: ${payload.messages.length}.`
       : `Pulled ${payload.messages.length} captured message(s). Voice notes stay marked for review while transcription continues in the background.`);
-    location.hash = '#messages';
     return payload;
   } catch (error) {
     setHintMessage('waha-status', `Pull failed: ${error.message}`);
@@ -1676,7 +1676,8 @@ async function confirmMessagePeriod() {
       location.hash = '#review';
     } catch (error) {
       setHintMessage('import-status', `Messages were loaded, but the draft could not be created: ${error.message}`);
-      location.hash = '#messages';
+      $('#source-material-review').open = true;
+      location.hash = '#review';
     }
   } else {
     updateMessagePeriodButton();
@@ -2006,7 +2007,6 @@ $('#consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#telegram-consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#whatsapp-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
 $('#telegram-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
-$('#conversation-file')?.addEventListener('change', importConversationFile);
 $('#save-integration')?.addEventListener('click', saveIntegration);
 $('#test-integration')?.addEventListener('click', testIntegration);
 $('#save-workflow').addEventListener('click', saveWorkflow);
@@ -2038,7 +2038,6 @@ document.querySelectorAll('[data-message-period]').forEach((button) => button.ad
 $('#confirm-message-period')?.addEventListener('click', confirmMessagePeriod);
 $('#close-message-period')?.addEventListener('click', () => setMessagePeriodOpen(false));
 $('#message-period-backdrop')?.addEventListener('click', () => setMessagePeriodOpen(false));
-$('#generate').addEventListener('click', generateRecap);
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
 $('#refresh-actions')?.addEventListener('click', loadActions);
@@ -2057,6 +2056,7 @@ $('#back-to-login')?.addEventListener('click', logout);
 $('#open-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(true));
 $('#close-quick-guide')?.addEventListener('click', () => setQuickGuideOpen(false));
 $('#quick-guide-backdrop')?.addEventListener('click', () => setQuickGuideOpen(false));
+$('#quick-guide-sample')?.addEventListener('click', runSampleReport);
 $('#open-pricing')?.addEventListener('click', openPricing);
 $('#login-pricing')?.addEventListener('click', openPricing);
 $('#footer-pricing')?.addEventListener('click', openPricing);

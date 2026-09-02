@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-66" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-67" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -200,8 +200,6 @@
         <div class="source-choice-grid">
           <button type="button" data-source-choice="whatsapp"><span class="source-symbol source-whatsapp">◉</span><strong>Connect WhatsApp</strong><small>Use a linked device securely</small><i>→</i></button>
           <button type="button" data-source-choice="telegram"><span class="source-symbol source-telegram">➤</span><strong>Connect Telegram</strong><small>Open Telegram and approve</small><i>→</i></button>
-          <button type="button" data-source-choice="upload"><span class="source-symbol">♫</span><strong>Add a voice-note transcript</strong><small>Paste a transcript to begin</small><i>→</i></button>
-          <button type="button" data-source-choice="paste"><span class="source-symbol">▤</span><strong>Paste a conversation</strong><small>Use text from any channel</small><i>→</i></button>
           <button type="button" data-source-choice="sample"><span class="source-symbol">✦</span><strong>Try a sample</strong><small>See a result immediately</small><i>→</i></button>
         </div>
         <button id="source-skip" class="source-skip" type="button">Go to my dashboard and do this later</button>
@@ -287,7 +285,6 @@
           <a class="active" href="#overview">Dashboard</a>
           <a href="#actions">Actions</a>
           <a href="#connect">Connection</a>
-          <a href="#messages">Messages</a>
           <a href="#integrations">Integrations</a>
           <a href="#review">Review</a>
         </nav>
@@ -495,42 +492,6 @@
                 </details>
               </section>
 
-              <section class="panel" id="messages">
-                <p class="eyebrow">Manual input</p>
-                <h2>Add material manually</h2>
-                <p class="hint">A separate option for files, copied conversations or existing transcripts. Messages loaded from WhatsApp or Telegram will also appear here if you need to inspect or edit them.</p>
-                <div class="conversation-import">
-                  <label>
-                    Source
-                    <select id="input-source">
-                      <option value="whatsapp">WhatsApp export</option>
-                      <option value="teams">Microsoft Teams export</option>
-                      <option value="slack">Slack export</option>
-                      <option value="telegram">Telegram export</option>
-                      <option value="email">Email conversation</option>
-                      <option value="other">Other conversation</option>
-                    </select>
-                  </label>
-                  <label>
-                    Upload conversation file
-                    <input id="conversation-file" type="file" accept=".txt,.json,.csv,text/plain,application/json,text/csv" />
-                  </label>
-                </div>
-                <p id="import-status" class="hint">Upload a TXT, JSON or CSV export, or paste conversation text below. Review all imported content before processing.</p>
-                <label>
-                  Paste conversation text
-                  <textarea id="chat-text" rows="7" placeholder="Paste messages, an email thread or meeting notes here"></textarea>
-                </label>
-                <label>
-                  Paste voice-note transcripts <span class="optional-label">Optional</span>
-                  <textarea id="voice-notes" rows="4" placeholder="Paste an existing transcript here"></textarea>
-                </label>
-                <div class="button-row">
-                  <button id="generate" class="button">Generate report from this material</button>
-                  <button id="purge" class="button secondary">Clear raw draft</button>
-                </div>
-              </section>
-
               <section class="panel" id="review">
                 <div class="section-heading">
                   <div>
@@ -541,6 +502,14 @@
                 </div>
                 <pre id="recap-output">Generate a report to preview the structured output.</pre>
                 <p class="hint" id="approve-status">Review the draft, then approve it when you are ready to post or export it.</p>
+                <details id="source-material-review" class="source-material-review">
+                  <summary>View source messages</summary>
+                  <p id="import-status" class="hint">This is the source material used to create the draft.</p>
+                  <input id="input-source" type="hidden" value="other" />
+                  <label>Conversation messages<textarea id="chat-text" rows="7" readonly></textarea></label>
+                  <label>Voice-note transcripts <span class="optional-label">When available</span><textarea id="voice-notes" rows="4" readonly></textarea></label>
+                  <button id="purge" class="button secondary compact-button" type="button">Remove source material</button>
+                </details>
               </section>
 
               <section class="panel" id="integrations">
@@ -574,7 +543,6 @@
         <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
           <a href="#actions">Actions</a>
           <a href="#connect">Connect</a>
-          <a href="#messages">Messages</a>
           <a href="#integrations">Integrations</a>
           <a href="#review">Review</a>
         </nav>
@@ -684,6 +652,7 @@
           <button id="close-quick-guide" class="button secondary compact-button" type="button">Close</button>
         </div>
         <p class="hint quick-guide-copy">Use this quick guide whenever you need help connecting WhatsApp, choosing a group, or preparing a recap.</p>
+        <button id="quick-guide-sample" class="button compact-button quick-guide-sample" type="button">Try a sample report</button>
         <div class="quick-guide-grid">
           <section>
             <h3>Start here</h3>
@@ -852,7 +821,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-66" type="module"></script>
+    <script src="/app.js?v=20260903-67" type="module"></script>
   </body>
 </html>
 

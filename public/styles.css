@@ -4070,7 +4070,6 @@ pre {
 
   #overview,
   #connect,
-  #messages,
   #integrations,
   #review {
     scroll-margin-top: 20px;
@@ -4386,7 +4385,7 @@ pre {
 .source-heading-row h1 { max-width: 720px; margin: 10px 0 12px; color: #112219; font-size: clamp(38px, 5vw, 58px); letter-spacing: -.05em; line-height: 1; }
 .source-heading-row p:last-child { color: #667169; font-size: 16px; }
 .source-heading-row img { width: 126px; height: 126px; object-fit: contain; filter: drop-shadow(0 15px 18px rgba(24,65,32,.14)); }
-.source-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 34px; }
+.source-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 34px; }
 .source-choice-grid button { min-height: 112px; display: grid; grid-template-columns: 54px minmax(0,1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 15px; border: 1px solid #d7e3d4; border-radius: 20px; background: #fff; color: #173321; cursor: pointer; padding: 18px; text-align: left; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
 .source-choice-grid button:hover,
 .source-choice-grid button:focus-visible { border-color: #75b92f; box-shadow: 0 14px 30px rgba(29,72,37,.1); outline: 0; transform: translateY(-3px); }
@@ -4397,6 +4396,27 @@ pre {
 .source-choice-grid small { align-self: start; color: #738077; }
 .source-choice-grid i { grid-column: 3; grid-row: 1 / 3; color: #6cab3e; font-size: 21px; font-style: normal; }
 .source-skip { display: block; margin: 25px auto 0; border: 0; background: transparent; color: #4d6555; cursor: pointer; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
+
+.source-material-review {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.source-material-review > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.source-material-review textarea {
+  background: #f7faf6;
+  color: var(--muted);
+}
+
+.quick-guide-sample { margin: 14px 0 4px; }
 
 @keyframes nzukoPulse { 50% { transform: translateY(-4px) rotate(5deg); box-shadow: 0 16px 34px rgba(154,230,62,.34); } }
 @keyframes reportReveal { from { opacity: 0; transform: translateY(5px); } }
