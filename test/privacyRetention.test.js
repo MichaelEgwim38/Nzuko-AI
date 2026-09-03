@@ -49,7 +49,7 @@ test('removes expired approved reports and their linked actions', () => {
   assert.deepEqual(state.operationalActions.map(({ id }) => id), ['new-action']);
 });
 
-test('caps approved retention at 365 days', () => {
+test('defaults unsupported approved retention to 60 days', () => {
   const state = {
     settings: { approvedRetentionDays: 900 },
     currentDraft: null,
@@ -58,6 +58,6 @@ test('caps approved retention at 365 days', () => {
   };
 
   const result = applyPrivacyRetention(state, { now: NOW });
-  assert.equal(result.approvedRetentionDays, 365);
-  assert.equal(state.settings.approvedRetentionDays, 365);
+  assert.equal(result.approvedRetentionDays, 60);
+  assert.equal(state.settings.approvedRetentionDays, 60);
 });

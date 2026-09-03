@@ -6,7 +6,8 @@ function timestamp(value) {
 }
 
 export function applyPrivacyRetention(state = {}, { now = Date.now(), draftHours = 24 } = {}) {
-  const approvedDays = Math.min(365, Math.max(1, Number(state.settings?.approvedRetentionDays || 90)));
+  const requestedDays = Number(state.settings?.approvedRetentionDays);
+  const approvedDays = [30, 60, 90].includes(requestedDays) ? requestedDays : 60;
   const draftCutoff = now - Math.max(1, Number(draftHours || 24)) * 60 * 60 * 1000;
   const approvedCutoff = now - approvedDays * DAY_MS;
   let changed = false;

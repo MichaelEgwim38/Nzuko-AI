@@ -1104,7 +1104,7 @@ async function startApp() {
 async function loadStatus() {
   const status = await api('/api/status');
   if ($('#approved-retention-days')) {
-    $('#approved-retention-days').value = String(status.settings.approvedRetentionDays || 90);
+    $('#approved-retention-days').value = String(status.settings.approvedRetentionDays || 60);
   }
   managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
@@ -1278,7 +1278,7 @@ function settingsPayload(extra = {}) {
     telegramConsentConfirmed: $('#telegram-consent-confirmed')?.checked || false,
     aiProcessingConfirmed: $('#ai-processing-confirmed')?.checked || false,
     retentionDays: 1,
-    approvedRetentionDays: Number($('#approved-retention-days')?.value || 90),
+    approvedRetentionDays: Number($('#approved-retention-days')?.value || 60),
     ...extra,
   };
   if (!managedWahaWorkspace) {
@@ -1975,8 +1975,8 @@ async function approveRecap() {
 async function savePrivacySettings() {
   try {
     const payload = await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
-    $('#approved-retention-days').value = String(payload.settings.approvedRetentionDays || 90);
-    setHintMessage('privacy-data-status', `Approved reports and actions will be retained for ${payload.settings.approvedRetentionDays || 90} days.`);
+    $('#approved-retention-days').value = String(payload.settings.approvedRetentionDays || 60);
+    setHintMessage('privacy-data-status', `Approved reports and actions will be retained for ${payload.settings.approvedRetentionDays || 60} days.`);
   } catch (error) {
     setHintMessage('privacy-data-status', `Retention could not be saved: ${error.message}`);
   }

@@ -64,7 +64,7 @@ const state = {
     aiProcessingConfirmedAt: '',
     aiProcessingNoticeVersion: '',
     retentionDays: 1,
-    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 90),
+    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 60),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',
     wahaBaseUrl: process.env.WAHA_BASE_URL || 'http://localhost:3000',
@@ -622,7 +622,9 @@ async function handleApi(request, response) {
         : '',
       aiProcessingNoticeVersion: Boolean(body.aiProcessingConfirmed) ? '2026-09-03' : '',
       retentionDays: 1,
-      approvedRetentionDays: Math.min(365, Math.max(1, Number(body.approvedRetentionDays || state.settings.approvedRetentionDays || 90))),
+      approvedRetentionDays: [30, 60, 90].includes(Number(body.approvedRetentionDays))
+        ? Number(body.approvedRetentionDays)
+        : ([30, 60, 90].includes(Number(state.settings.approvedRetentionDays)) ? Number(state.settings.approvedRetentionDays) : 60),
       connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',
       wahaBaseUrl: body.wahaBaseUrl || state.settings.wahaBaseUrl,
       wahaPublicUrl: body.wahaPublicUrl || state.settings.wahaPublicUrl,

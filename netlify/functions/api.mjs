@@ -2173,7 +2173,9 @@ export default async function handler(request) {
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
         retentionDays: 1,
-        approvedRetentionDays: Math.min(365, Math.max(1, Number(body.approvedRetentionDays || state.settings.approvedRetentionDays || 90))),
+        approvedRetentionDays: [30, 60, 90].includes(Number(body.approvedRetentionDays))
+          ? Number(body.approvedRetentionDays)
+          : ([30, 60, 90].includes(Number(state.settings.approvedRetentionDays)) ? Number(state.settings.approvedRetentionDays) : 60),
         connectorMode: managedWahaBaseUrl ? 'waha' : body.connectorMode === 'waha' ? 'waha' : 'mock',
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage

@@ -76,7 +76,7 @@ export function defaultSettings() {
       : [],
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
     retentionDays: 1,
-    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 90),
+    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 60),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',
     wahaBaseUrl: process.env.WAHA_BASE_URL || 'http://localhost:3000',
