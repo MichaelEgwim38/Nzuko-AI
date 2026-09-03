@@ -520,6 +520,23 @@
                 </details>
               </section>
 
+              <section class="panel ai-processing-panel" id="ai-processing-controls">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Privacy control</p>
+                    <h2>Optional AI reconciliation</h2>
+                    <p>Use whole-conversation AI to reconcile discussions, decisions, owners and deadlines. Standard reports remain available when this is off.</p>
+                  </div>
+                </div>
+                <label class="check-row ai-processing-confirmation">
+                  <input id="ai-processing-confirmed" type="checkbox" />
+                  <span>I am authorised to send the selected workspace material to OpenAI for report generation. I understand that unnecessary identifiers are removed, outputs require human review, and I must not submit clinical records or other restricted data.</span>
+                </label>
+                <p class="hint">You can withdraw this authorisation at any time. Turning it off does not disconnect WhatsApp or Telegram.</p>
+                <p id="ai-processing-status" class="hint" aria-live="polite"></p>
+                <p class="hint"><a href="/privacy.html#ai-processing" target="_blank" rel="noreferrer">Read how AI processing works</a></p>
+              </section>
+
               <section class="panel" id="review">
                 <div class="section-heading">
                   <div>

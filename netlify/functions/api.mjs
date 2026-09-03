@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from '../../src/workflowTemplates.js';
+import { generateReconciledWorkflowReport } from '../../src/reconciliationAgent.js';
 import {
   cloneScopeData,
   countCapturedMessages,
+  enforceMessageRetention,
   defaultMembershipRecord,
   defaultWorkspaceRecord,
   legacyWorkspaceId,
@@ -842,6 +844,7 @@ async function loadWorkspaceContext(user) {
   const scope = workspaceScopeFor(workspace);
   const state = await loadAppState(scope);
   state.settings = managedSettings(state.settings, workspace);
+  await enforceMessageRetention(scope, state.settings.retentionDays);
   const ownerSummary = await normaliseSharedOwner(scope, state);
   const { users, record } = await loadOrCreateUserAccess(user);
   if (record.workspaceId !== workspace.id) {
@@ -2162,7 +2165,7 @@ export default async function handler(request) {
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
-        retentionDays: Number(body.retentionDays || state.settings.retentionDays),
+        retentionDays: Math.min(90, Math.max(1, Number(body.retentionDays || state.settings.retentionDays || 14))),
         connectorMode: managedWahaBaseUrl ? 'waha' : body.connectorMode === 'waha' ? 'waha' : 'mock',
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage
@@ -2191,6 +2194,11 @@ export default async function handler(request) {
         telegramConsentConfirmed: body.telegramConsentConfirmed === undefined
           ? Boolean(state.settings.telegramConsentConfirmed)
           : Boolean(body.telegramConsentConfirmed),
+        aiProcessingConfirmed: Boolean(body.aiProcessingConfirmed),
+        aiProcessingConfirmedAt: Boolean(body.aiProcessingConfirmed)
+          ? (state.settings.aiProcessingConfirmedAt || nowIso())
+          : '',
+        aiProcessingNoticeVersion: Boolean(body.aiProcessingConfirmed) ? '2026-09-03' : '',
       };
       state.settings = applyApprovedGroups(state.settings, requestedGroups);
       if (body.approvedGroupId) {
@@ -2228,6 +2236,18 @@ export default async function handler(request) {
             telegramGroupId: state.settings.telegramGroupId || '',
             telegramGroupName: state.settings.telegramGroupName || '',
           },
+        });
+      }
+      if (Boolean(previousSettings.aiProcessingConfirmed) !== Boolean(state.settings.aiProcessingConfirmed)) {
+        logUsageEvent(state, {
+          type: 'workspace.ai_processing_authorisation_updated',
+          actorUserId: session.userId || '',
+          actorName: sessionOwnerName(session),
+          actorEmail: session.email || '',
+          summary: state.settings.aiProcessingConfirmed
+            ? `${sessionOwnerName(session)} authorised optional AI reconciliation under notice 2026-09-03.`
+            : `${sessionOwnerName(session)} withdrew optional AI reconciliation authorisation.`,
+          details: { noticeVersion: state.settings.aiProcessingNoticeVersion || '' },
         });
       }
       await saveAppState(scope, state);
@@ -2437,13 +2457,20 @@ export default async function handler(request) {
         chatText = split.chatText;
         voiceNotes = split.voiceNotes;
       }
-      const recap = generateWorkflowReport({
+      const semanticAiAllowed = process.env.SEMANTIC_RECONCILIATION_ENABLED === 'true'
+        && state.settings.aiProcessingConfirmed === true;
+      const recap = await generateReconciledWorkflowReport({
         chatText: chatText || '',
         voiceNotes: voiceNotes || '',
         groupName: state.settings.approvedGroupName,
         messages: sourceMessages,
         workflowType: state.settings.workflowType,
         customInstructions: state.settings.workflowCustomInstructions,
+        mode: state.settings.workspaceTemplate || state.settings.workflowType,
+        reportPeriod: range ? `${range.from} to ${range.to}` : 'User-selected material',
+      }, {
+        openaiApiKey: semanticAiAllowed ? process.env.OPENAI_API_KEY : '',
+        model: process.env.RECONCILIATION_MODEL,
       });
       state.currentDraft = {
         id: `draft-${Date.now()}`,
@@ -2463,6 +2490,8 @@ export default async function handler(request) {
         details: {
           source: body.useStoredRange ? 'stored-messages' : 'manual-input',
           groupName: state.settings.approvedGroupName,
+          reconciliationEngine: recap.reconciliationEngine || 'deterministic',
+          aiProcessingAuthorised: semanticAiAllowed,
         },
       });
       await saveAppState(scope, state);

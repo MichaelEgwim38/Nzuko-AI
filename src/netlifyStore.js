@@ -94,6 +94,9 @@ export function defaultSettings() {
     telegramGroupId: '',
     telegramGroupName: '',
     telegramConsentConfirmed: false,
+    aiProcessingConfirmed: false,
+    aiProcessingConfirmedAt: '',
+    aiProcessingNoticeVersion: '',
   };
 }
 
@@ -288,6 +291,15 @@ export async function countCapturedMessages(scopeOrQuery = 'shared', maybeQuery)
   const { groupId } = resolved.query;
   const messages = await loadMessagesRaw(resolved.scope);
   return messages.filter((message) => !groupId || message.groupId === groupId).length;
+}
+
+export async function enforceMessageRetention(scope = 'shared', retentionDays = 14) {
+  const days = Math.min(90, Math.max(1, Number(retentionDays) || 14));
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const messages = await loadMessagesRaw(scope);
+  const retained = messages.filter((message) => timestampMs(message) >= cutoff);
+  if (retained.length !== messages.length) await saveMessagesRaw(scope, retained);
+  return { removed: messages.length - retained.length, retained: retained.length, retentionDays: days };
 }
 
 export async function loadUsers() {

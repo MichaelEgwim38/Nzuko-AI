@@ -59,6 +59,9 @@ const state = {
     approvedGroupName: process.env.APPROVED_GROUP_NAME || '',
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
     telegramConsentConfirmed: false,
+    aiProcessingConfirmed: false,
+    aiProcessingConfirmedAt: '',
+    aiProcessingNoticeVersion: '',
     retentionDays: Number(process.env.RETENTION_DAYS || 14),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',
@@ -611,7 +614,12 @@ async function handleApi(request, response) {
       approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
       approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
       consentConfirmed: Boolean(body.consentConfirmed),
-      retentionDays: Number(body.retentionDays || state.settings.retentionDays),
+      aiProcessingConfirmed: Boolean(body.aiProcessingConfirmed),
+      aiProcessingConfirmedAt: Boolean(body.aiProcessingConfirmed)
+        ? (state.settings.aiProcessingConfirmedAt || new Date().toISOString())
+        : '',
+      aiProcessingNoticeVersion: Boolean(body.aiProcessingConfirmed) ? '2026-09-03' : '',
+      retentionDays: Math.min(90, Math.max(1, Number(body.retentionDays || state.settings.retentionDays || 14))),
       connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',
       wahaBaseUrl: body.wahaBaseUrl || state.settings.wahaBaseUrl,
       wahaPublicUrl: body.wahaPublicUrl || state.settings.wahaPublicUrl,
@@ -757,6 +765,8 @@ async function handleApi(request, response) {
       chatText = split.chatText;
       voiceNotes = split.voiceNotes;
     }
+    const semanticAiAllowed = process.env.SEMANTIC_RECONCILIATION_ENABLED === 'true'
+      && state.settings.aiProcessingConfirmed === true;
     const recap = await generateReconciledWorkflowReport({
       chatText: chatText || '',
       voiceNotes: voiceNotes || '',
@@ -766,7 +776,10 @@ async function handleApi(request, response) {
       customInstructions: state.settings.workflowCustomInstructions,
       mode: state.settings.workspaceTemplate || state.settings.workflowType,
       reportPeriod: range ? `${range.from} to ${range.to}` : 'Not stated',
-    }, { openaiApiKey: process.env.OPENAI_API_KEY });
+    }, {
+      openaiApiKey: semanticAiAllowed ? process.env.OPENAI_API_KEY : '',
+      model: process.env.RECONCILIATION_MODEL,
+    });
     state.currentDraft = {
       id: `draft-${Date.now()}`,
       createdAt: new Date().toISOString(),

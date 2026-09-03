@@ -44,6 +44,26 @@ const REPORT_SCHEMA = {
   required: ['reportPeriod', 'sources', 'executiveSummary', 'decisions', 'actions', 'discussionPoints', 'blockersRisksEscalations', 'openQuestions', 'voiceNoteReview', 'followUps', 'humanReviewFlags'],
 };
 
+const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const URL_PATTERN = /\bhttps?:\/\/[^\s<]+/gi;
+const PHONE_PATTERN = /(?<!\w)(?:\+?\d[\d ().-]{7,}\d)(?!\w)/g;
+const PLATFORM_ID_PATTERN = /\b\d{5,}(?:@(?:c|g)\.us)?\b/gi;
+
+export function minimiseText(value = '', maximumLength = 30000) {
+  return String(value || '')
+    .replace(EMAIL_PATTERN, '[email removed]')
+    .replace(URL_PATTERN, '[link removed]')
+    .replace(PHONE_PATTERN, '[phone removed]')
+    .replace(PLATFORM_ID_PATTERN, '[identifier removed]')
+    .slice(0, maximumLength);
+}
+
+function minimiseSpeaker(value = '') {
+  const speaker = String(value || '').trim();
+  if (!speaker || /@(?:c|g)\.us$/i.test(speaker) || /^\+?[\d ().-]{7,}$/.test(speaker)) return 'Participant';
+  return minimiseText(speaker, 120);
+}
+
 function bullets(items, fallback) {
   return (items.length ? items : [fallback]).map((value) => `- ${value}`).join('\n');
 }
@@ -104,17 +124,17 @@ Please correct any missing or inaccurate speakers, timestamps, translations, dec
 
 function sourceMaterial({ chatText, voiceNotes, messages }) {
   const structured = Array.isArray(messages) && messages.length
-    ? `\nStructured messages:\n${JSON.stringify(messages.slice(-1000).map((message) => ({
-        speaker: message.from || 'Speaker not identified',
+    ? `\nStructured messages:\n${JSON.stringify(messages.slice(-200).map((message) => ({
+        speaker: minimiseSpeaker(message.from || 'Speaker not identified'),
         timestamp: message.timestamp || message.receivedAt || message.createdAt || 'Time not captured',
         type: message.type || 'text',
-        statement: message.body || '',
-        translatedVoiceMeaning: message.voiceNote?.translation?.englishSummary || '',
+        statement: minimiseText(message.body || '', 4000),
+        translatedVoiceMeaning: minimiseText(message.voiceNote?.translation?.englishSummary || '', 4000),
         translationConfidence: message.voiceNote?.translation?.confidence || 'Not scored',
         translationReviewNote: message.voiceNote?.translation?.reviewNote || '',
       })))} `
     : '';
-  return `Conversation text:\n${String(chatText || '').slice(0, 60000)}\n\nVoice-note transcripts:\n${String(voiceNotes || '').slice(0, 30000)}${structured}`;
+  return `Conversation text:\n${minimiseText(chatText, 30000)}\n\nVoice-note transcripts:\n${minimiseText(voiceNotes, 15000)}${structured}`;
 }
 
 export async function generateReconciledWorkflowReport(input, { openaiApiKey, model } = {}) {

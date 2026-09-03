@@ -57,6 +57,7 @@ Required Netlify environment variables:
 - `WAHA_API_KEY` when your WAHA instance requires it
 - `OPENAI_API_KEY` for voice-note transcription and translation
 - `RECONCILIATION_MODEL` optionally selects the report reconciliation model (defaults to `gpt-4.1-mini`)
+- `SEMANTIC_RECONCILIATION_ENABLED=true` enables optional external AI reconciliation at deployment level. It remains off for each workspace until the workspace owner separately authorises it.
 - `PUBLIC_APP_URL` for webhook registration in production
 - `STRIPE_SECRET_KEY`
 - `STRIPE_STARTER_PRICE_ID`
@@ -121,6 +122,8 @@ Captured approved-group messages are stored locally in `data/messages.json`, so 
 WAHA's historical chat pull may still fail for some WEBJS sessions. When that happens, the app falls back to the locally stored live-capture history.
 
 Voice-note transcription is review-first. When `OPENAI_API_KEY` is configured, incoming approved-group voice notes are downloaded from WAHA and sent to `gpt-4o-transcribe` with an Igbo/Pidgin/English prompt. The app leaves language detection on automatic by default because real group voice notes may mix Igbo, Nigerian Pidgin, and English. The transcript is always marked as needing human review before posting.
+
+Before enabling semantic reconciliation in production, complete [the data-protection launch checklist](docs/DATA_PROTECTION_LAUNCH_CHECKLIST.md). Captured source messages are automatically pruned to the workspace retention setting (14 days by default). Common contact identifiers are removed before optional reconciliation, OpenAI requests use `store: false`, and all output remains a draft requiring human approval.
 
 If WhatsApp delivers a voice note in an unsupported audio format such as OGG/Opus, the app keeps it as pending instead of guessing. Add an audio conversion step before production rollout.
 

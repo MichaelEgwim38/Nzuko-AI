@@ -1062,6 +1062,10 @@ async function loadStatus() {
   currentTelegramGroupName = status.settings.telegramGroupName || '';
   $('#telegram-group-name').value = currentTelegramGroupName;
   $('#telegram-consent-confirmed').checked = Boolean(status.settings.telegramConsentConfirmed);
+  $('#ai-processing-confirmed').checked = Boolean(status.settings.aiProcessingConfirmed);
+  setHintMessage('ai-processing-status', status.settings.aiProcessingConfirmed
+    ? `Authorised${status.settings.aiProcessingConfirmedAt ? ` on ${new Date(status.settings.aiProcessingConfirmedAt).toLocaleDateString()}` : ''}.`
+    : 'Off. Nzuko AI will use its standard local report rules.');
   setButtonDisabled('load-telegram-messages', !currentTelegramGroupId || !status.settings.telegramConsentConfirmed);
   setConnectionStatus(
     'telegram-summary-status',
@@ -1189,6 +1193,7 @@ function settingsPayload(extra = {}) {
     telegramGroupId: currentTelegramGroupId,
     telegramGroupName: currentTelegramGroupName,
     telegramConsentConfirmed: $('#telegram-consent-confirmed')?.checked || false,
+    aiProcessingConfirmed: $('#ai-processing-confirmed')?.checked || false,
     retentionDays: 14,
     ...extra,
   };
@@ -2171,6 +2176,18 @@ async function handleBillingAdminAction(event) {
 $('#save-settings')?.addEventListener('click', saveSettings);
 $('#consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#telegram-consent-confirmed')?.addEventListener('change', saveConnectorConsent);
+$('#ai-processing-confirmed')?.addEventListener('change', async (event) => {
+  try {
+    const payload = await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+    event.currentTarget.checked = Boolean(payload.settings.aiProcessingConfirmed);
+    setHintMessage('ai-processing-status', event.currentTarget.checked
+      ? 'AI reconciliation authorised for this workspace. Every result remains a draft for human review.'
+      : 'AI reconciliation is off. Standard local report rules remain available.');
+  } catch (error) {
+    event.currentTarget.checked = !event.currentTarget.checked;
+    setHintMessage('ai-processing-status', `The privacy setting could not be saved: ${error.message}`);
+  }
+});
 $('#whatsapp-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
 $('#telegram-transcribe-language')?.addEventListener('change', saveTranscriptionLanguage);
 $('#save-integration')?.addEventListener('click', saveIntegration);

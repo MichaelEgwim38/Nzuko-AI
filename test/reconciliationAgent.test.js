@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatReconciledReport, generateReconciledWorkflowReport } from '../src/reconciliationAgent.js';
+import { formatReconciledReport, generateReconciledWorkflowReport, minimiseText } from '../src/reconciliationAgent.js';
+
+test('removes common identifiers before external reconciliation', () => {
+  const result = minimiseText('Call +44 7700 900123, email ada@example.com or visit https://example.com/x. ID 123456789@c.us');
+  assert.equal(result.includes('ada@example.com'), false);
+  assert.equal(result.includes('7700'), false);
+  assert.equal(result.includes('example.com'), false);
+  assert.equal(result.includes('123456789'), false);
+  assert.match(result, /\[email removed\]/);
+  assert.match(result, /\[phone removed\]|\[identifier removed\]/);
+});
 
 const intelligence = {
   reportPeriod: 'Today', sources: ['WhatsApp'], executiveSummary: 'The payment policy remains unresolved and Yusuf owns receipt reporting.',
