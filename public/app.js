@@ -1016,6 +1016,36 @@ function ensureSupabase() {
   return supabaseClient;
 }
 
+function setWorkspaceToolsOpen(open) {
+  const layer = $('#workspace-tools');
+  const trigger = $('#open-workspace-tools');
+  if (!layer || !trigger) return;
+  layer.hidden = !open;
+  trigger.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('workspace-tools-open', open);
+  if (open) {
+    window.requestAnimationFrame(() => $('#close-workspace-tools')?.focus());
+  } else {
+    trigger.focus();
+  }
+}
+
+function initialiseWorkspaceTools() {
+  const content = $('#workspace-tools .workspace-tools-content');
+  if (!content) return;
+  ['ai-processing-controls', 'privacy-data-controls', 'integrations'].forEach((id) => {
+    const panel = document.getElementById(id);
+    if (panel) content.appendChild(panel);
+  });
+  document.querySelectorAll('a[href="#integrations"]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      setWorkspaceToolsOpen(true);
+      window.requestAnimationFrame(() => $('#integrations')?.scrollIntoView({ block: 'start' }));
+    });
+  });
+}
+
 async function completeSocialSession() {
   const supabase = ensureSupabase();
   const currentUrl = new URL(window.location.href);
@@ -2357,6 +2387,13 @@ $('#purge').addEventListener('click', purgeDraft);
 $('#save-privacy-settings')?.addEventListener('click', savePrivacySettings);
 $('#erase-source-data')?.addEventListener('click', eraseSourceData);
 $('#erase-operational-data')?.addEventListener('click', eraseOperationalData);
+initialiseWorkspaceTools();
+$('#open-workspace-tools')?.addEventListener('click', () => setWorkspaceToolsOpen(true));
+$('#close-workspace-tools')?.addEventListener('click', () => setWorkspaceToolsOpen(false));
+$('#workspace-tools-backdrop')?.addEventListener('click', () => setWorkspaceToolsOpen(false));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('#workspace-tools')?.hidden) setWorkspaceToolsOpen(false);
+});
 $('#actions-list')?.addEventListener('click', handleActionInteraction);
 $('#actions-list')?.addEventListener('change', handleActionInteraction);
 document.querySelectorAll('[data-action-filter]').forEach((button) => button.addEventListener('click', () => {

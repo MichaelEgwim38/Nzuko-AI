@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-80" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-82" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -298,20 +298,41 @@
                 <span id="sidebar-account-email" class="sidebar-account-email"></span>
               </div>
             </section>
-            <button id="open-admin" class="button compact-button upgrade-button" type="button" hidden>Owner dashboard</button>
-            <button id="manage-billing" class="button compact-button upgrade-button" type="button" hidden>Manage billing</button>
-            <button id="install-app" class="button light-secondary compact-button" type="button" hidden>Get the app</button>
-            <button id="open-pricing" class="button light-secondary compact-button" type="button">Pricing</button>
-            <button id="open-quick-guide" class="button secondary compact-button" type="button">Quick guide</button>
+            <button id="open-workspace-tools" class="workspace-tools-trigger" type="button" aria-controls="workspace-tools-drawer" aria-expanded="false">
+              <span class="workspace-tools-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span>Tools</span>
+            </button>
             <button id="logout" class="button secondary compact-button" type="button">Log out</button>
           </div>
         </nav>
+
+        <div id="workspace-tools" class="workspace-tools-layer" hidden>
+          <button id="workspace-tools-backdrop" class="workspace-tools-backdrop" type="button" aria-label="Close workspace tools"></button>
+          <aside id="workspace-tools-drawer" class="workspace-tools-drawer" role="dialog" aria-modal="true" aria-labelledby="workspace-tools-title">
+            <header class="workspace-tools-header">
+              <div>
+                <p class="eyebrow">Workspace control centre</p>
+                <h2 id="workspace-tools-title">Tools</h2>
+                <p>Configure the intelligence, privacy and destinations behind your reports.</p>
+              </div>
+              <button id="close-workspace-tools" class="button secondary compact-button" type="button">Close</button>
+            </header>
+            <nav class="workspace-tools-shortcuts" aria-label="Workspace tool shortcuts">
+              <button id="install-app" type="button" hidden><span aria-hidden="true">&#8599;</span><strong>Get the app</strong><small>Use Nzuko anywhere</small></button>
+              <button id="open-pricing" type="button"><span aria-hidden="true">&pound;</span><strong>Pricing</strong><small>Plans and usage</small></button>
+              <button id="open-quick-guide" type="button"><span aria-hidden="true">?</span><strong>Quick guide</strong><small>See the simple flow</small></button>
+              <button id="manage-billing" type="button" hidden><span aria-hidden="true">&#10003;</span><strong>Billing</strong><small>Manage subscription</small></button>
+              <button id="open-admin" type="button" hidden><span aria-hidden="true">&#8984;</span><strong>Owner dashboard</strong><small>Monitor the service</small></button>
+            </nav>
+            <div class="workspace-tools-content">
+            </div>
+          </aside>
+        </div>
 
         <nav class="dashboard-section-nav" aria-label="Workspace sections">
           <a class="active" href="#overview">Dashboard</a>
           <a href="#actions">Actions</a>
           <a href="#connect">Connection</a>
-          <a href="#integrations">Integrations</a>
           <a href="#review">Review</a>
         </nav>
 
@@ -550,7 +571,7 @@
                 </details>
               </section>
 
-              <section class="panel ai-processing-panel" id="ai-processing-controls">
+              <section class="panel ai-processing-panel tool-settings-panel" id="ai-processing-controls">
                 <div class="section-heading">
                   <div>
                     <p class="eyebrow">Privacy control</p>
@@ -587,7 +608,7 @@
                 </details>
               </section>
 
-              <section class="panel privacy-data-panel" id="privacy-data-controls">
+              <section class="panel privacy-data-panel tool-settings-panel" id="privacy-data-controls">
                 <div class="section-heading">
                   <div>
                     <p class="eyebrow">Privacy by design</p>
@@ -616,7 +637,7 @@
                 <p id="privacy-data-status" class="hint" aria-live="polite"></p>
               </section>
 
-              <section class="panel" id="integrations">
+              <section class="panel tool-settings-panel" id="integrations">
                 <p class="eyebrow">Integrations</p>
                 <h2>Send approved reports to other tools</h2>
                 <p class="hint">Connect a Zapier, Make or compatible HTTPS webhook. Nzuko AI sends only reports that a person has approved.</p>
@@ -638,7 +659,6 @@
                 </div>
                 <p id="integration-status" class="hint">Use the test before enabling live delivery.</p>
               </section>
-
             </div>
           </section>
 
@@ -647,7 +667,6 @@
         <nav class="mobile-quick-nav" aria-label="Quick mobile dashboard navigation">
           <a href="#actions">Actions</a>
           <a href="#connect">Connect</a>
-          <a href="#integrations">Integrations</a>
           <a href="#review">Review</a>
         </nav>
       </div>
@@ -932,7 +951,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-80" type="module"></script>
+    <script src="/app.js?v=20260903-82" type="module"></script>
   </body>
 </html>
 
