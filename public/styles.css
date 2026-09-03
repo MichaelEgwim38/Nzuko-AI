@@ -3773,6 +3773,23 @@ pre {
   font-size: 24px;
 }
 
+.connection-disclosure > summary .connection-card-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.connection-card-title img {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  filter: drop-shadow(0 6px 10px rgba(23, 52, 33, 0.14));
+}
+
+.connection-disclosure > summary .connection-card-title strong {
+  margin-top: 0;
+}
+
 .connection-summary-status {
   flex: 0 0 auto;
   border: 1px solid var(--line);
