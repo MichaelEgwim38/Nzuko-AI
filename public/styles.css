@@ -5020,27 +5020,38 @@ pre {
   .app-topbar {
     min-height: 62px;
     padding: 9px 12px;
+    align-items: center;
   }
 
   .app-brand .brand-lockup-tagline,
   .topbar-account-copy,
   .topbar-actions > #open-admin,
-  .topbar-actions > #manage-billing,
-  .topbar-actions > #install-app,
-  .topbar-actions > #open-pricing,
-  .topbar-actions > #open-quick-guide {
+  .topbar-actions > #manage-billing {
     display: none !important;
   }
 
   .topbar-actions {
+    width: 100%;
+    margin-left: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 5px;
     overflow: visible;
   }
 
-  #logout {
+  .topbar-actions > #install-app,
+  .topbar-actions > #open-pricing,
+  .topbar-actions > #open-quick-guide,
+  .topbar-actions > #logout {
     min-height: 39px;
     border-radius: 11px;
-    padding: 8px 11px;
+    padding: 8px 9px;
     font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .topbar-account {
+    display: none;
   }
 
   .dashboard-section-nav {

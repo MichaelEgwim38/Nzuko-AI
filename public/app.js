@@ -151,7 +151,7 @@ function updateInstallButton() {
   const canShowIosHelp = isIosDevice();
   if (button) {
     button.hidden = (!deferredInstallPrompt && !canShowIosHelp) || Boolean(isStandalone);
-    button.textContent = deferredInstallPrompt ? 'Install app' : 'Add to Home Screen';
+    button.textContent = 'Get the app';
   }
   if (loginButton) {
     loginButton.hidden = Boolean(isStandalone);
