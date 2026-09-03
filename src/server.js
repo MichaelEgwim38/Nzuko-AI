@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from './workflowTemplates.js';
 import { generateReconciledWorkflowReport } from './reconciliationAgent.js';
 import { actionView, actionsFromApprovedRecap, updateOperationalAction } from './operationalActions.js';
-import { loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
+import { deleteCapturedMessages, loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
+import { applyPrivacyRetention } from './privacyRetention.js';
 import { buildPendingVoiceNote, isVoiceMedia, transcribeVoiceNote } from './transcription.js';
 import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from './connectors/mockWhatsApp.js';
 import {
@@ -62,7 +63,8 @@ const state = {
     aiProcessingConfirmed: false,
     aiProcessingConfirmedAt: '',
     aiProcessingNoticeVersion: '',
-    retentionDays: Number(process.env.RETENTION_DAYS || 14),
+    retentionDays: 1,
+    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 90),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',
     wahaBaseUrl: process.env.WAHA_BASE_URL || 'http://localhost:3000',
@@ -591,7 +593,7 @@ async function handleApi(request, response) {
       apiKey: state.settings.wahaApiKey,
       phoneNumber,
     });
-    sendJson(response, 200, { code: result?.code || '', phoneNumber });
+    sendJson(response, 200, { code: result?.code || '' });
     return;
   }
 
@@ -619,7 +621,8 @@ async function handleApi(request, response) {
         ? (state.settings.aiProcessingConfirmedAt || new Date().toISOString())
         : '',
       aiProcessingNoticeVersion: Boolean(body.aiProcessingConfirmed) ? '2026-09-03' : '',
-      retentionDays: Math.min(90, Math.max(1, Number(body.retentionDays || state.settings.retentionDays || 14))),
+      retentionDays: 1,
+      approvedRetentionDays: Math.min(365, Math.max(1, Number(body.approvedRetentionDays || state.settings.approvedRetentionDays || 90))),
       connectorMode: body.connectorMode === 'waha' ? 'waha' : 'mock',
       wahaBaseUrl: body.wahaBaseUrl || state.settings.wahaBaseUrl,
       wahaPublicUrl: body.wahaPublicUrl || state.settings.wahaPublicUrl,
@@ -787,6 +790,10 @@ async function handleApi(request, response) {
       range,
       source: body.useStoredRange ? 'stored-messages' : 'manual-input',
     };
+    if (['whatsapp', 'telegram'].includes(String(body.source || '').toLowerCase())) {
+      await deleteCapturedMessages();
+      state.capturedMessages = [];
+    }
     sendJson(response, 200, { draft: state.currentDraft });
     return;
   }
@@ -861,7 +868,27 @@ async function handleApi(request, response) {
 
   if (request.method === 'POST' && requestUrl.pathname === '/api/purge') {
     state.currentDraft = null;
-    sendJson(response, 200, { ok: true, message: 'Raw draft data cleared. Approved audit log retained.' });
+    await deleteCapturedMessages();
+    state.capturedMessages = [];
+    sendJson(response, 200, { ok: true, message: 'Temporary source material and draft cleared. Approved reports retained.' });
+    return;
+  }
+
+  if (request.method === 'POST' && requestUrl.pathname === '/api/privacy/erase-source') {
+    state.currentDraft = null;
+    const result = await deleteCapturedMessages();
+    state.capturedMessages = [];
+    sendJson(response, 200, { ok: true, removed: result.removed, message: 'Temporary messages, transcripts and draft data were erased.' });
+    return;
+  }
+
+  if (request.method === 'POST' && requestUrl.pathname === '/api/privacy/erase-operational-data') {
+    state.currentDraft = null;
+    state.auditLog = [];
+    state.operationalActions = [];
+    await deleteCapturedMessages();
+    state.capturedMessages = [];
+    sendJson(response, 200, { ok: true, message: 'Workspace reports, actions and temporary source material were erased. Account and billing records were retained.' });
     return;
   }
 
@@ -870,6 +897,7 @@ async function handleApi(request, response) {
 
 const server = createServer(async (request, response) => {
   try {
+    applyPrivacyRetention(state);
     const requestUrl = new URL(request.url, `http://${request.headers.host}`);
     if (requestUrl.pathname.startsWith('/api/')) {
       await handleApi(request, response);

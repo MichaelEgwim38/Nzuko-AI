@@ -67,3 +67,22 @@ export async function loadCapturedMessages({ groupId, from, to, limit = 500 } = 
     .sort((a, b) => timestampMs(b) - timestampMs(a))
     .slice(0, limit);
 }
+
+export async function deleteCapturedMessages({ groupId, from, to } = {}) {
+  writeChain = writeChain.then(async () => {
+    const fromMs = from ? new Date(from).getTime() : null;
+    const toMs = to ? new Date(to).getTime() : null;
+    const messages = await readJsonArray(messagesPath);
+    const shouldDelete = (message) => {
+      if (groupId && message.groupId !== groupId) return false;
+      const ms = timestampMs(message);
+      if (fromMs && ms < fromMs) return false;
+      if (toMs && ms > toMs) return false;
+      return true;
+    };
+    const retained = messages.filter((message) => !shouldDelete(message));
+    await writeJsonArray(messagesPath, retained);
+    return { removed: messages.length - retained.length, retained: retained.length };
+  });
+  return writeChain;
+}

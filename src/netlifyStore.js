@@ -75,7 +75,8 @@ export function defaultSettings() {
       ? [{ id: process.env.APPROVED_GROUP_ID, name: process.env.APPROVED_GROUP_NAME || process.env.APPROVED_GROUP_ID }]
       : [],
     consentConfirmed: process.env.CONSENT_CONFIRMED === 'true',
-    retentionDays: Number(process.env.RETENTION_DAYS || 14),
+    retentionDays: 1,
+    approvedRetentionDays: Number(process.env.APPROVED_RETENTION_DAYS || 90),
     postingMode: 'review-first',
     connectorMode: process.env.CONNECTOR_MODE === 'waha' ? 'waha' : 'mock',
     wahaBaseUrl: process.env.WAHA_BASE_URL || 'http://localhost:3000',
@@ -293,8 +294,26 @@ export async function countCapturedMessages(scopeOrQuery = 'shared', maybeQuery)
   return messages.filter((message) => !groupId || message.groupId === groupId).length;
 }
 
-export async function enforceMessageRetention(scope = 'shared', retentionDays = 14) {
-  const days = Math.min(90, Math.max(1, Number(retentionDays) || 14));
+export async function deleteCapturedMessages(scopeOrQuery = 'shared', maybeQuery) {
+  const resolved = resolveScopeAndQuery(scopeOrQuery, maybeQuery);
+  const { groupId, from, to } = resolved.query;
+  const fromMs = from ? new Date(from).getTime() : null;
+  const toMs = to ? new Date(to).getTime() : null;
+  const messages = await loadMessagesRaw(resolved.scope);
+  const shouldDelete = (message) => {
+    if (groupId && message.groupId !== groupId) return false;
+    const ms = timestampMs(message);
+    if (fromMs && ms < fromMs) return false;
+    if (toMs && ms > toMs) return false;
+    return true;
+  };
+  const retained = messages.filter((message) => !shouldDelete(message));
+  if (retained.length !== messages.length) await saveMessagesRaw(resolved.scope, retained);
+  return { removed: messages.length - retained.length, retained: retained.length };
+}
+
+export async function enforceMessageRetention(scope = 'shared', retentionDays = 1) {
+  const days = 1;
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   const messages = await loadMessagesRaw(scope);
   const retained = messages.filter((message) => timestampMs(message) >= cutoff);

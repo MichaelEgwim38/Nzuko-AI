@@ -1103,6 +1103,9 @@ async function startApp() {
 
 async function loadStatus() {
   const status = await api('/api/status');
+  if ($('#approved-retention-days')) {
+    $('#approved-retention-days').value = String(status.settings.approvedRetentionDays || 90);
+  }
   managedWahaWorkspace = Boolean(status.managedWahaConnection);
   applyManagedWorkspaceUi();
   renderWorkspaceStatus(status);
@@ -1274,7 +1277,8 @@ function settingsPayload(extra = {}) {
     telegramGroupName: currentTelegramGroupName,
     telegramConsentConfirmed: $('#telegram-consent-confirmed')?.checked || false,
     aiProcessingConfirmed: $('#ai-processing-confirmed')?.checked || false,
-    retentionDays: 14,
+    retentionDays: 1,
+    approvedRetentionDays: Number($('#approved-retention-days')?.value || 90),
     ...extra,
   };
   if (!managedWahaWorkspace) {
@@ -1946,6 +1950,7 @@ async function generateRecap() {
     body: JSON.stringify({
       chatText: $('#chat-text').value,
       voiceNotes: $('#voice-notes').value,
+      source: $('#input-source').value,
     }),
   });
   $('#recap-output').textContent = payload.draft.recap.text;
@@ -1959,11 +1964,49 @@ async function approveRecap() {
   try {
     const payload = await api('/api/recap/approve', { method: 'POST', body: '{}' });
     $('#approve-status').textContent = `Approved through ${payload.auditEntry.posted.provider || $('#connector-mode').value} at ${payload.auditEntry.approvedAt}.`;
-    $('#recap-output').textContent = EMPTY_DRAFT_MESSAGE;
+    clearDraftFields();
     await Promise.all([loadAudit(), loadActions()]);
     await loadStatus();
   } catch (error) {
     $('#approve-status').textContent = error.message;
+  }
+}
+
+async function savePrivacySettings() {
+  try {
+    const payload = await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+    $('#approved-retention-days').value = String(payload.settings.approvedRetentionDays || 90);
+    setHintMessage('privacy-data-status', `Approved reports and actions will be retained for ${payload.settings.approvedRetentionDays || 90} days.`);
+  } catch (error) {
+    setHintMessage('privacy-data-status', `Retention could not be saved: ${error.message}`);
+  }
+}
+
+async function eraseSourceData() {
+  if (!window.confirm('Erase all temporary messages, transcripts and the current draft?')) return;
+  try {
+    const payload = await api('/api/privacy/erase-source', { method: 'POST', body: '{}' });
+    clearDraftFields();
+    setButtonDisabled('approve', true);
+    setHintMessage('privacy-data-status', payload.message);
+  } catch (error) {
+    setHintMessage('privacy-data-status', `Temporary data could not be erased: ${error.message}`);
+  }
+}
+
+async function eraseOperationalData() {
+  if (!window.confirm('Permanently delete all approved reports, actions and temporary source material in this workspace? Account and billing records will remain.')) return;
+  try {
+    const payload = await api('/api/privacy/erase-operational-data', { method: 'POST', body: '{}' });
+    clearDraftFields();
+    auditEntriesCache = [];
+    operationalActionsCache = [];
+    renderAuditFeed();
+    renderOperationalActions();
+    setButtonDisabled('approve', true);
+    setHintMessage('privacy-data-status', payload.message);
+  } catch (error) {
+    setHintMessage('privacy-data-status', `Workspace data could not be erased: ${error.message}`);
   }
 }
 
@@ -2311,6 +2354,9 @@ $('#close-message-period')?.addEventListener('click', () => setMessagePeriodOpen
 $('#message-period-backdrop')?.addEventListener('click', () => setMessagePeriodOpen(false));
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
+$('#save-privacy-settings')?.addEventListener('click', savePrivacySettings);
+$('#erase-source-data')?.addEventListener('click', eraseSourceData);
+$('#erase-operational-data')?.addEventListener('click', eraseOperationalData);
 $('#actions-list')?.addEventListener('click', handleActionInteraction);
 $('#actions-list')?.addEventListener('change', handleActionInteraction);
 document.querySelectorAll('[data-action-filter]').forEach((button) => button.addEventListener('click', () => {

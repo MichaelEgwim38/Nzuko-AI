@@ -1644,6 +1644,40 @@ h2 {
 
 .usage-warning[hidden] { display: none; }
 
+.privacy-data-panel {
+  background: linear-gradient(145deg, #f8fff3, #fff);
+}
+
+.privacy-lock-object {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 19px;
+  background: #e9f8dd;
+  box-shadow: 0 13px 30px rgba(36, 93, 56, .12);
+  font-size: 27px;
+}
+
+.privacy-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.privacy-facts span {
+  border: 1px solid #d5e7cd;
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 10px;
+  color: #47604d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.privacy-danger-button { padding: 10px 2px; }
+
 .topup-card-recommended {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(101, 189, 53, 0.14);

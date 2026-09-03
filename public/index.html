@@ -579,6 +579,35 @@
                 </details>
               </section>
 
+              <section class="panel privacy-data-panel" id="privacy-data-controls">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Privacy by design</p>
+                    <h2>Keep outcomes, not conversations</h2>
+                    <p>Temporary messages and voice-note transcripts are removed after a draft is created. Unapproved drafts expire after 24 hours.</p>
+                  </div>
+                  <span class="privacy-lock-object" aria-hidden="true">🔒</span>
+                </div>
+                <label>Keep approved reports and actions for
+                  <select id="approved-retention-days">
+                    <option value="30">30 days</option>
+                    <option value="90" selected>90 days (recommended)</option>
+                    <option value="365">12 months</option>
+                  </select>
+                </label>
+                <div class="privacy-facts">
+                  <span>Phone numbers are not saved by Nzuko AI</span>
+                  <span>Source buffer: maximum 24 hours</span>
+                  <span>Connection erased when disconnected</span>
+                </div>
+                <div class="button-row">
+                  <button id="save-privacy-settings" class="button" type="button">Save retention</button>
+                  <button id="erase-source-data" class="button secondary" type="button">Erase temporary data</button>
+                  <button id="erase-operational-data" class="danger-text privacy-danger-button" type="button">Delete reports and actions</button>
+                </div>
+                <p id="privacy-data-status" class="hint" aria-live="polite"></p>
+              </section>
+
               <section class="panel" id="integrations">
                 <p class="eyebrow">Integrations</p>
                 <h2>Send approved reports to other tools</h2>
@@ -895,7 +924,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-75" type="module"></script>
+    <script src="/app.js?v=20260903-76" type="module"></script>
   </body>
 </html>
 

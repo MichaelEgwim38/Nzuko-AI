@@ -61,7 +61,7 @@
         <ul>
           <li>Account data such as your email address, display name, and authentication details.</li>
           <li>Workspace settings such as approved WhatsApp or Telegram group names, language settings, and report preferences.</li>
-          <li>Captured group content that your workspace explicitly approves for recap generation, including text messages and voice-note transcripts.</li>
+          <li>Temporary group content that your workspace explicitly approves for report generation, including text messages and voice-note transcripts.</li>
           <li>Billing and subscription data required to manage paid access through Stripe.</li>
           <li>Operational logs used to secure the app, diagnose issues, and verify workspace activity.</li>
         </ul>
@@ -93,7 +93,8 @@
         </ul>
 
         <h2>Data retention</h2>
-        <p>Captured source messages are retained for 14 days by default and are then automatically removed. Approved reports, action records, account records, security logs and billing records may have different retention periods according to their operational or legal purpose. Customers may request deletion or return of their data when their service ends, subject to legal retention requirements and backup deletion cycles.</p>
+        <p>Nzuko AI does not save the telephone number entered to request a WhatsApp pairing code. Connected WhatsApp and Telegram services may hold account authorisation data only while the connection remains active. Disconnecting a service removes that connector session and clears its temporary workspace content.</p>
+        <p>Captured source messages and voice-note transcripts are removed after a draft is created and, in all cases, from Nzuko AI's temporary source buffer after a maximum of 24 hours. Unapproved report drafts expire after 24 hours. Workspace owners choose whether approved reports and their action records are kept for 30 days, 90 days or 12 months; the default is 90 days. Users can erase temporary source data or all operational reports and actions from the workspace. Account, billing and limited security records may be retained where needed to provide the service, prevent fraud or meet legal obligations, subject to backup deletion cycles.</p>
 
         <h2>Your responsibilities</h2>
         <p>Workspace owners must use Nzuko AI only with appropriate consent from the relevant group or community members and must not connect private accounts or groups without approval.</p>

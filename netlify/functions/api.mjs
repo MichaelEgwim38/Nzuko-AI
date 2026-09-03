@@ -4,6 +4,7 @@ import { generateReconciledWorkflowReport } from '../../src/reconciliationAgent.
 import {
   cloneScopeData,
   countCapturedMessages,
+  deleteCapturedMessages,
   enforceMessageRetention,
   defaultMembershipRecord,
   defaultWorkspaceRecord,
@@ -20,6 +21,7 @@ import {
   saveUsers,
   workspaceScopeFor,
 } from '../../src/netlifyStore.js';
+import { applyPrivacyRetention } from '../../src/privacyRetention.js';
 import { backgroundTaskSecret, cookieFlags, createSessionToken, readUserSession } from '../../src/netlifyAuth.js';
 import { providerSessionUser, supabaseAuthConfig, verifySupabaseAccessToken } from '../../src/supabaseAuth.js';
 import { defaultPaidPlan, listPaidPlans, normalisePaidPlanId, paidPlanById, paidPlanByPriceId, paidPlanForCheckout, planNameForId } from '../../src/billingPlans.js';
@@ -845,6 +847,8 @@ async function loadWorkspaceContext(user) {
   const state = await loadAppState(scope);
   state.settings = managedSettings(state.settings, workspace);
   await enforceMessageRetention(scope, state.settings.retentionDays);
+  const privacyRetention = applyPrivacyRetention(state);
+  if (privacyRetention.changed) await saveAppState(scope, state);
   const ownerSummary = await normaliseSharedOwner(scope, state);
   const { users, record } = await loadOrCreateUserAccess(user);
   if (record.workspaceId !== workspace.id) {
@@ -1970,6 +1974,7 @@ export default async function handler(request) {
       state.settings.approvedGroupName = '';
       state.settings.approvedGroups = [];
       state.currentDraft = null;
+      await deleteCapturedMessages(scope);
       clearSharedOwner(state);
       logUsageEvent(state, {
         type: 'waha.session_switched',
@@ -2037,7 +2042,7 @@ export default async function handler(request) {
         apiKey: settings.wahaApiKey,
         phoneNumber,
       });
-      return sendJson(200, { code: result?.code || '', phoneNumber });
+      return sendJson(200, { code: result?.code || '' });
     }
 
     if (request.method === 'POST' && pathname === '/api/telegram/start') {
@@ -2087,6 +2092,8 @@ export default async function handler(request) {
       context.state.settings.telegramGroupId = '';
       context.state.settings.telegramGroupName = '';
       context.state.settings.telegramConsentConfirmed = false;
+      context.state.currentDraft = null;
+      await deleteCapturedMessages(context.scope);
       await saveAppState(context.scope, context.state);
       return sendJson(200, result);
     }
@@ -2165,7 +2172,8 @@ export default async function handler(request) {
         approvedGroupId: body.approvedGroupId === undefined ? state.settings.approvedGroupId : String(body.approvedGroupId || '').trim(),
         approvedGroupName: body.approvedGroupName === undefined ? state.settings.approvedGroupName : String(body.approvedGroupName || '').trim(),
         consentConfirmed: Boolean(body.consentConfirmed),
-        retentionDays: Math.min(90, Math.max(1, Number(body.retentionDays || state.settings.retentionDays || 14))),
+        retentionDays: 1,
+        approvedRetentionDays: Math.min(365, Math.max(1, Number(body.approvedRetentionDays || state.settings.approvedRetentionDays || 90))),
         connectorMode: managedWahaBaseUrl ? 'waha' : body.connectorMode === 'waha' ? 'waha' : 'mock',
         transcribeLanguage: isValidTranscriptionLanguage(body.transcribeLanguage)
           ? body.transcribeLanguage
@@ -2481,6 +2489,12 @@ export default async function handler(request) {
         range,
         source: body.useStoredRange ? 'stored-messages' : 'manual-input',
       };
+      if (['whatsapp', 'telegram'].includes(String(body.source || '').toLowerCase())) {
+        const sourceGroupId = String(body.source).toLowerCase() === 'telegram'
+          ? state.settings.telegramGroupId
+          : state.settings.approvedGroupId;
+        await deleteCapturedMessages(scope, { groupId: sourceGroupId });
+      }
       logUsageEvent(state, {
         type: 'recap.generated',
         actorUserId: session.userId || '',
@@ -2618,8 +2632,27 @@ export default async function handler(request) {
         return sendJson(403, { error: 'Only the user who generated this draft can clear it.' });
       }
       state.currentDraft = null;
+      await deleteCapturedMessages(scope);
       await saveAppState(scope, state);
-      return sendJson(200, { ok: true, message: 'Raw draft data cleared. Approved audit log retained.' });
+      return sendJson(200, { ok: true, message: 'Temporary source material and draft cleared. Approved reports retained.' });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/privacy/erase-source') {
+      const context = await loadWorkspaceContext(session);
+      context.state.currentDraft = null;
+      const result = await deleteCapturedMessages(context.scope);
+      await saveAppState(context.scope, context.state);
+      return sendJson(200, { ok: true, removed: result.removed, message: 'Temporary messages, transcripts and draft data were erased.' });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/privacy/erase-operational-data') {
+      const context = await loadWorkspaceContext(session);
+      context.state.currentDraft = null;
+      context.state.auditLog = [];
+      context.state.operationalActions = [];
+      await deleteCapturedMessages(context.scope);
+      await saveAppState(context.scope, context.state);
+      return sendJson(200, { ok: true, message: 'Workspace reports, actions and temporary source material were erased. Account and billing records were retained.' });
     }
 
     return sendJson(404, { error: 'API route not found.' });
