@@ -1168,30 +1168,59 @@ textarea {
   color: #252925;
 }
 
+.app-topbar #logout,
 .workspace-tools-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-topbar #logout {
+  min-height: 48px;
+  border-radius: 15px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.app-topbar #logout:hover,
+.app-topbar #logout:focus-visible,
+.workspace-tools-trigger:hover,
+.workspace-tools-trigger:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(76, 139, 56, 0.34);
+  background: #f4faef;
+  box-shadow: 0 8px 18px rgba(24, 51, 31, 0.12);
+}
+
+.app-topbar #logout:active,
+.workspace-tools-trigger:active {
+  transform: scale(0.94);
+  background: #e8f4df;
+  box-shadow: 0 3px 8px rgba(24, 51, 31, 0.12);
+}
+
+.workspace-tools-trigger {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
   border: 1px solid rgba(16, 24, 18, .1);
-  border-radius: 14px;
+  border-radius: 15px;
   background: #f1f4f1;
   color: #1c261f;
-  padding: 8px 12px;
-  font-weight: 800;
+  padding: 0;
   cursor: pointer;
 }
 
 .workspace-tools-grid {
   display: grid;
-  grid-template-columns: repeat(3, 4px);
-  gap: 3px;
+  grid-template-columns: repeat(3, 5px);
+  gap: 3.5px;
 }
 
 .workspace-tools-grid i {
-  width: 4px;
-  height: 4px;
-  border-radius: 1px;
+  width: 5px;
+  height: 5px;
+  border-radius: 1.5px;
   background: currentColor;
 }
 
@@ -1507,8 +1536,9 @@ textarea {
 .topbar-account {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-right: 4px;
+  gap: 12px;
+  margin-right: 6px;
+  padding: 5px 8px;
 }
 
 .topbar-account-copy {
@@ -1518,12 +1548,12 @@ textarea {
 
 .topbar-account-copy strong {
   color: #1c2a1f;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .topbar-account-copy span {
   color: #758278;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .topbar-account-copy .sidebar-account-email {
@@ -2064,8 +2094,7 @@ h2 {
 }
 
 @media (max-width: 420px) {
-  .workspace-tools-trigger { width: 42px; padding: 0; justify-content: center; }
-  .workspace-tools-trigger > span:last-child { display: none; }
+  .workspace-tools-trigger { width: 44px; height: 44px; padding: 0; justify-content: center; }
   .workspace-tools-drawer { padding-inline: 14px; }
   .workspace-tools-header h2 { font-size: 29px; }
   .workspace-tools-shortcuts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -5070,7 +5099,7 @@ pre {
 
   .login-signin-button,
   .login-header-cta {
-    min-height: 39px;
+    min-height: 44px;
     display: inline-flex;
     border-radius: 11px;
     padding: 8px 11px;
