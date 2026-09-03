@@ -696,45 +696,52 @@
           </div>
           <button id="close-quick-guide" class="button secondary compact-button" type="button">Close</button>
         </div>
-        <p class="hint quick-guide-copy">Use this quick guide whenever you need help connecting WhatsApp, choosing a group, or preparing a recap.</p>
-        <button id="quick-guide-sample" class="button compact-button quick-guide-sample" type="button">Try a sample report</button>
-        <div class="quick-guide-grid">
+        <p class="hint quick-guide-copy">Connect from a computer or phone, choose an authorised group, then turn a useful message period into a reviewable report.</p>
+        <div class="quick-guide-start">
+          <div><span aria-hidden="true">✨</span><p><strong>Want to explore first?</strong><small>Create a safe example draft without connecting an account.</small></p></div>
+          <button id="quick-guide-sample" class="button compact-button quick-guide-sample" type="button">Try a sample report</button>
+        </div>
+        <div class="quick-guide-grid quick-guide-device-grid">
           <section>
-            <h3>Start here</h3>
+            <div class="quick-guide-section-title"><span class="quick-guide-device-icon" aria-hidden="true">🖥️</span><div><p class="eyebrow">Computer</p><h3>Connect with a QR code</h3></div></div>
             <ol>
-              <li>Sign in to Nzuko AI.</li>
-              <li>Choose your Nzuko Mode.</li>
-              <li>Open WhatsApp or Telegram connection.</li>
-              <li>Connect with the QR code.</li>
-              <li>Choose an authorised group.</li>
+              <li>Open <strong>Connection</strong> and expand WhatsApp or Telegram.</li>
+              <li>Select <strong>Get QR code</strong>.</li>
+              <li>On your phone, open <strong>Linked Devices</strong> in WhatsApp or <strong>Settings → Devices</strong> in Telegram.</li>
+              <li>Choose the option to link a device and scan the QR shown by Nzuko AI.</li>
+              <li>When the status turns <strong>Connected</strong>, choose the group you are authorised to use.</li>
             </ol>
           </section>
           <section>
-            <h3>Load messages</h3>
+            <div class="quick-guide-section-title"><span class="quick-guide-device-icon" aria-hidden="true">📱</span><div><p class="eyebrow">Mobile phone</p><h3>Connect on this phone</h3></div></div>
             <ol>
-              <li>Choose the voice-note language.</li>
-              <li>Click Load messages.</li>
-              <li>Select Today, This week, This month or your own dates.</li>
-              <li>Nzuko AI loads the material and creates a draft.</li>
-              <li>Review and approve the report.</li>
+              <li>Open <strong>Connection</strong> and expand WhatsApp or Telegram.</li>
+              <li>Select <strong>Connect on this phone</strong> instead of trying to scan your own screen.</li>
+              <li><strong>WhatsApp:</strong> enter your number, request a pairing code, then enter it in WhatsApp under <strong>Linked Devices → Link with phone number</strong>.</li>
+              <li><strong>Telegram:</strong> enter your number, then enter the code Telegram sends you. Enter your Telegram password only if two-step verification is enabled.</li>
+              <li>When connected, return to Nzuko AI and choose the authorised group.</li>
             </ol>
           </section>
-          <section>
-            <h3>When switching users</h3>
-            <ol>
-              <li>Click Disconnect and switch WhatsApp.</li>
-              <li>Start a new session.</li>
-              <li>Show the QR again on the dashboard screen.</li>
-              <li>The next person scans with their own WhatsApp.</li>
+          <section class="quick-guide-wide-section">
+            <div class="quick-guide-section-title"><span class="quick-guide-device-icon" aria-hidden="true">🪄</span><div><p class="eyebrow">Computer or mobile</p><h3>Create, review and approve</h3></div></div>
+            <ol class="quick-guide-flow-list">
+              <li><strong>Confirm permission.</strong> Tick the permission box for the selected group.</li>
+              <li><strong>Choose language.</strong> Leave voice-note language on Auto detect unless you know it.</li>
+              <li><strong>Load messages.</strong> Select Today, This week, This month or Choose dates. Nzuko AI loads the messages and creates one draft automatically.</li>
+              <li><strong>Review carefully.</strong> Check decisions, actions, owners, deadlines, unresolved points and source material.</li>
+              <li><strong>Approve when ready.</strong> Nothing becomes an official record or is shared until you approve it.</li>
             </ol>
-            <p class="hint">Only one WhatsApp account can be connected at a time in the current setup.</p>
+            <p class="quick-guide-note"><strong>Optional:</strong> Enable AI reconciliation only when you are authorised to send the selected material for AI processing. Live capture is also optional and is not required to load message history.</p>
           </section>
-          <section>
-            <h3>Support</h3>
-            <p><strong>Organization:</strong> RohariGroup LTD</p>
-            <p><strong>Phone:</strong> 07308050013</p>
-            <p><strong>Email:</strong> info@roharigroup.com</p>
-            <p><strong>Website:</strong> www.roharigroup.com</p>
+          <section class="quick-guide-wide-section quick-guide-manage-section">
+            <div>
+              <h3>Change or disconnect an account</h3>
+              <p>Open the connected channel and select <strong>Manage connection</strong>. You can change the selected group or disconnect that WhatsApp or Telegram account.</p>
+            </div>
+            <div class="quick-guide-support">
+              <h3>Need help?</h3>
+              <p><strong>Rohari Group Ltd</strong><br /><a href="mailto:info@roharigroup.com">info@roharigroup.com</a><br />07308050013</p>
+            </div>
           </section>
         </div>
       </section>
