@@ -1515,7 +1515,7 @@ function renderTelegramStatus(payload = {}) {
     $('#start-telegram').textContent = 'Hide QR code';
     $('#start-telegram').setAttribute('aria-expanded', 'true');
     $('#telegram-phone-box').hidden = true;
-    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Scan QR to connect', 'pending');
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Not connected', 'disconnected');
     $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>${isMobileDevice() ? 'This QR must be displayed on another screen. On your phone, open Telegram → Settings → Devices → Link Desktop Device, then scan it.' : 'Telegram → Settings → Devices → Link Desktop Device'}</p>`;
     telegramPollTimer = setTimeout(checkTelegramStatus, 2000);
     return;
