@@ -22,6 +22,7 @@ let showAllBilling = false;
 let upgradeNoteDismissTimeout = null;
 let deferredInstallPrompt = null;
 let selectedBillingInterval = 'monthly';
+let latestPricingStatus = null;
 let currentTelegramGroupId = '';
 let currentTelegramGroupName = '';
 let telegramPollTimer = null;
@@ -368,6 +369,7 @@ function renderWorkspaceStatus(status = {}) {
 }
 
 function renderBillingPlans(status = {}) {
+  latestPricingStatus = status;
   const publicPricing = Boolean(status.publicPricing);
   const trial = status.trial || {};
   const billing = status.billing || {};
@@ -2275,7 +2277,7 @@ document.querySelectorAll('[data-billing-interval]').forEach((button) => {
     document.querySelectorAll('.billing-interval-option').forEach((option) => {
       option.classList.toggle('active', option.dataset.billingInterval === selectedBillingInterval);
     });
-    renderBillingPlans(latestStatus || {});
+    renderBillingPlans(latestPricingStatus || latestStatus || {});
   });
 });
 $('#toggle-audit-feed')?.addEventListener('click', () => {
