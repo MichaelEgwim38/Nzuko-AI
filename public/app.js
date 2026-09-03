@@ -70,24 +70,24 @@ const workspaceTemplates = {
 
 const landingModeExamples = {
   'property-facilities': {
-    conversation: '“The boiler at Oak House is losing pressure again. James will inspect it tomorrow and report back by 2pm.”',
-    report: [['Issue', 'Boiler losing pressure'], ['Location', 'Oak House'], ['Owner', 'James'], ['Deadline', 'Tomorrow, 2pm']],
+    conversation: '“The boiler at Oak House is losing pressure again. It may be a leak, but that is not confirmed. James: I’ll inspect it tomorrow at 9am. Access from Flat 3 is still awaiting confirmation.”',
+    report: [['Reconciled issue', 'Pressure loss; cause not yet confirmed'], ['Action', 'Inspect boiler and report findings'], ['Owner & due', 'James · Tomorrow, 9am'], ['Not a decision', 'Do not record an unconfirmed leak'], ['Needs follow-up', 'Confirm access with Flat 3']],
   },
   'healthcare-operations': {
-    conversation: '“The evening rota is short by one person. Amara will call the agency and confirm cover before 4pm.”',
-    report: [['Operational issue', 'Evening rota short'], ['Action', 'Contact staffing agency'], ['Owner', 'Amara'], ['Deadline', 'Today, 4pm']],
+    conversation: '“The evening rota is one person short. Amara suggested calling the agency. Later, Daniel confirmed he can cover from 6pm, so the manager said agency cover is no longer needed. Amara will update the rota by 4pm.”',
+    report: [['Final outcome', 'Daniel covers the 6pm shift'], ['Superseded proposal', 'Agency call no longer required'], ['Action', 'Update and circulate the rota'], ['Owner & due', 'Amara · Today, 4pm'], ['Control', 'Administrative handover; human approval required']],
   },
   'field-service': {
-    conversation: '“Unit 14 is repaired, but the replacement valve still needs ordering. Leon will send the part number this afternoon.”',
-    report: [['Job', 'Unit 14 repair'], ['Status', 'Repair completed'], ['Outstanding', 'Order replacement valve'], ['Owner', 'Leon']],
+    conversation: '“Leon marked Unit 14 complete at noon. The customer then reported the alarm returned during testing. Leon: I’ll revisit at 3pm and send the valve part number to Aisha before I leave.”',
+    report: [['Reconciled status', 'Job reopened after customer test'], ['Site action', 'Revisit and diagnose recurring alarm'], ['Owner & due', 'Leon · Today, 3pm'], ['Follow-up', 'Send valve part number to Aisha'], ['Risk prevented', 'Not incorrectly recorded as completed']],
   },
   'community-charity': {
-    conversation: '“We agreed to hold the food-drive on Saturday. Ruth will book the hall and Daniel will organise six volunteers.”',
-    report: [['Decision', 'Food-drive on Saturday'], ['Venue owner', 'Ruth'], ['Volunteer owner', 'Daniel'], ['Requirement', 'Six volunteers']],
+    conversation: '“Most members preferred reminders before late-payment penalties, but no penalty was approved. Yusuf: I can collect the receipts every Saturday and post the totals. The venue question remains open.”',
+    report: [['Confirmed action', 'Collect receipts and post totals'], ['Owner & schedule', 'Yusuf · Every Saturday'], ['Not a decision', 'Late-payment penalty remains unapproved'], ['Discussion', 'Reminders preferred before penalties'], ['Open question', 'Confirm the regular venue']],
   },
   personal: {
-    conversation: '“I need to send the application by Friday, call the dentist tomorrow and follow up with Maya about the invoice.”',
-    report: [['Priority', 'Submit application'], ['Deadline', 'Friday'], ['Reminder', 'Call dentist tomorrow'], ['Follow-up', 'Maya — invoice']],
+    conversation: '“I originally planned to send the application on Monday, but the reference will not arrive until Wednesday. I’ll submit it by Thursday at noon, then follow up with Maya about the unpaid invoice on Friday.”',
+    report: [['Updated commitment', 'Submit application Thursday'], ['Reason reconciled', 'Waiting for Wednesday reference'], ['Deadline', 'Thursday, 12pm'], ['Next follow-up', 'Contact Maya about invoice Friday'], ['Superseded date', 'Monday is no longer current']],
   },
 };
 
