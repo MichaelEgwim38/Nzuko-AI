@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-83" />
+    <link rel="stylesheet" href="/styles.css?v=20260904-85" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -324,6 +324,7 @@
               <button type="button" data-tool-panel="ai-processing-controls"><span class="tool-icon tool-icon-ai" aria-hidden="true">&#10022;</span><strong>AI intelligence</strong></button>
               <button type="button" data-tool-panel="privacy-data-controls"><span class="tool-icon tool-icon-privacy" aria-hidden="true">&#128274;</span><strong>Privacy</strong></button>
               <button type="button" data-tool-panel="integrations"><span class="tool-icon tool-icon-integrations" aria-hidden="true">&#8644;</span><strong>Integrations</strong></button>
+              <button type="button" data-tool-panel="actions"><span class="tool-icon tool-icon-actions" aria-hidden="true">&#10003;</span><strong>Actions</strong></button>
               <button id="install-app" type="button" data-close-tools><span class="tool-icon tool-icon-app" aria-hidden="true">&#8595;</span><strong>Get the app</strong></button>
               <button id="open-pricing" type="button" data-close-tools><span class="tool-icon tool-icon-pricing" aria-hidden="true">&pound;</span><strong>Pricing</strong></button>
               <button id="open-quick-guide" type="button" data-close-tools><span class="tool-icon tool-icon-guide" aria-hidden="true">?</span><strong>Quick guide</strong></button>
@@ -334,13 +335,6 @@
             </div>
           </aside>
         </div>
-
-        <nav class="dashboard-section-nav" aria-label="Workspace sections">
-          <a class="active" href="#overview">Dashboard</a>
-          <a href="#actions">Actions</a>
-          <a href="#connect">Connection</a>
-          <a href="#review">Review</a>
-        </nav>
 
         <div class="dashboard-layout">
           <section class="dashboard-main">
@@ -368,7 +362,7 @@
             </section>
 
             <div class="workspace-stack">
-              <section class="panel actions-panel" id="actions">
+              <section class="panel actions-panel tool-settings-panel" id="actions">
                 <div class="section-heading actions-heading">
                   <div>
                     <p id="actions-eyebrow" class="eyebrow">Approved operational actions</p>
@@ -789,7 +783,7 @@
           <section>
             <div class="quick-guide-section-title"><span class="quick-guide-device-icon" aria-hidden="true">🖥️</span><div><p class="eyebrow">Computer</p><h3>Connect with a QR code</h3></div></div>
             <ol>
-              <li>Open <strong>Connection</strong> and expand WhatsApp or Telegram.</li>
+              <li>Open the WhatsApp or Telegram connection card.</li>
               <li>Select <strong>Get QR code</strong>.</li>
               <li>On your phone, open <strong>Linked Devices</strong> in WhatsApp or <strong>Settings → Devices</strong> in Telegram.</li>
               <li>Choose the option to link a device and scan the QR shown by Nzuko AI.</li>
@@ -799,7 +793,7 @@
           <section>
             <div class="quick-guide-section-title"><span class="quick-guide-device-icon" aria-hidden="true">📱</span><div><p class="eyebrow">Mobile phone</p><h3>Connect on this phone</h3></div></div>
             <ol>
-              <li>Open <strong>Connection</strong> and expand WhatsApp or Telegram.</li>
+              <li>Expand the WhatsApp or Telegram connection card.</li>
               <li>Select <strong>Connect on this phone</strong> instead of trying to scan your own screen.</li>
               <li><strong>WhatsApp:</strong> enter your number, request a pairing code, then enter it in WhatsApp under <strong>Linked Devices → Link with phone number</strong>.</li>
               <li><strong>Telegram:</strong> enter your number, then enter the code Telegram sends you. Enter your Telegram password only if two-step verification is enabled.</li>
@@ -957,7 +951,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-84" type="module"></script>
+    <script src="/app.js?v=20260904-85" type="module"></script>
   </body>
 </html>
 

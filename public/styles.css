@@ -1297,6 +1297,7 @@ textarea {
 .tool-icon-ai { background: linear-gradient(145deg, #7459e8, #9a70f1); }
 .tool-icon-privacy { background: linear-gradient(145deg, #16885b, #4dbf79); }
 .tool-icon-integrations { background: linear-gradient(145deg, #2188ce, #4fb8e7); }
+.tool-icon-actions { background: linear-gradient(145deg, #406f3a, #75b92f); }
 .tool-icon-app { background: linear-gradient(145deg, #75b92f, #9ae63e); }
 .tool-icon-pricing { background: linear-gradient(145deg, #e38a16, #f5ba3b); }
 .tool-icon-guide { background: linear-gradient(145deg, #d94a62, #f17a8a); }
@@ -1318,6 +1319,9 @@ textarea {
 .workspace-tools-content .tool-settings-panel.active-tool-panel { display: block; }
 
 .workspace-tools-content .section-heading { align-items: flex-start; }
+.workspace-tools-content .actions-panel .action-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .workspace-tools-open { overflow: hidden; }
 
 .dashboard-sidebar,

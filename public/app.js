@@ -1052,7 +1052,7 @@ function setWorkspaceToolPanel(panelId = '') {
 function initialiseWorkspaceTools() {
   const content = $('#workspace-tools .workspace-tools-content');
   if (!content) return;
-  ['ai-processing-controls', 'privacy-data-controls', 'integrations'].forEach((id) => {
+  ['actions', 'ai-processing-controls', 'privacy-data-controls', 'integrations'].forEach((id) => {
     const panel = document.getElementById(id);
     if (panel) content.appendChild(panel);
   });
