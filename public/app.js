@@ -133,7 +133,8 @@ function configureConnectionExperience() {
   const mobile = isMobileDevice();
   document.body.classList.toggle('mobile-connection-experience', mobile);
   document.querySelectorAll('.mobile-connect-control').forEach((element) => {
-    if (element.id !== 'open-telegram-login') element.hidden = !mobile;
+    if (!mobile) element.hidden = true;
+    else if (element.matches('button.mobile-connect-control')) element.hidden = false;
   });
   if (mobile) {
     $('#show-qr').textContent = 'Use QR on another device';
@@ -1486,6 +1487,7 @@ function renderTelegramStatus(payload = {}) {
     telegramQrVisible = false;
     $('#telegram-qr-box').hidden = true;
     $('#start-telegram').textContent = 'Get QR code';
+    $('#telegram-phone-box').hidden = true;
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', `Connected · ${payload.account?.name || 'Telegram'}`, 'connected');
     $('#telegram-qr-box').innerHTML = `<strong>Connected as ${escapeHtml(payload.account?.name || 'Telegram user')}</strong>`;
     setHintMessage('telegram-status', 'Telegram is connected. Load the groups available to this account.');
@@ -1496,18 +1498,29 @@ function renderTelegramStatus(payload = {}) {
     $('#telegram-qr-box').hidden = false;
     $('#start-telegram').textContent = 'Hide QR code';
     $('#start-telegram').setAttribute('aria-expanded', 'true');
+    $('#telegram-phone-box').hidden = true;
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Scan QR to connect', 'pending');
     $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>${isMobileDevice() ? 'This QR must be displayed on another screen. On your phone, open Telegram → Settings → Devices → Link Desktop Device, then scan it.' : 'Telegram → Settings → Devices → Link Desktop Device'}</p>`;
     telegramPollTimer = setTimeout(checkTelegramStatus, 2000);
     return;
   }
+  if (payload.phoneCodeRequired) {
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Enter Telegram code', 'pending');
+    $('#telegram-phone-box').hidden = false;
+    $('#telegram-phone-stage').hidden = true;
+    $('#telegram-code-stage').hidden = false;
+    $('#telegram-code')?.focus();
+    setHintMessage('telegram-status', `Telegram sent a verification code${payload.phoneNumber ? ` to ${payload.phoneNumber}` : ''}. Enter it here to connect.`);
+    return;
+  }
   if (payload.passwordRequired) {
+    $('#telegram-phone-box').hidden = true;
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Password required', 'pending');
     setHintMessage('telegram-status', `Enter your Telegram two-step verification password${payload.passwordHint ? ` (${payload.passwordHint})` : ''}.`);
     telegramPollTimer = setTimeout(checkTelegramStatus, 2500);
     return;
   }
-  if (payload.status === 'starting' || payload.status === 'authorising') {
+  if (payload.status === 'starting' || payload.status === 'authorising' || payload.status === 'sending_code') {
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Connecting…', 'pending');
     telegramPollTimer = setTimeout(checkTelegramStatus, 1500);
     return;
@@ -1536,9 +1549,47 @@ async function startTelegram() {
     return;
   }
   try {
+    $('#telegram-phone-box').hidden = true;
     setHintMessage('telegram-status', 'Preparing a secure Telegram QR code…');
     renderTelegramStatus(await api('/api/telegram/start', { method: 'POST', body: '{}' }));
   } catch (error) { setHintMessage('telegram-status', error.message); }
+}
+
+function showTelegramPhoneBox() {
+  const box = $('#telegram-phone-box');
+  box.hidden = !box.hidden;
+  if (box.hidden) return;
+  clearTimeout(telegramPollTimer);
+  telegramQrVisible = false;
+  $('#telegram-qr-box').hidden = true;
+  $('#start-telegram').textContent = 'Get QR code';
+  $('#start-telegram').setAttribute('aria-expanded', 'false');
+  $('#telegram-phone-stage').hidden = false;
+  $('#telegram-code-stage').hidden = true;
+  $('#telegram-phone')?.focus();
+}
+
+async function requestTelegramCode() {
+  const phoneNumber = $('#telegram-phone').value.trim();
+  try {
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Sending code…', 'pending');
+    setHintMessage('telegram-status', 'Asking Telegram to send a secure verification code…');
+    renderTelegramStatus(await api('/api/telegram/phone', { method: 'POST', body: JSON.stringify({ phoneNumber }) }));
+  } catch (error) {
+    setHintMessage('telegram-status', error.message);
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Not connected', 'disconnected');
+  }
+}
+
+async function submitTelegramCode() {
+  const code = $('#telegram-code').value.trim();
+  try {
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Verifying…', 'pending');
+    renderTelegramStatus(await api('/api/telegram/code', { method: 'POST', body: JSON.stringify({ code }) }));
+    telegramPollTimer = setTimeout(checkTelegramStatus, 1200);
+  } catch (error) {
+    setHintMessage('telegram-status', error.message);
+  }
 }
 
 async function submitTelegramPassword() {
@@ -1599,6 +1650,9 @@ async function disconnectTelegram() {
     currentTelegramGroupId = '';
     currentTelegramGroupName = '';
     $('#telegram-group-name').value = '';
+    $('#telegram-phone').value = '';
+    $('#telegram-code').value = '';
+    $('#telegram-phone-box').hidden = true;
     $('#telegram-consent-confirmed').checked = false;
     setButtonDisabled('load-telegram-messages', true);
     $('#telegram-group-list').textContent = 'Telegram group not loaded yet.';
@@ -2125,6 +2179,9 @@ $('#load-groups').addEventListener('click', loadGroups);
 $('#manage-whatsapp-groups')?.addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
 $('#start-telegram')?.addEventListener('click', startTelegram);
+$('#show-telegram-phone')?.addEventListener('click', showTelegramPhoneBox);
+$('#request-telegram-code')?.addEventListener('click', requestTelegramCode);
+$('#submit-telegram-code')?.addEventListener('click', submitTelegramCode);
 $('#load-telegram-groups')?.addEventListener('click', loadTelegramGroups);
 $('#submit-telegram-password')?.addEventListener('click', submitTelegramPassword);
 $('#load-telegram-messages')?.addEventListener('click', () => setMessagePeriodOpen(true, 'telegram'));

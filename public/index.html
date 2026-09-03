@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-69" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-70" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -449,6 +449,7 @@
                     <div class="connector-step">
                       <div class="connector-step-heading"><span>1</span><div><strong>Connect Telegram</strong><small>Scan a secure QR code from Telegram Devices.</small></div></div>
                     <div class="button-row">
+                      <button id="show-telegram-phone" class="button mobile-connect-control" type="button">Connect on this phone</button>
                       <button id="start-telegram" class="button" type="button" aria-expanded="false">Get QR code</button>
                       <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
                       <details id="telegram-manage-connection" class="connection-manage" hidden>
@@ -459,6 +460,23 @@
                         </div>
                       </details>
                     </div>
+                    </div>
+                    <div id="telegram-phone-box" class="pairing-box mobile-connect-control" hidden>
+                      <div id="telegram-phone-stage">
+                        <label>
+                          Telegram phone number
+                          <input id="telegram-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. +447700900123" />
+                        </label>
+                        <p class="hint">Include + and your country code. Telegram will send the code inside the Telegram app.</p>
+                        <button id="request-telegram-code" class="button" type="button">Send Telegram code</button>
+                      </div>
+                      <div id="telegram-code-stage" hidden>
+                        <label>
+                          Telegram verification code
+                          <input id="telegram-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Enter the code" />
+                        </label>
+                        <button id="submit-telegram-code" class="button" type="button">Verify and connect</button>
+                      </div>
                     </div>
                     <div id="telegram-qr-box" class="qr-box" hidden></div>
                     <div id="telegram-password-box" hidden>
@@ -832,7 +850,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-69" type="module"></script>
+    <script src="/app.js?v=20260903-70" type="module"></script>
   </body>
 </html>
 

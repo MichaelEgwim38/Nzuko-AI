@@ -20,6 +20,8 @@ async function request({ baseUrl, apiKey, session, action, method = 'GET', body,
 }
 
 export function startTelegramSession(options) { return request({ ...options, action: 'start', method: 'POST' }); }
+export function startTelegramPhoneLogin(options) { return request({ ...options, action: 'phone', method: 'POST', body: { phoneNumber: options.phoneNumber } }); }
+export function submitTelegramCode(options) { return request({ ...options, action: 'code', method: 'POST', body: { code: options.code } }); }
 export function getTelegramStatus(options) { return request({ ...options, action: 'status' }); }
 export function submitTelegramPassword(options) { return request({ ...options, action: 'password', method: 'POST', body: { password: options.password } }); }
 export function listTelegramGroups(options) { return request({ ...options, action: 'groups' }); }

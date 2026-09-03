@@ -49,7 +49,9 @@ import {
   getTelegramStatus,
   listTelegramGroups,
   logoutTelegramSession,
+  startTelegramPhoneLogin,
   startTelegramSession,
+  submitTelegramCode,
   submitTelegramPassword,
 } from '../../src/connectors/telegram.js';
 
@@ -2040,6 +2042,23 @@ export default async function handler(request) {
       const { state, trial } = context;
       ensureTrialAllowed(trial);
       return sendJson(200, await startTelegramSession(telegramOptions(state)));
+    }
+
+    if (request.method === 'POST' && pathname === '/api/telegram/phone') {
+      const body = await readBody(request);
+      const context = await loadWorkspaceContext(session);
+      ensureTrialAllowed(context.trial);
+      const phoneNumber = String(body.phoneNumber || '').trim();
+      if (!/^\+[1-9][0-9]{7,14}$/.test(phoneNumber)) return sendJson(400, { error: 'Enter the full Telegram number with + and country code.' });
+      return sendJson(200, await startTelegramPhoneLogin({ ...telegramOptions(context.state), phoneNumber }));
+    }
+
+    if (request.method === 'POST' && pathname === '/api/telegram/code') {
+      const body = await readBody(request);
+      const context = await loadWorkspaceContext(session);
+      const code = String(body.code || '').replace(/\s/g, '');
+      if (!/^[0-9]{4,8}$/.test(code)) return sendJson(400, { error: 'Enter the Telegram verification code.' });
+      return sendJson(202, await submitTelegramCode({ ...telegramOptions(context.state), code }));
     }
 
     if (request.method === 'GET' && pathname === '/api/telegram/status') {

@@ -59,6 +59,8 @@ function publicState(entry) {
     loginUrl: entry.loginUrl || '',
     qrExpiresAt: entry.qrExpiresAt || null,
     passwordRequired: entry.status === 'password_required',
+    phoneCodeRequired: entry.status === 'code_required',
+    phoneNumber: entry.phoneNumber ? `${entry.phoneNumber.slice(0, 3)}••••${entry.phoneNumber.slice(-3)}` : '',
     passwordHint: entry.passwordHint || '',
     error: entry.error || '',
     account: entry.account || null,
@@ -72,7 +74,7 @@ async function entryFor(name) {
     connectionRetries: 5,
     autoReconnect: true,
   });
-  const entry = { name: sessionName, client, status: 'disconnected', qr: '', loginUrl: '', error: '', loginPromise: null };
+  const entry = { name: sessionName, client, status: 'disconnected', qr: '', loginUrl: '', error: '', loginPromise: null, phoneCodeResolver: null, passwordResolver: null, qrAbortController: null };
   sessions.set(sessionName, entry);
   return entry;
 }
@@ -93,6 +95,7 @@ async function startQrLogin(entry) {
   if (entry.loginPromise) return;
   entry.status = 'starting';
   entry.error = '';
+  entry.qrAbortController = new AbortController();
   entry.loginPromise = entry.client.signInUserWithQrCode(
     { apiId, apiHash },
     {
@@ -112,6 +115,7 @@ async function startQrLogin(entry) {
         entry.error = error.message || String(error);
         return false;
       },
+      abortSignal: entry.qrAbortController.signal,
     }
   ).then(async (user) => {
     await writeFile(sessionFile(entry.name), entry.client.session.save(), { mode: 0o600 });
@@ -122,7 +126,59 @@ async function startQrLogin(entry) {
   }).catch((error) => {
     entry.status = 'error';
     entry.error = error.message || String(error);
-  }).finally(() => { entry.loginPromise = null; entry.passwordResolver = null; });
+  }).finally(() => { entry.loginPromise = null; entry.passwordResolver = null; entry.qrAbortController = null; });
+}
+
+async function stopPendingQrLogin(entry) {
+  if (!entry.qrAbortController) return;
+  entry.qrAbortController.abort();
+  await entry.loginPromise?.catch(() => {});
+  entry.loginPromise = null;
+  entry.qrAbortController = null;
+}
+
+async function startPhoneLogin(entry, phoneNumber) {
+  if (await connectExisting(entry)) return;
+  await stopPendingQrLogin(entry);
+  if (entry.loginPromise) throw new Error('A Telegram sign-in is already in progress.');
+  entry.phoneNumber = String(phoneNumber || '').trim();
+  entry.status = 'sending_code';
+  entry.error = '';
+  entry.qr = '';
+  entry.loginUrl = '';
+  entry.loginPromise = entry.client.signInUser(
+    { apiId, apiHash },
+    {
+      phoneNumber: entry.phoneNumber,
+      phoneCode: async () => {
+        entry.status = 'code_required';
+        return new Promise((resolve) => { entry.phoneCodeResolver = resolve; });
+      },
+      password: async (hint) => {
+        entry.status = 'password_required';
+        entry.passwordHint = hint || '';
+        return new Promise((resolve) => { entry.passwordResolver = resolve; });
+      },
+      onError: async (error) => {
+        entry.error = error.message || String(error);
+        return false;
+      },
+    }
+  ).then(async (user) => {
+    await writeFile(sessionFile(entry.name), entry.client.session.save(), { mode: 0o600 });
+    entry.status = 'connected';
+    entry.account = { id: String(user.id), name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Telegram user', username: user.username || '' };
+  }).catch((error) => {
+    entry.status = 'error';
+    entry.error = error.message || String(error);
+  }).finally(() => {
+    entry.loginPromise = null;
+    entry.phoneCodeResolver = null;
+    entry.passwordResolver = null;
+  });
+  for (let attempt = 0; attempt < 50 && entry.status === 'sending_code'; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }
 
 async function waitForQr(entry) {
@@ -199,7 +255,7 @@ const server = http.createServer(async (request, response) => {
       });
       return response.end(media.content);
     }
-    const match = url.pathname.match(/^\/sessions\/([^/]+)(?:\/(start|status|password|groups|messages|logout))?$/);
+    const match = url.pathname.match(/^\/sessions\/([^/]+)(?:\/(start|phone|code|status|password|groups|messages|logout))?$/);
     if (!match) return json(response, 404, { error: 'Not found' });
     const entry = await entryFor(decodeURIComponent(match[1]));
     const action = match[2] || 'status';
@@ -208,6 +264,21 @@ const server = http.createServer(async (request, response) => {
       await startQrLogin(entry);
       await waitForQr(entry);
       return json(response, 200, publicState(entry));
+    }
+    if (request.method === 'POST' && action === 'phone') {
+      const payload = await body(request);
+      const phoneNumber = String(payload.phoneNumber || '').replace(/[^0-9+]/g, '');
+      if (!/^\+[1-9][0-9]{7,14}$/.test(phoneNumber)) return json(response, 400, { error: 'Enter the full Telegram number with + and country code.' });
+      await startPhoneLogin(entry, phoneNumber);
+      return json(response, 200, publicState(entry));
+    }
+    if (request.method === 'POST' && action === 'code') {
+      const payload = await body(request);
+      if (!entry.phoneCodeResolver) return json(response, 409, { error: 'Request a Telegram login code first.' });
+      entry.phoneCodeResolver(String(payload.code || '').replace(/\s/g, ''));
+      entry.phoneCodeResolver = null;
+      entry.status = 'authorising';
+      return json(response, 202, publicState(entry));
     }
     if (request.method === 'GET' && action === 'status') {
       if (entry.status === 'disconnected') await connectExisting(entry);
