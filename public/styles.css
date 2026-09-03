@@ -3390,6 +3390,23 @@ pre {
   box-shadow: 0 0 0 4px rgba(85, 184, 61, 0.14);
 }
 
+.connection-summary-status.is-disconnected {
+  border-color: rgba(198, 61, 61, 0.28);
+  background: #fff1f1;
+  color: #9d2929;
+}
+
+.connection-summary-status.is-disconnected::before {
+  background: #d94747;
+  box-shadow: 0 0 0 4px rgba(217, 71, 71, 0.14);
+}
+
+.connection-summary-status.is-pending {
+  border-color: rgba(226, 168, 41, 0.32);
+  background: #fff9e8;
+  color: #8a6200;
+}
+
 .connection-summary-status.is-pending::before {
   background: #e2a829;
   box-shadow: 0 0 0 4px rgba(226, 168, 41, 0.14);
@@ -5079,28 +5096,52 @@ pre {
   }
 
   .dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) 104px;
+    gap: 8px;
     min-height: auto;
-    padding: 23px 18px;
+    padding: 18px;
   }
 
   .dashboard-hero-copy h1 {
-    font-size: clamp(34px, 10vw, 44px);
-    line-height: 1;
+    font-size: clamp(29px, 8.5vw, 38px);
+    line-height: 1.04;
   }
 
   .dashboard-hero-object {
-    margin-top: 18px;
+    min-height: 132px;
+    margin-top: 0;
+    align-content: center;
   }
 
   .dashboard-hero-object img {
-    width: 92px;
-    height: 92px;
+    width: 82px;
+    height: 82px;
   }
 
   .hero-purpose-control {
-    align-items: flex-start;
+    align-items: center;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .hero-purpose-control strong {
+    font-size: 12px;
+  }
+
+  .hero-purpose-action {
+    font-size: 10px;
+  }
+
+  .dashboard-hero-copy .lead {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  #trial-summary {
+    gap: 6px;
+    padding: 7px 9px;
+    font-size: 10px;
   }
 
   .panel {
@@ -5345,6 +5386,18 @@ body[data-nzuko-mode] .dashboard-hero .eyebrow,
 body[data-nzuko-mode] .panel .eyebrow,
 body[data-nzuko-mode] .connection-summary-status {
   color: var(--mode-accent-strong);
+}
+
+body[data-nzuko-mode] .connection-summary-status.is-connected {
+  color: #245d38;
+}
+
+body[data-nzuko-mode] .connection-summary-status.is-disconnected {
+  color: #9d2929;
+}
+
+body[data-nzuko-mode] .connection-summary-status.is-pending {
+  color: #8a6200;
 }
 
 body[data-nzuko-mode] .dashboard-section-nav a.active,

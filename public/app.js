@@ -94,6 +94,7 @@ const landingModeExamples = {
 let selectedLandingMode = 'property-facilities';
 let whatsappQrVisible = false;
 let telegramQrVisible = false;
+let whatsappPollTimer = null;
 
 const actionModeCopy = {
   'healthcare-operations': { eyebrow: 'Approved shift actions', heading: 'Keep every handover accountable', owner: 'Responsible staff member', empty: 'Approved handover actions will appear here.' },
@@ -137,7 +138,7 @@ function configureConnectionExperience() {
     else if (element.matches('button.mobile-connect-control')) element.hidden = false;
   });
   if (mobile) {
-    $('#show-qr').textContent = 'Use QR on another device';
+    $('#show-qr').textContent = 'Get QR code';
     $('#start-telegram').textContent = 'Connect Telegram';
   }
 }
@@ -1016,7 +1017,7 @@ async function startApp() {
       approvedGroupId: currentApprovedGroupId,
     });
   }
-  await Promise.all([loadAudit(), loadActions(), checkTelegramStatus()]);
+  await Promise.all([loadAudit(), loadActions(), checkWaha(), checkTelegramStatus()]);
   await loadAdminBilling();
 }
 
@@ -1033,8 +1034,8 @@ async function loadStatus() {
   setConnectionStatus(
     'connection-summary-status',
     'whatsapp-manage-connection',
-    currentApprovedGroups.length ? `Connected · ${currentApprovedGroups.length} group${currentApprovedGroups.length === 1 ? '' : 's'}` : 'Not connected',
-    currentApprovedGroups.length ? 'connected' : 'disconnected'
+    'Checking connection...',
+    'pending'
   );
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
@@ -1065,8 +1066,8 @@ async function loadStatus() {
   setConnectionStatus(
     'telegram-summary-status',
     'telegram-manage-connection',
-    currentTelegramGroupId ? `Connected · ${currentTelegramGroupName}` : 'Not connected',
-    currentTelegramGroupId ? 'connected' : 'disconnected'
+    'Checking connection...',
+    'pending'
   );
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
@@ -1306,15 +1307,32 @@ async function testIntegration() {
 
 async function checkWaha() {
   try {
-    await saveSettings();
     const payload = await api('/api/waha/status');
     const state = String(payload.status.status || '').toLowerCase();
     const connected = ['working', 'connected', 'authenticated'].includes(state);
     setConnectionStatus('connection-summary-status', 'whatsapp-manage-connection', connected ? 'Connected' : 'Not connected', connected ? 'connected' : 'disconnected');
     setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'reachable'}.`);
+    return connected;
   } catch (error) {
+    setConnectionStatus('connection-summary-status', 'whatsapp-manage-connection', 'Not connected', 'error');
     setHintMessage('waha-status', `WhatsApp check failed: ${error.message}`);
+    return false;
   }
+}
+
+async function pollWhatsAppConnection() {
+  clearTimeout(whatsappPollTimer);
+  if (!whatsappQrVisible) return;
+  const connected = await checkWaha();
+  if (connected) {
+    whatsappQrVisible = false;
+    $('#qr-box').hidden = true;
+    $('#show-qr').textContent = 'Get QR code';
+    $('#show-qr').setAttribute('aria-expanded', 'false');
+    return;
+  }
+  setConnectionStatus('connection-summary-status', 'whatsapp-manage-connection', 'Scan QR to connect', 'pending');
+  whatsappPollTimer = setTimeout(pollWhatsAppConnection, 2000);
 }
 
 async function startWaha() {
@@ -1360,6 +1378,7 @@ async function showQr() {
   const button = $('#show-qr');
   const box = $('#qr-box');
   if (whatsappQrVisible) {
+    clearTimeout(whatsappPollTimer);
     whatsappQrVisible = false;
     box.hidden = true;
     button.textContent = 'Get QR code';
@@ -1395,6 +1414,8 @@ async function showQr() {
     `;
     whatsappQrVisible = true;
     button.setAttribute('aria-expanded', 'true');
+    setConnectionStatus('connection-summary-status', 'whatsapp-manage-connection', 'Scan QR to connect', 'pending');
+    whatsappPollTimer = setTimeout(pollWhatsAppConnection, 1500);
     setHintMessage('waha-status', 'QR loaded. Scan it now with WhatsApp Linked Devices while the QR stays open.');
   } catch (error) {
     box.hidden = false;
@@ -1477,11 +1498,6 @@ async function loadGroups() {
 
 function renderTelegramStatus(payload = {}) {
   clearTimeout(telegramPollTimer);
-  const openTelegram = $('#open-telegram-login');
-  if (openTelegram) {
-    openTelegram.hidden = !isMobileDevice() || !payload.loginUrl;
-    openTelegram.href = payload.loginUrl || '#';
-  }
   $('#telegram-password-box').hidden = !payload.passwordRequired;
   if (payload.connected) {
     telegramQrVisible = false;
