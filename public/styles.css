@@ -682,15 +682,6 @@ textarea {
   filter: drop-shadow(0 3px 3px rgba(15,52,30,.14));
 }
 
-.channel-logo small {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .channel-logo-whatsapp svg { fill: #21c063; }
 .channel-logo-telegram svg { fill: #269ed8; }
 .channel-logo-voice svg { fill: #8854d0; }
