@@ -1628,6 +1628,34 @@ h2 {
   max-width: min(100%, 560px);
 }
 
+.usage-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(100%, 680px);
+  padding: 12px 14px;
+  border: 1px solid #e9bd57;
+  border-radius: 16px;
+  background: #fff8e5;
+  color: #5d4307;
+  font-weight: 700;
+}
+
+.usage-warning[hidden] { display: none; }
+
+.topup-card-recommended {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(101, 189, 53, 0.14);
+}
+
+@media (max-width: 640px) {
+  .usage-warning {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .actions-panel {
   padding: 28px;
   background: linear-gradient(145deg, #ffffff 0%, #f6fbf3 100%);

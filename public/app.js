@@ -23,6 +23,7 @@ let upgradeNoteDismissTimeout = null;
 let deferredInstallPrompt = null;
 let selectedBillingInterval = 'monthly';
 let latestPricingStatus = null;
+let billingLimitContext = '';
 let currentTelegramGroupId = '';
 let currentTelegramGroupName = '';
 let telegramPollTimer = null;
@@ -275,6 +276,8 @@ function renderWorkspaceStatus(status = {}) {
   const openAdminButton = $('#open-admin');
   const sidebarRole = $('#sidebar-account-role');
   const checkWahaButton = $('#check-waha');
+  const usageWarning = $('#usage-warning');
+  const usageWarningText = $('#usage-warning-text');
 
   if (trialSummary) {
     if (trial.isSubscribed) {
@@ -298,6 +301,25 @@ function renderWorkspaceStatus(status = {}) {
 
   if (upgradeNote && trial.isSubscribed) {
     upgradeNote.hidden = true;
+  }
+
+  if (usageWarning && usageWarningText) {
+    const usage = billing.usage || {};
+    const alerts = [];
+    if (trial.isSubscribed) {
+      const reportLimit = Number(usage.recapLimit || 0);
+      const reportRemaining = Number(usage.recapRemaining || 0);
+      const minuteLimit = Number(usage.transcriptionMinuteLimit || 0);
+      const minuteRemaining = Number(usage.transcriptionMinutesRemaining || 0);
+      if (reportLimit && Number(usage.recapTopUpCredits || 0) <= 0 && reportRemaining <= reportLimit * 0.2) {
+        alerts.push(reportRemaining <= 0 ? 'No reports remaining' : `${reportRemaining} reports remaining`);
+      }
+      if (minuteLimit && Number(usage.transcriptionTopUpMinutes || 0) <= 0 && minuteRemaining <= minuteLimit * 0.2) {
+        alerts.push(minuteRemaining <= 0 ? 'No transcription minutes remaining' : `${Math.round(minuteRemaining * 10) / 10} transcription minutes remaining`);
+      }
+    }
+    usageWarning.hidden = !alerts.length;
+    usageWarningText.textContent = alerts.length ? `${alerts.join(' · ')}. Add extra usage or move to a larger plan.` : '';
   }
 
   if (paymentNotice) {
@@ -386,10 +408,11 @@ function renderBillingPlans(status = {}) {
   if (topUpSection) topUpSection.hidden = !trial.isSubscribed;
   if (topUpContainer && trial.isSubscribed) {
     const topUps = Array.isArray(billing.topUps) ? billing.topUps : [];
+    const relevantTopUpId = billingLimitContext === 'transcription' ? 'transcription-100' : billingLimitContext === 'reports' ? 'reports-50' : '';
     topUpContainer.innerHTML = topUps.map((topUp) => `
-      <article class="topup-card">
+      <article class="topup-card${topUp.id === relevantTopUpId ? ' topup-card-recommended' : ''}">
         <div><strong>${escapeHtml(topUp.name || '')}</strong><small>${escapeHtml(topUp.priceLabel || '')} one-time payment</small></div>
-        <button class="button compact-button" type="button" data-topup-id="${escapeHtml(topUp.id || '')}" ${topUp.checkoutEnabled ? '' : 'disabled'}>Buy</button>
+        <button class="button compact-button" type="button" data-topup-id="${escapeHtml(topUp.id || '')}" ${topUp.checkoutEnabled ? '' : 'disabled'}>${topUp.id === relevantTopUpId ? 'Add now' : 'Buy'}</button>
       </article>
     `).join('');
   }
@@ -428,6 +451,11 @@ function renderBillingPlans(status = {}) {
     summary.textContent = usageNotes.length
       ? `${billing.planName || 'Paid access'} is active. ${usageNotes.join(' · ')} in the current billing window. Use Manage billing for plan changes or cancellations.`
       : `${billing.planName || 'Paid access'} is active. Use Manage billing for plan changes or cancellations.`;
+    if (billingLimitContext === 'transcription') {
+      summary.textContent = 'You need more transcription time. Add 100 minutes now, or choose a larger plan for a higher monthly allowance.';
+    } else if (billingLimitContext === 'reports') {
+      summary.textContent = 'You need more reports. Add 50 reports now, or choose a larger plan for a higher monthly allowance.';
+    }
   } else if (publicPricing) {
     summary.textContent = 'Choose a plan after your free trial. Sign in with Google to create your workspace—no card required.';
   } else if (trial.canUseApp) {
@@ -803,7 +831,15 @@ async function api(path, options = {}) {
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error || 'Request failed');
+    const message = payload.error || 'Request failed';
+    if (/recap limit|trial recap limit/i.test(message)) {
+      billingLimitContext = 'reports';
+      window.setTimeout(() => openPricing(), 0);
+    } else if (/transcription-minute limit|trial transcription-minute limit/i.test(message)) {
+      billingLimitContext = 'transcription';
+      window.setTimeout(() => openPricing(), 0);
+    }
+    throw new Error(message);
   }
   return payload;
 }
@@ -2176,6 +2212,7 @@ async function handleBillingAdminAction(event) {
 }
 
 $('#save-settings')?.addEventListener('click', saveSettings);
+$('#usage-warning-action')?.addEventListener('click', openPricing);
 $('#consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#telegram-consent-confirmed')?.addEventListener('change', saveConnectorConsent);
 $('#ai-processing-confirmed')?.addEventListener('change', async (event) => {
