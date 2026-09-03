@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-68" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-69" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -374,7 +374,7 @@
                   <div class="connector-step-heading"><span>1</span><div><strong>Connect WhatsApp</strong><small>Use a QR code, or pair directly on mobile.</small></div></div>
                 <div class="button-row">
                   <button id="show-pairing" class="button mobile-connect-control" type="button">Connect on this phone</button>
-                  <button id="show-qr" class="button">Get QR code</button>
+                  <button id="show-qr" class="button" aria-expanded="false">Get QR code</button>
                   <details id="whatsapp-manage-connection" class="connection-manage" hidden>
                     <summary>Manage connection</summary>
                     <div class="connection-manage-menu">
@@ -393,7 +393,7 @@
                   <button id="request-pairing-code" class="button" type="button">Get secure pairing code</button>
                   <div id="pairing-result" class="pairing-result" hidden></div>
                 </div>
-                <div id="qr-box" class="qr-box">Click Get QR code, then scan it with WhatsApp Linked Devices.</div>
+                <div id="qr-box" class="qr-box" hidden></div>
                 <div class="link-row managed-field managed-hidden" data-managed-hidden="true" aria-hidden="true">
                   <a href="/qr.html" target="_blank" rel="noreferrer">Open full-screen QR</a>
                 </div>
@@ -449,7 +449,7 @@
                     <div class="connector-step">
                       <div class="connector-step-heading"><span>1</span><div><strong>Connect Telegram</strong><small>Scan a secure QR code from Telegram Devices.</small></div></div>
                     <div class="button-row">
-                      <button id="start-telegram" class="button" type="button">Get QR code</button>
+                      <button id="start-telegram" class="button" type="button" aria-expanded="false">Get QR code</button>
                       <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
                       <details id="telegram-manage-connection" class="connection-manage" hidden>
                         <summary>Manage connection</summary>
@@ -460,7 +460,7 @@
                       </details>
                     </div>
                     </div>
-                    <div id="telegram-qr-box" class="qr-box">Click Get QR code, then scan it from Telegram Settings → Devices.</div>
+                    <div id="telegram-qr-box" class="qr-box" hidden></div>
                     <div id="telegram-password-box" hidden>
                       <label>
                         Telegram two-step verification password
@@ -519,7 +519,7 @@
                   <input id="input-source" type="hidden" value="other" />
                   <label>Conversation messages<textarea id="chat-text" rows="7" readonly></textarea></label>
                   <label>Voice-note transcripts <span class="optional-label">When available</span><textarea id="voice-notes" rows="4" readonly></textarea></label>
-                  <button id="purge" class="button secondary compact-button" type="button">Remove source material</button>
+                  <button id="purge" class="button secondary compact-button" type="button">Clear source and preview</button>
                 </details>
               </section>
 
@@ -832,7 +832,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-68" type="module"></script>
+    <script src="/app.js?v=20260903-69" type="module"></script>
   </body>
 </html>
 

@@ -92,6 +92,8 @@ const landingModeExamples = {
 };
 
 let selectedLandingMode = 'property-facilities';
+let whatsappQrVisible = false;
+let telegramQrVisible = false;
 
 const actionModeCopy = {
   'healthcare-operations': { eyebrow: 'Approved shift actions', heading: 'Keep every handover accountable', owner: 'Responsible staff member', empty: 'Approved handover actions will appear here.' },
@@ -358,7 +360,7 @@ function renderWorkspaceStatus(status = {}) {
 
   ['save-settings', 'check-waha', 'switch-waha-user'].forEach((id) => setButtonDisabled(id, !canUseApp));
   ['start-waha', 'show-qr'].forEach((id) => setButtonDisabled(id, !canClaimSession));
-  ['load-groups', 'configure-webhook', 'load-whatsapp-messages', 'load-telegram-messages', 'generate', 'approve', 'purge'].forEach((id) =>
+  ['load-groups', 'configure-webhook', 'load-whatsapp-messages', 'load-telegram-messages', 'generate', 'approve'].forEach((id) =>
     setButtonDisabled(id, !canOperateLive)
   );
 }
@@ -891,8 +893,12 @@ async function runSampleReport() {
     const payload = await api('/api/sample');
     $('#chat-text').value = payload.chatText || '';
     $('#voice-notes').value = payload.voiceNotes || '';
-    $('#input-source').value = 'other';
-    await generateRecap();
+    $('#input-source').value = 'sample';
+    $('#recap-output').textContent = payload.recap?.text || 'The sample preview could not be generated.';
+    $('#draft-workflow-name').textContent = `${payload.recap?.workflowName || workflowName()} sample`;
+    $('#approve-status').textContent = 'Sample preview only. Load your own WhatsApp or Telegram messages to create an approvable report.';
+    setButtonDisabled('approve', true);
+    setHintMessage('import-status', 'Sample conversation used for this preview. It does not use your report allowance.');
     window.location.hash = 'review';
   } catch (error) {
     setHintMessage('import-status', `The sample could not be loaded: ${error.message}`);
@@ -1324,6 +1330,10 @@ async function startWaha() {
 async function switchWahaUser() {
   try {
     const payload = await api('/api/waha/logout', { method: 'POST', body: '{}' });
+    whatsappQrVisible = false;
+    $('#qr-box').hidden = true;
+    $('#show-qr').textContent = 'Get QR code';
+    $('#show-qr').setAttribute('aria-expanded', 'false');
     currentApprovedGroupId = '';
     currentApprovedGroups = [];
     $('#group-name').value = '';
@@ -1347,11 +1357,18 @@ async function switchWahaUser() {
 
 async function showQr() {
   const button = $('#show-qr');
-  const originalLabel = button?.textContent || 'Get QR code';
+  const box = $('#qr-box');
+  if (whatsappQrVisible) {
+    whatsappQrVisible = false;
+    box.hidden = true;
+    button.textContent = 'Get QR code';
+    button.setAttribute('aria-expanded', 'false');
+    return;
+  }
   try {
     if (button) {
       button.disabled = true;
-      button.textContent = 'Preparing QRâ€¦';
+      button.textContent = 'Preparing QR...';
     }
     await saveSettings();
     await api('/api/waha/start', { method: 'POST', body: '{}' });
@@ -1366,20 +1383,25 @@ async function showQr() {
       }
     }
     if (!payload?.qr?.data || !payload?.qr?.mimetype) {
-      $('#qr-box').textContent = 'The QR is still being prepared. Please select Get QR code again.';
+      box.hidden = false;
+      box.textContent = 'The QR is still being prepared. Please select Get QR code again.';
       return;
     }
-    $('#qr-box').innerHTML = `
+    box.hidden = false;
+    box.innerHTML = `
       <strong>Open this QR on another screen and scan it with your WhatsApp account.</strong>
       <img alt="WAHA WhatsApp QR code" src="data:${payload.qr.mimetype};base64,${payload.qr.data}" />
     `;
+    whatsappQrVisible = true;
+    button.setAttribute('aria-expanded', 'true');
     setHintMessage('waha-status', 'QR loaded. Scan it now with WhatsApp Linked Devices while the QR stays open.');
   } catch (error) {
-    $('#qr-box').textContent = `QR failed: ${error.message}`;
+    box.hidden = false;
+    box.textContent = `QR failed: ${error.message}`;
   } finally {
     if (button) {
       button.disabled = false;
-      button.textContent = originalLabel;
+      button.textContent = whatsappQrVisible ? 'Hide QR code' : 'Get QR code';
     }
   }
 }
@@ -1461,14 +1483,21 @@ function renderTelegramStatus(payload = {}) {
   }
   $('#telegram-password-box').hidden = !payload.passwordRequired;
   if (payload.connected) {
+    telegramQrVisible = false;
+    $('#telegram-qr-box').hidden = true;
+    $('#start-telegram').textContent = 'Get QR code';
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', `Connected · ${payload.account?.name || 'Telegram'}`, 'connected');
     $('#telegram-qr-box').innerHTML = `<strong>Connected as ${escapeHtml(payload.account?.name || 'Telegram user')}</strong>`;
     setHintMessage('telegram-status', 'Telegram is connected. Load the groups available to this account.');
     return;
   }
   if (payload.qr) {
+    telegramQrVisible = true;
+    $('#telegram-qr-box').hidden = false;
+    $('#start-telegram').textContent = 'Hide QR code';
+    $('#start-telegram').setAttribute('aria-expanded', 'true');
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Scan QR to connect', 'pending');
-    $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>Telegram → Settings → Devices → Link Desktop Device</p>`;
+    $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>${isMobileDevice() ? 'This QR must be displayed on another screen. On your phone, open Telegram → Settings → Devices → Link Desktop Device, then scan it.' : 'Telegram → Settings → Devices → Link Desktop Device'}</p>`;
     telegramPollTimer = setTimeout(checkTelegramStatus, 2000);
     return;
   }
@@ -1484,6 +1513,10 @@ function renderTelegramStatus(payload = {}) {
     return;
   }
   setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', payload.status === 'error' ? 'Connection failed' : 'Not connected', payload.status === 'error' ? 'error' : 'disconnected');
+  telegramQrVisible = false;
+  $('#telegram-qr-box').hidden = true;
+  $('#start-telegram').textContent = 'Get QR code';
+  $('#start-telegram').setAttribute('aria-expanded', 'false');
   if (payload.error) setHintMessage('telegram-status', payload.error);
 }
 
@@ -1492,6 +1525,16 @@ async function checkTelegramStatus() {
 }
 
 async function startTelegram() {
+  const box = $('#telegram-qr-box');
+  const button = $('#start-telegram');
+  if (telegramQrVisible) {
+    clearTimeout(telegramPollTimer);
+    telegramQrVisible = false;
+    box.hidden = true;
+    button.textContent = 'Get QR code';
+    button.setAttribute('aria-expanded', 'false');
+    return;
+  }
   try {
     setHintMessage('telegram-status', 'Preparing a secure Telegram QR code…');
     renderTelegramStatus(await api('/api/telegram/start', { method: 'POST', body: '{}' }));
@@ -1548,6 +1591,10 @@ async function loadTelegramMessages(range = {}) {
 async function disconnectTelegram() {
   try {
     clearTimeout(telegramPollTimer);
+    telegramQrVisible = false;
+    $('#telegram-qr-box').hidden = true;
+    $('#start-telegram').textContent = 'Get QR code';
+    $('#start-telegram').setAttribute('aria-expanded', 'false');
     await api('/api/telegram/logout', { method: 'POST', body: '{}' });
     currentTelegramGroupId = '';
     currentTelegramGroupName = '';
@@ -1747,6 +1794,7 @@ async function generateRecap() {
     }),
   });
   $('#recap-output').textContent = payload.draft.recap.text;
+  setButtonDisabled('approve', false);
   $('#draft-workflow-name').textContent = `${payload.draft.recap.workflowName || workflowName()} draft`;
   $('#approve-status').textContent = 'Draft ready. Review before approving.';
   await loadStatus();
@@ -1765,9 +1813,14 @@ async function approveRecap() {
 }
 
 async function purgeDraft() {
-  const payload = await api('/api/purge', { method: 'POST', body: '{}' });
-  $('#approve-status').textContent = payload.message;
-  $('#recap-output').textContent = EMPTY_DRAFT_MESSAGE;
+  try {
+    const payload = await api('/api/purge', { method: 'POST', body: '{}' });
+    clearDraftFields();
+    $('#approve-status').textContent = payload.message;
+    $('#draft-workflow-name').textContent = `${workflowName()} draft`;
+  } catch (error) {
+    $('#approve-status').textContent = `Source material could not be cleared: ${error.message}`;
+  }
 }
 
 async function loadAudit() {

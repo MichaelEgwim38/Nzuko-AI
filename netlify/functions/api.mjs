@@ -2115,7 +2115,15 @@ export default async function handler(request) {
     }
 
     if (request.method === 'GET' && pathname === '/api/sample') {
-      return sendJson(200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes });
+      const context = await loadWorkspaceContext(session);
+      const recap = generateWorkflowReport({
+        chatText: sampleChat,
+        voiceNotes: sampleVoiceNotes,
+        groupName: 'Sample operations team',
+        workflowType: context.state.settings.workflowType,
+        customInstructions: context.state.settings.workflowCustomInstructions,
+      });
+      return sendJson(200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes, recap });
     }
 
     if (request.method === 'POST' && pathname === '/api/settings') {

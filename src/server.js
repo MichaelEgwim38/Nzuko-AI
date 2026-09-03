@@ -592,7 +592,14 @@ async function handleApi(request, response) {
   }
 
   if (request.method === 'GET' && requestUrl.pathname === '/api/sample') {
-    sendJson(response, 200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes });
+    const recap = generateWorkflowReport({
+      chatText: sampleChat,
+      voiceNotes: sampleVoiceNotes,
+      groupName: 'Sample operations team',
+      workflowType: state.settings.workflowType,
+      customInstructions: state.settings.workflowCustomInstructions,
+    });
+    sendJson(response, 200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes, recap });
     return;
   }
 
