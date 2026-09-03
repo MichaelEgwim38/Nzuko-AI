@@ -176,10 +176,10 @@ function updateInstallButton() {
   const footerButton = $('#footer-install-app');
   const currentDeviceButton = $('#install-current-device');
   const isStandalone = isStandaloneMode();
-  const canShowIosHelp = isIosDevice();
   if (button) {
-    button.hidden = (!deferredInstallPrompt && !canShowIosHelp) || Boolean(isStandalone);
-    button.textContent = 'Get the app';
+    button.hidden = Boolean(isStandalone);
+    const label = button.querySelector('strong');
+    if (label) label.textContent = 'Get the app';
   }
   if (loginButton) {
     loginButton.hidden = Boolean(isStandalone);
