@@ -1024,10 +1024,29 @@ function setWorkspaceToolsOpen(open) {
   trigger.setAttribute('aria-expanded', String(open));
   document.body.classList.toggle('workspace-tools-open', open);
   if (open) {
+    setWorkspaceToolPanel();
     window.requestAnimationFrame(() => $('#close-workspace-tools')?.focus());
   } else {
     trigger.focus();
   }
+}
+
+function setWorkspaceToolPanel(panelId = '') {
+  const launcher = $('#workspace-tools-launcher');
+  const content = $('#workspace-tools .workspace-tools-content');
+  const back = $('#back-workspace-tools');
+  const drawer = $('#workspace-tools-drawer');
+  if (!launcher || !content || !back) return;
+  const selected = panelId ? document.getElementById(panelId) : null;
+  launcher.hidden = Boolean(selected);
+  content.hidden = !selected;
+  back.hidden = !selected;
+  content.querySelectorAll('.tool-settings-panel').forEach((panel) => {
+    panel.classList.toggle('active-tool-panel', panel === selected);
+  });
+  if (drawer) drawer.scrollTop = 0;
+  const heading = $('#workspace-tools-title');
+  if (heading) heading.textContent = selected?.querySelector('h2')?.textContent || 'Tools';
 }
 
 function initialiseWorkspaceTools() {
@@ -1041,7 +1060,7 @@ function initialiseWorkspaceTools() {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       setWorkspaceToolsOpen(true);
-      window.requestAnimationFrame(() => $('#integrations')?.scrollIntoView({ block: 'start' }));
+      setWorkspaceToolPanel('integrations');
     });
   });
 }
@@ -2390,7 +2409,10 @@ $('#erase-operational-data')?.addEventListener('click', eraseOperationalData);
 initialiseWorkspaceTools();
 $('#open-workspace-tools')?.addEventListener('click', () => setWorkspaceToolsOpen(true));
 $('#close-workspace-tools')?.addEventListener('click', () => setWorkspaceToolsOpen(false));
+$('#back-workspace-tools')?.addEventListener('click', () => setWorkspaceToolPanel());
 $('#workspace-tools-backdrop')?.addEventListener('click', () => setWorkspaceToolsOpen(false));
+document.querySelectorAll('[data-tool-panel]').forEach((button) => button.addEventListener('click', () => setWorkspaceToolPanel(button.dataset.toolPanel)));
+document.querySelectorAll('[data-close-tools]').forEach((button) => button.addEventListener('click', () => setWorkspaceToolsOpen(false)));
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !$('#workspace-tools')?.hidden) setWorkspaceToolsOpen(false);
 });
