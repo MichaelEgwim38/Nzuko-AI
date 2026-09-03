@@ -29,7 +29,7 @@ import { billingTopUpById, consumeAllowanceWithCredits, listBillingTopUps } from
 import { createCustomerPortalSession, createSubscriptionCheckoutSession, createTopUpCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
-import { mockGroups, postApprovedRecap, sampleChat, sampleVoiceNotes } from '../../src/connectors/mockWhatsApp.js';
+import { mockGroups, postApprovedRecap, sampleScenarioForMode } from '../../src/connectors/mockWhatsApp.js';
 import {
   configureWahaWebhook,
   createWahaSession,
@@ -2145,14 +2145,15 @@ export default async function handler(request) {
 
     if (request.method === 'GET' && pathname === '/api/sample') {
       const context = await loadWorkspaceContext(session);
+      const sample = sampleScenarioForMode(context.state.settings.workspaceTemplate);
       const recap = generateWorkflowReport({
-        chatText: sampleChat,
-        voiceNotes: sampleVoiceNotes,
-        groupName: 'Sample operations team',
+        chatText: sample.chatText,
+        voiceNotes: sample.voiceNotes,
+        groupName: sample.groupName,
         workflowType: context.state.settings.workflowType,
         customInstructions: context.state.settings.workflowCustomInstructions,
       });
-      return sendJson(200, { chatText: sampleChat, voiceNotes: sampleVoiceNotes, recap });
+      return sendJson(200, { chatText: sample.chatText, voiceNotes: sample.voiceNotes, recap });
     }
 
     if (request.method === 'POST' && pathname === '/api/settings') {

@@ -1,12 +1,13 @@
-const decisionPattern = /\b(agreed|decision|decided|approved|resolved|final|we will|conclusion)\b/i;
-const actionPattern = /\b(i (?:will|can|shall)|will|shall|is to|action|assigned|deadline|before|by monday|by tuesday|by wednesday|by thursday|by friday|follow up|send|draft|collect|share|post|prepare)\b/i;
-const unresolvedPattern = /\?|no final|not final|unclear|argue|disagree|disagreement|pending|confirm|should we|can we/i;
+const decisionPattern = /\b(agreed|decision|decided|approved|resolved|we will|conclusion)\b/i;
+const actionPattern = /\b(i (?:will|can|shall)|(?:[\p{L}][\p{L}'’-]*\s+){0,2}[\p{L}][\p{L}'’-]*\s+(?:will|shall|is to|can)\s+(?:cover|update|circulate|inspect|report|revisit|send|reserve|collect|share|post|prepare|draft|submit|follow up|manage|contact|book|confirm)|action|assigned|deadline|follow up|send|draft|collect|share|post|prepare|update|circulate|inspect|revisit|reserve|submit)\b/iu;
+const unresolvedPattern = /\?|no final|not final|unclear|argue|disagree|disagreement|pending|should we|can we/i;
 const rejectedOutcomePattern = /\b(?:no|not)\b[^.!?]{0,80}\b(?:final|approved|agreed|decided|resolved|confirmed)\b|\b(?:remains?|still)\s+(?:open|unresolved|pending)\b/i;
 const discussionPattern = /\b(?:discussed|discussion|proposed|suggested|preferred|supported|considered|raised|debated)\b/i;
 const linkOnlyPattern = /^https?:\/\/\S+$/i;
 const noisyActionPattern = /\b(action items?:|voice note translated summary|voice note transcript|privacy|connected only to the approved|not connected to people)/i;
 const voiceTypes = new Set(['audio', 'ptt']);
 const noUsefulContentPattern = /^(null|undefined|n\/a|\[object object\])$/i;
+const supersededPlanPattern = /\b(?:originally|previously)\s+(?:planned|intended)\b|\b(?:will|can|shall)\s+not\b/i;
 
 export function splitReadableLines(value) {
   return String(value || '')
@@ -67,6 +68,7 @@ function isUsefulAction(line) {
   if (!isUsefulContent(item)) return false;
   if (noisyActionPattern.test(item)) return false;
   if (unresolvedPattern.test(item) || rejectedOutcomePattern.test(item)) return false;
+  if (supersededPlanPattern.test(item)) return false;
   if (item.length > 240) return false;
   return actionPattern.test(item);
 }
@@ -92,6 +94,12 @@ function statementTopics(value) {
   if (/\b(?:receipt|receipts|screenshots?|totals?)\b/.test(text)) topics.add('receipt-reporting');
   if (/\b(?:contribution list|contributions list)\b/.test(text)) topics.add('contribution-list');
   if (/\b(?:8\s*(?:pm|p\.m\.)|meeting every evening|meet every evening|daily meeting)\b/.test(text)) topics.add('meeting-schedule');
+  if (/\b(?:rota|shift|agency cover|evening cover|staffing)\b/.test(text)) topics.add('staffing');
+  if (/\b(?:boiler|pressure|plant-room|safety inspection)\b/.test(text)) topics.add('boiler');
+  if (/\b(?:flat 3|tenant access|building access|site access)\b/.test(text)) topics.add('access');
+  if (/\b(?:unit 14|job 14|alarm|valve part|replacement valve)\b/.test(text)) topics.add('field-job-14');
+  if (/\b(?:volunteer rota|food-bank|food bank)\b/.test(text)) topics.add('volunteer-rota');
+  if (/\b(?:application|reference)\b/.test(text)) topics.add('application');
   return topics;
 }
 
@@ -101,7 +109,7 @@ function contradictedByUnresolved(item, unresolvedItems = []) {
   return unresolvedItems.some((unresolved) => {
     if (!rejectedOutcomePattern.test(unresolved?.text || '')) return false;
     const unresolvedTopics = statementTopics(unresolved.text);
-    return [...topics].some((topic) => unresolvedTopics.has(topic));
+    return [...topics].some((topic) => topic === 'late-payment-policy' && unresolvedTopics.has(topic));
   });
 }
 
@@ -146,6 +154,8 @@ function displaySpeaker(value) {
   const speaker = String(value || '').trim();
   if (!speaker) return 'Speaker not captured';
   if (speaker === 'Assistant account') return speaker;
+  const voiceSpeaker = speaker.match(/^voice note(?:\s*-\s*|\s+from\s+)(.+)$/i);
+  if (voiceSpeaker?.[1]) return voiceSpeaker[1].trim();
   return speaker;
 }
 
@@ -173,7 +183,7 @@ function itemFromLine(line, fallbackSource = 'Manual input') {
   const cleaned = cleanLine(line);
   return {
     text: stripSpeaker(cleaned),
-    speaker: extractSpeaker(cleaned) || 'Speaker not captured',
+    speaker: displaySpeaker(extractSpeaker(cleaned)),
     time: 'time not captured',
     source: fallbackSource,
     confidence: '',
@@ -233,13 +243,19 @@ function inferOwner(item) {
   if (/^chair(man)?\b/i.test(text)) return 'Chairman';
   if (/^group\b/i.test(text)) return 'Group';
   if (/\bi (?:will|can|shall)\b/i.test(text)) return item.speaker;
-  const namedCommitment = text.match(/^(?:decision\s*:\s*)?([\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*){0,2})\s+(?:will|shall|is to|can)\b/iu);
+  const namedCommitment = text.match(/^(?:(?:decision\s*:|we\s+(?:agreed|decided|approved)(?:\s+that)?)\s*)?([\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*){0,2})\s+(?:will|shall|is to|can)\b/iu);
   if (namedCommitment?.[1]) return namedCommitment[1].trim();
   return 'Needs owner';
 }
 
 function inferDue(item) {
   const text = item.text || '';
+  const todayOrTomorrow = text.match(/\b(today|tomorrow)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (todayOrTomorrow) return `${todayOrTomorrow[1][0].toUpperCase()}${todayOrTomorrow[1].slice(1).toLowerCase()}, ${todayOrTomorrow[2]}`;
+  const byDayTime = text.match(/\b(by|before)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (byDayTime) return `${byDayTime[1][0].toUpperCase()}${byDayTime[1].slice(1).toLowerCase()} ${byDayTime[2]}, ${byDayTime[3]}`;
+  const byTime = text.match(/\b(by|before)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))(?:\s+(today|tomorrow))?\b/i);
+  if (byTime) return `${byTime[1][0].toUpperCase()}${byTime[1].slice(1).toLowerCase()} ${byTime[2]}${byTime[3] ? ` ${byTime[3].toLowerCase()}` : ''}`;
   const beforeDay = text.match(/\bbefore\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
   if (beforeDay) return `Before ${beforeDay[1]}`;
   const byDay = text.match(/\bby\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
@@ -247,6 +263,19 @@ function inferDue(item) {
   const recurringDay = text.match(/\b(?:every|on)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)s?\b|\b(Mondays|Tuesdays|Wednesdays|Thursdays|Fridays|Saturdays|Sundays)\b/i);
   if (recurringDay) return recurringDay[1] ? `Every ${recurringDay[1]}` : recurringDay[2];
   return 'Not stated';
+}
+
+function actionTask(item) {
+  const owner = inferOwner(item);
+  const escapedOwner = owner.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(item.text || '')
+    .replace(/^decision\s*:\s*/i, '')
+    .replace(new RegExp(`^we\\s+(?:agreed|decided|approved)(?:\\s+that)?\\s+${escapedOwner}\\s+(?:will|shall|is to|can)\\s+`, 'i'), '')
+    .replace(new RegExp(`^${escapedOwner}\\s+(?:will|shall|is to|can)\\s+`, 'i'), '')
+    .replace(/^.*?\bi\s+(?:will|shall|can)\s+/i, '')
+    .replace(/^i\s+(?:will|shall|can)\s+/i, '')
+    .replace(/^./, (character) => character.toUpperCase())
+    .trim();
 }
 
 function reconcileActionItems(items = []) {
@@ -271,9 +300,6 @@ function reconcileActionItems(items = []) {
       continue;
     }
     const existing = reconciled[duplicateIndex];
-    const itemIsExplicitDecision = /^decision\s*:/i.test(item.text);
-    const existingIsExplicitDecision = /^decision\s*:/i.test(existing.text);
-    if (itemIsExplicitDecision && !existingIsExplicitDecision) reconciled[duplicateIndex] = item;
     reviewNotes.push(`Confirm whether “${existing.text}” and “${item.text}” describe the same action for ${owner}.`);
   }
   return { items: reconciled, reviewNotes };
@@ -283,7 +309,7 @@ function formatActionItems(items) {
   return items
     .map(
       (item, index) => `${index + 1}. Owner: ${inferOwner(item)}
-   Task: ${item.text}
+   Task: ${actionTask(item)}
    Due: ${inferDue(item)}
    Source: ${item.source}
    Time: ${item.time}
@@ -386,11 +412,16 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     itemText(decisionItems),
     'No confirmed decision found. Mark the main point as needs confirmation before posting.'
   );
+  const unresolvedText = new Set(reconciliationIssues.map((item) => cleanLine(item.text).toLowerCase()));
+  const distinctPointItems = uniqueItems([...textPointItems, ...pointLines], 'No discussion points captured yet.', 8)
+    .filter((item) => item.source?.includes('Review note') || !unresolvedText.has(cleanLine(item.text).toLowerCase()));
   const points = uniqueFirst(
-    itemText(uniqueItems([...textPointItems, ...pointLines], 'No discussion points captured yet.', 8)),
+    itemText(distinctPointItems),
     'No discussion points captured yet.'
   );
-  const pointItems = uniqueItems([...textPointItems, ...pointLines], 'No discussion points captured yet.', 8);
+  const pointItems = distinctPointItems.length
+    ? distinctPointItems
+    : uniqueItems([], 'No separate discussion point was captured.', 8);
   const extractedActionItems = uniqueItems(
     [
       ...structuredVoice.actions.filter((item) => isUsefulAction(item.text)),
@@ -401,7 +432,7 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
   );
   const { items: actionItems, reviewNotes: actionReconciliationNotes } = reconcileActionItems(extractedActionItems);
   const actions = uniqueFirst(
-    actionItems.map((item) => `${inferOwner(item)}: ${item.text}`),
+    actionItems.map((item) => `${inferOwner(item)}: ${actionTask(item)}`),
     'No action item with owner found. Add owner and deadline if the group has one.'
   );
   const unresolvedItems = uniqueItems(
@@ -429,6 +460,11 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
   const realDecisions = decisionItems.filter((item) => !item.source.includes('Review note'));
   const realActions = actionItems.filter((item) => !item.source.includes('Review note'));
   const realUnresolved = unresolvedItems.filter((item) => !item.source.includes('Review note'));
+  const decisionTopics = realDecisions.map((item) => statementTopics(item.text));
+  const executiveActions = realActions.filter((item) => {
+    const topics = statementTopics(item.text);
+    return !topics.size || !decisionTopics.some((decisionTopic) => [...topics].some((topic) => decisionTopic.has(topic)));
+  });
   const translatedVoiceCount = voiceSummaryItems.filter((item) => item.source === 'Voice note').length;
   const humanReviewItems = uniqueFirst([
     ...voiceSummaryItems
@@ -438,7 +474,7 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
   ], 'Confirm the draft against the source conversation before approval.', 6);
   const executivePoints = uniqueFirst([
     ...realDecisions.map((item) => item.text),
-    ...realActions.map((item) => `${inferOwner(item)} will handle: ${item.text}`),
+    ...executiveActions.map((item) => `${inferOwner(item)}: ${actionTask(item)}`),
     ...realUnresolved.map((item) => `Still unresolved: ${item.text}`),
     translatedVoiceCount ? `${translatedVoiceCount} translated voice-note item(s) require human validation.` : '',
   ], 'No confirmed outcome was detected. Review the source conversation.', 6);
