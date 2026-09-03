@@ -56,6 +56,7 @@ Required Netlify environment variables:
 - `WAHA_WORKERS_JSON` (optional JSON array of WAHA workers for horizontal scaling)
 - `WAHA_API_KEY` when your WAHA instance requires it
 - `OPENAI_API_KEY` for voice-note transcription and translation
+- `RECONCILIATION_MODEL` optionally selects the report reconciliation model (defaults to `gpt-4.1-mini`)
 - `PUBLIC_APP_URL` for webhook registration in production
 - `STRIPE_SECRET_KEY`
 - `STRIPE_STARTER_PRICE_ID`

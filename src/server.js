@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateWorkflowReport, normaliseWorkflowType, workflowTemplates } from './workflowTemplates.js';
+import { generateReconciledWorkflowReport } from './reconciliationAgent.js';
 import { actionView, actionsFromApprovedRecap, updateOperationalAction } from './operationalActions.js';
 import { loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
 import { buildPendingVoiceNote, isVoiceMedia, transcribeVoiceNote } from './transcription.js';
@@ -756,14 +757,16 @@ async function handleApi(request, response) {
       chatText = split.chatText;
       voiceNotes = split.voiceNotes;
     }
-    const recap = generateWorkflowReport({
+    const recap = await generateReconciledWorkflowReport({
       chatText: chatText || '',
       voiceNotes: voiceNotes || '',
       groupName: state.settings.approvedGroupName,
       messages: sourceMessages,
       workflowType: state.settings.workflowType,
       customInstructions: state.settings.workflowCustomInstructions,
-    });
+      mode: state.settings.workspaceTemplate || state.settings.workflowType,
+      reportPeriod: range ? `${range.from} to ${range.to}` : 'Not stated',
+    }, { openaiApiKey: process.env.OPENAI_API_KEY });
     state.currentDraft = {
       id: `draft-${Date.now()}`,
       createdAt: new Date().toISOString(),
