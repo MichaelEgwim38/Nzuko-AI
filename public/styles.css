@@ -650,9 +650,9 @@ textarea {
 
 .login-value-line {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 74px));
-  gap: 12px;
-  margin-top: 26px;
+  grid-template-columns: repeat(4, 44px);
+  gap: 10px;
+  margin-top: 22px;
 }
 
 .login-value-line .channel-logo {
@@ -661,24 +661,25 @@ textarea {
   place-items: center;
   align-items: center;
   min-width: 0;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255,255,255,.9);
-  border-radius: 22px;
-  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,248,234,.9));
-  box-shadow: 0 12px 22px rgba(24,71,41,.13), inset 0 1px 1px #fff;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dce8d7;
+  border-radius: 14px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 7px 14px rgba(24,71,41,.1), inset 0 1px 1px #fff;
   transform: translateZ(0);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
 .login-value-line .channel-logo:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 17px 28px rgba(24,71,41,.18), inset 0 1px 1px #fff;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 18px rgba(24,71,41,.14), inset 0 1px 1px #fff;
 }
 
 .channel-logo svg {
-  width: 31px;
-  height: 31px;
-  filter: drop-shadow(0 5px 5px rgba(15,52,30,.18));
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 3px 3px rgba(15,52,30,.14));
 }
 
 .channel-logo small {
@@ -698,8 +699,8 @@ textarea {
 .channel-logo::after {
   content: "";
   position: absolute;
-  inset: 8px 10px auto;
-  height: 24%;
+  inset: 5px 7px auto;
+  height: 20%;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(255,255,255,.9), transparent);
   pointer-events: none;
@@ -4354,7 +4355,7 @@ pre {
   }
 
   .login-value-line {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, 42px);
   }
 
   .provider-button {
@@ -4963,19 +4964,21 @@ pre {
   }
 
   .login-value-line {
-    width: min(100%, 320px);
+    width: fit-content;
     margin-inline: auto;
-    gap: 9px;
-    margin-top: 22px;
+    gap: 8px;
+    margin-top: 18px;
   }
 
   .login-value-line .channel-logo {
-    border-radius: 18px;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
   }
 
   .channel-logo svg {
-    width: 27px;
-    height: 27px;
+    width: 23px;
+    height: 23px;
   }
 
   .login-primary-cta {
