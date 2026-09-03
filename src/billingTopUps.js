@@ -2,8 +2,8 @@ const definitions = [
   {
     id: 'transcription-100',
     name: '100 transcription minutes',
-    priceLabel: '£5',
-    amountCents: 500,
+    priceLabel: '£10',
+    amountCents: 1000,
     transcriptionMinutes: 100,
     recaps: 0,
     stripePriceEnv: 'STRIPE_TRANSCRIPTION_TOPUP_PRICE_ID',
@@ -11,8 +11,8 @@ const definitions = [
   {
     id: 'reports-50',
     name: '50 additional reports',
-    priceLabel: '£5',
-    amountCents: 500,
+    priceLabel: '£15',
+    amountCents: 1500,
     transcriptionMinutes: 0,
     recaps: 50,
     stripePriceEnv: 'STRIPE_REPORT_TOPUP_PRICE_ID',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nzuko-ai-shell-v73';
+const CACHE_NAME = 'nzuko-ai-shell-v74';
 const APP_SHELL = [
   '/',
   '/index.html',

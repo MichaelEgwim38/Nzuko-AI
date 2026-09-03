@@ -4,8 +4,14 @@ import test from 'node:test';
 import { billingTopUpById, consumeAllowanceWithCredits } from '../src/billingTopUps.js';
 
 test('defines the two initial top-up packs', () => {
-  assert.equal(billingTopUpById('transcription-100')?.transcriptionMinutes, 100);
-  assert.equal(billingTopUpById('reports-50')?.recaps, 50);
+  const transcription = billingTopUpById('transcription-100');
+  const reports = billingTopUpById('reports-50');
+  assert.equal(transcription?.transcriptionMinutes, 100);
+  assert.equal(transcription?.amountCents, 1000);
+  assert.equal(transcription?.priceLabel, '£10');
+  assert.equal(reports?.recaps, 50);
+  assert.equal(reports?.amountCents, 1500);
+  assert.equal(reports?.priceLabel, '£15');
 });
 
 test('uses included allowance before purchased credits', () => {

@@ -455,7 +455,7 @@ function renderBillingPlans(status = {}) {
               <p class="plan-card-price">${escapeHtml(selectedPrice.label || '')}</p>
               <h3>${escapeHtml(plan.name || '')}</h3>
             </div>
-            ${isCurrent ? '<span class="plan-badge">Active</span>' : plan.recommended ? '<span class="plan-badge">Best value</span>' : ''}
+            ${isCurrent ? '<span class="plan-badge">Active</span>' : plan.badgeLabel ? `<span class="plan-badge">${escapeHtml(plan.badgeLabel)}</span>` : ''}
           </div>
           <p class="plan-card-summary">${escapeHtml(plan.summary || '')}</p>
           <ul class="plan-feature-list">
