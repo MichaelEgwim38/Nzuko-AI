@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-67" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-68" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -318,7 +318,6 @@
                     <h2 id="actions-heading">Keep every commitment moving</h2>
                     <p id="actions-description" class="hint">Actions appear here only after a person approves the source report.</p>
                   </div>
-                  <button id="refresh-actions" class="button secondary compact-button" type="button">Refresh</button>
                 </div>
                 <div id="action-metrics" class="action-metrics" aria-label="Action overview">
                   <article><strong>0</strong><span>Open</span></article>
@@ -326,7 +325,7 @@
                   <article><strong>0</strong><span>Overdue</span></article>
                   <article><strong>0</strong><span>Escalated</span></article>
                 </div>
-                <div class="action-toolbar" role="group" aria-label="Filter actions">
+                <div id="action-toolbar" class="action-toolbar" role="group" aria-label="Filter actions">
                   <button class="action-filter active" type="button" data-action-filter="open">Open</button>
                   <button class="action-filter" type="button" data-action-filter="overdue">Overdue</button>
                   <button class="action-filter" type="button" data-action-filter="done">Completed</button>
@@ -343,7 +342,7 @@
                       <span class="eyebrow">WhatsApp connection</span>
                       <strong>Connect the active WhatsApp account</strong>
                     </span>
-                    <span id="connection-summary-status" class="connection-summary-status">Setup required</span>
+                    <span id="connection-summary-status" class="connection-summary-status is-disconnected">Not connected</span>
                   </summary>
                   <div class="connection-disclosure-content">
                 <p class="hint connect-copy">Connect once, choose the conversation you are authorised to use, then bring its messages into your workspace.</p>
@@ -376,7 +375,13 @@
                 <div class="button-row">
                   <button id="show-pairing" class="button mobile-connect-control" type="button">Connect on this phone</button>
                   <button id="show-qr" class="button">Get QR code</button>
-                  <button id="switch-waha-user" class="button quiet-button" type="button">Disconnect</button>
+                  <details id="whatsapp-manage-connection" class="connection-manage" hidden>
+                    <summary>Manage connection</summary>
+                    <div class="connection-manage-menu">
+                      <button id="manage-whatsapp-groups" type="button">Change group</button>
+                      <button id="switch-waha-user" type="button" class="danger-text">Disconnect WhatsApp</button>
+                    </div>
+                  </details>
                 </div>
                 </div>
                 <div id="pairing-box" class="pairing-box mobile-connect-control" hidden>
@@ -437,7 +442,7 @@
                       <span class="eyebrow">Telegram connection</span>
                       <strong>Connect Telegram with a QR code</strong>
                     </span>
-                    <span id="telegram-summary-status" class="connection-summary-status">Setup required</span>
+                    <span id="telegram-summary-status" class="connection-summary-status is-disconnected">Not connected</span>
                   </summary>
                   <div class="connection-disclosure-content">
                     <p class="hint connect-copy">Connect once, choose the conversation you are authorised to use, then bring its messages into your workspace.</p>
@@ -446,7 +451,13 @@
                     <div class="button-row">
                       <button id="start-telegram" class="button" type="button">Get QR code</button>
                       <a id="open-telegram-login" class="button mobile-connect-control" href="#" hidden>Open Telegram to connect</a>
-                      <button id="disconnect-telegram" class="button quiet-button" type="button">Disconnect</button>
+                      <details id="telegram-manage-connection" class="connection-manage" hidden>
+                        <summary>Manage connection</summary>
+                        <div class="connection-manage-menu">
+                          <button id="manage-telegram-groups" type="button">Change group</button>
+                          <button id="disconnect-telegram" type="button" class="danger-text">Disconnect Telegram</button>
+                        </div>
+                      </details>
                     </div>
                     </div>
                     <div id="telegram-qr-box" class="qr-box">Click Get QR code, then scan it from Telegram Settings → Devices.</div>
@@ -500,7 +511,7 @@
                   </div>
                   <button id="approve" class="button">Approve post</button>
                 </div>
-                <pre id="recap-output">Generate a report to preview the structured output.</pre>
+                <pre id="recap-output">No draft yet. Load messages from WhatsApp or Telegram, or try a sample report.</pre>
                 <p class="hint" id="approve-status">Review the draft, then approve it when you are ready to post or export it.</p>
                 <details id="source-material-review" class="source-material-review">
                   <summary>View source messages</summary>
@@ -821,7 +832,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-67" type="module"></script>
+    <script src="/app.js?v=20260903-68" type="module"></script>
   </body>
 </html>
 

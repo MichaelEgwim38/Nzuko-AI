@@ -1663,6 +1663,39 @@ h2 {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.actions-panel.is-empty {
+  padding: 24px 26px;
+}
+
+.actions-panel.is-empty .actions-heading .hint {
+  margin-bottom: 0;
+}
+
+.actions-panel.is-empty .action-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 10px;
+}
+
+.actions-panel.is-empty .action-metrics article {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.actions-panel.is-empty .action-metrics strong {
+  font-size: 16px;
+}
+
+.actions-panel.is-empty #actions-status {
+  margin: 0;
+}
+
 .action-metrics strong {
   color: var(--accent-dark);
   font-size: 25px;
@@ -3334,6 +3367,85 @@ pre {
   font-weight: 800;
   padding: 8px 12px;
 }
+
+.connection-summary-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #8c958f;
+  box-shadow: 0 0 0 4px rgba(140, 149, 143, 0.12);
+}
+
+.connection-summary-status.is-connected {
+  border-color: rgba(70, 148, 55, 0.28);
+  background: #effbe8;
+  color: #245d38;
+}
+
+.connection-summary-status.is-connected::before {
+  background: #55b83d;
+  box-shadow: 0 0 0 4px rgba(85, 184, 61, 0.14);
+}
+
+.connection-summary-status.is-pending::before {
+  background: #e2a829;
+  box-shadow: 0 0 0 4px rgba(226, 168, 41, 0.14);
+}
+
+.connection-manage {
+  position: relative;
+}
+
+.connection-manage > summary {
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.connection-manage > summary::after {
+  content: '⌄';
+  margin-left: 8px;
+}
+
+.connection-manage > summary::-webkit-details-marker { display: none; }
+
+.connection-manage-menu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 7px);
+  right: 0;
+  display: grid;
+  min-width: 190px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(17, 42, 26, 0.14);
+}
+
+.connection-manage-menu button {
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-weight: 750;
+}
+
+.connection-manage-menu button:hover { background: #f2f7ef; }
+.connection-manage-menu .danger-text { color: #a83e32; }
 
 .connection-disclosure-content {
   padding-top: 24px;

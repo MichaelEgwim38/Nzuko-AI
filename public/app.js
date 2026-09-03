@@ -101,6 +101,20 @@ const actionModeCopy = {
   personal: { eyebrow: 'My approved actions', heading: 'Turn conversations into progress', owner: 'Owner', empty: 'Your approved reminders and follow-ups will appear here.' },
 };
 
+const EMPTY_DRAFT_MESSAGE = 'No draft yet. Load messages from WhatsApp or Telegram, or try a sample report.';
+
+function setConnectionStatus(statusId, manageId, label, state = 'disconnected') {
+  const status = $(`#${statusId}`);
+  const manage = $(`#${manageId}`);
+  if (status) {
+    status.textContent = label;
+    status.classList.toggle('is-connected', state === 'connected');
+    status.classList.toggle('is-pending', state === 'pending');
+    status.classList.toggle('is-disconnected', state === 'disconnected' || state === 'error');
+  }
+  if (manage) manage.hidden = state !== 'connected';
+}
+
 function isStandaloneMode() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone;
 }
@@ -995,7 +1009,7 @@ async function startApp() {
       approvedGroupId: currentApprovedGroupId,
     });
   }
-  await Promise.all([loadAudit(), loadActions()]);
+  await Promise.all([loadAudit(), loadActions(), checkTelegramStatus()]);
   await loadAdminBilling();
 }
 
@@ -1009,9 +1023,12 @@ async function loadStatus() {
   currentApprovedGroups = Array.isArray(status.settings.approvedGroups) ? status.settings.approvedGroups : [];
   currentGroupLimit = Number(status.groupAccess?.limit || 1);
   $('#group-name').value = status.settings.approvedGroupName || '';
-  $('#connection-summary-status').textContent = currentApprovedGroups.length
-    ? `${currentApprovedGroups.length} of ${currentGroupLimit} groups`
-    : 'Setup required';
+  setConnectionStatus(
+    'connection-summary-status',
+    'whatsapp-manage-connection',
+    currentApprovedGroups.length ? `Connected · ${currentApprovedGroups.length} group${currentApprovedGroups.length === 1 ? '' : 's'}` : 'Not connected',
+    currentApprovedGroups.length ? 'connected' : 'disconnected'
+  );
   $('#connector-mode').value = status.settings.connectorMode;
   $('#consent-confirmed').checked = status.settings.consentConfirmed;
   setButtonDisabled('load-whatsapp-messages', !currentApprovedGroupId || !status.settings.consentConfirmed);
@@ -1038,7 +1055,12 @@ async function loadStatus() {
   $('#telegram-group-name').value = currentTelegramGroupName;
   $('#telegram-consent-confirmed').checked = Boolean(status.settings.telegramConsentConfirmed);
   setButtonDisabled('load-telegram-messages', !currentTelegramGroupId || !status.settings.telegramConsentConfirmed);
-  $('#telegram-summary-status').textContent = currentTelegramGroupId ? `Group: ${currentTelegramGroupName}` : 'Setup required';
+  setConnectionStatus(
+    'telegram-summary-status',
+    'telegram-manage-connection',
+    currentTelegramGroupId ? `Connected · ${currentTelegramGroupName}` : 'Not connected',
+    currentTelegramGroupId ? 'connected' : 'disconnected'
+  );
   $('#waha-base-url').value = status.settings.wahaBaseUrl;
   $('#waha-session').value = status.settings.wahaSession;
   $('#waha-base-url').readOnly = managedWahaWorkspace;
@@ -1279,6 +1301,9 @@ async function checkWaha() {
   try {
     await saveSettings();
     const payload = await api('/api/waha/status');
+    const state = String(payload.status.status || '').toLowerCase();
+    const connected = ['working', 'connected', 'authenticated'].includes(state);
+    setConnectionStatus('connection-summary-status', 'whatsapp-manage-connection', connected ? 'Connected' : 'Not connected', connected ? 'connected' : 'disconnected');
     setHintMessage('waha-status', `WhatsApp session status: ${payload.status.status || 'reachable'}.`);
   } catch (error) {
     setHintMessage('waha-status', `WhatsApp check failed: ${error.message}`);
@@ -1436,29 +1461,29 @@ function renderTelegramStatus(payload = {}) {
   }
   $('#telegram-password-box').hidden = !payload.passwordRequired;
   if (payload.connected) {
-    $('#telegram-summary-status').textContent = 'Connected';
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', `Connected · ${payload.account?.name || 'Telegram'}`, 'connected');
     $('#telegram-qr-box').innerHTML = `<strong>Connected as ${escapeHtml(payload.account?.name || 'Telegram user')}</strong>`;
     setHintMessage('telegram-status', 'Telegram is connected. Load the groups available to this account.');
     return;
   }
   if (payload.qr) {
-    $('#telegram-summary-status').textContent = 'Scan QR';
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Scan QR to connect', 'pending');
     $('#telegram-qr-box').innerHTML = `<img alt="Telegram login QR code" src="${payload.qr}" /><p>Telegram → Settings → Devices → Link Desktop Device</p>`;
     telegramPollTimer = setTimeout(checkTelegramStatus, 2000);
     return;
   }
   if (payload.passwordRequired) {
-    $('#telegram-summary-status').textContent = 'Password required';
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Password required', 'pending');
     setHintMessage('telegram-status', `Enter your Telegram two-step verification password${payload.passwordHint ? ` (${payload.passwordHint})` : ''}.`);
     telegramPollTimer = setTimeout(checkTelegramStatus, 2500);
     return;
   }
   if (payload.status === 'starting' || payload.status === 'authorising') {
-    $('#telegram-summary-status').textContent = 'Connecting';
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Connecting…', 'pending');
     telegramPollTimer = setTimeout(checkTelegramStatus, 1500);
     return;
   }
-  $('#telegram-summary-status').textContent = payload.status === 'error' ? 'Connection failed' : 'Setup required';
+  setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', payload.status === 'error' ? 'Connection failed' : 'Not connected', payload.status === 'error' ? 'error' : 'disconnected');
   if (payload.error) setHintMessage('telegram-status', payload.error);
 }
 
@@ -1503,7 +1528,7 @@ async function chooseTelegramGroup(event) {
   currentTelegramGroupName = event.currentTarget.dataset.groupName;
   $('#telegram-group-name').value = currentTelegramGroupName;
   await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
-  $('#telegram-summary-status').textContent = `Group: ${currentTelegramGroupName}`;
+  setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', `Connected · ${currentTelegramGroupName}`, 'connected');
   setButtonDisabled('load-telegram-messages', !$('#telegram-consent-confirmed').checked);
   setHintMessage('telegram-status', `Selected Telegram group: ${currentTelegramGroupName}. Confirm permission below before loading messages.`);
   await loadTelegramGroups();
@@ -1531,7 +1556,7 @@ async function disconnectTelegram() {
     setButtonDisabled('load-telegram-messages', true);
     $('#telegram-group-list').textContent = 'Telegram group not loaded yet.';
     $('#telegram-qr-box').textContent = 'Telegram disconnected. Click Get Telegram QR to connect another account.';
-    $('#telegram-summary-status').textContent = 'Setup required';
+    setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Not connected', 'disconnected');
     setHintMessage('telegram-status', 'Telegram has been disconnected from this workspace.');
   } catch (error) { setHintMessage('telegram-status', error.message); }
 }
@@ -1569,6 +1594,12 @@ async function chooseGroup(event) {
     option.querySelector('em').textContent = active ? 'Active' : approved ? 'Added' : 'Add group';
   });
   collapseGroupList(payload.settings);
+  setConnectionStatus(
+    'connection-summary-status',
+    'whatsapp-manage-connection',
+    `Connected · ${currentApprovedGroups.length} group${currentApprovedGroups.length === 1 ? '' : 's'}`,
+    'connected'
+  );
   setHintMessage('waha-status', `Active report group: ${payload.settings.approvedGroupName}. ${currentApprovedGroups.length} of ${currentGroupLimit} groups connected.`);
 }
 
@@ -1604,6 +1635,12 @@ async function removeApprovedGroup(event) {
   $('#group-name').value = payload.settings.approvedGroupName || '';
   setButtonDisabled('load-whatsapp-messages', !currentApprovedGroupId || !payload.settings.consentConfirmed);
   collapseGroupList(payload.settings);
+  setConnectionStatus(
+    'connection-summary-status',
+    'whatsapp-manage-connection',
+    currentApprovedGroups.length ? `Connected · ${currentApprovedGroups.length} group${currentApprovedGroups.length === 1 ? '' : 's'}` : 'Not connected',
+    currentApprovedGroups.length ? 'connected' : 'disconnected'
+  );
   setHintMessage('waha-status', `${currentApprovedGroups.length} of ${currentGroupLimit} WhatsApp groups connected.`);
 }
 
@@ -1688,7 +1725,7 @@ async function confirmMessagePeriod() {
 function clearDraftFields() {
   $('#chat-text').value = '';
   $('#voice-notes').value = '';
-  $('#recap-output').textContent = 'Generate a report to preview the structured output.';
+  $('#recap-output').textContent = EMPTY_DRAFT_MESSAGE;
 }
 
 async function configureWebhook() {
@@ -1719,7 +1756,7 @@ async function approveRecap() {
   try {
     const payload = await api('/api/recap/approve', { method: 'POST', body: '{}' });
     $('#approve-status').textContent = `Approved through ${payload.auditEntry.posted.provider || $('#connector-mode').value} at ${payload.auditEntry.approvedAt}.`;
-    $('#recap-output').textContent = 'Generate a new report to preview the next structured output.';
+    $('#recap-output').textContent = EMPTY_DRAFT_MESSAGE;
     await Promise.all([loadAudit(), loadActions()]);
     await loadStatus();
   } catch (error) {
@@ -1730,7 +1767,7 @@ async function approveRecap() {
 async function purgeDraft() {
   const payload = await api('/api/purge', { method: 'POST', body: '{}' });
   $('#approve-status').textContent = payload.message;
-  $('#recap-output').textContent = 'Generate a report to preview the structured output.';
+  $('#recap-output').textContent = EMPTY_DRAFT_MESSAGE;
 }
 
 async function loadAudit() {
@@ -1757,6 +1794,11 @@ function renderActions() {
   const overdue = open.filter((action) => action.overdue);
   const escalated = open.filter((action) => action.escalated);
   const personal = currentWorkspaceTemplate === 'personal';
+  const panel = $('#actions');
+  const toolbar = $('#action-toolbar');
+  const isEmpty = operationalActionsCache.length === 0;
+  panel?.classList.toggle('is-empty', isEmpty);
+  if (toolbar) toolbar.hidden = isEmpty;
   const metricItems = [
     [open.length, 'Open'],
     ...(!personal ? [[awaiting.length, 'Awaiting acknowledgement']] : []),
@@ -1775,7 +1817,8 @@ function renderActions() {
   const modeCopy = actionModeCopy[currentWorkspaceTemplate];
   status.textContent = operationalActionsCache.length
     ? `${open.length} unresolved action${open.length === 1 ? '' : 's'} across approved reports.`
-    : `${modeCopy?.empty || 'No official actions yet.'} Generate and approve a report to create them.`;
+    : `${modeCopy?.empty || 'No official actions yet.'} Approved report actions will appear automatically.`;
+  list.hidden = isEmpty;
   list.innerHTML = visible.length ? visible.map((action) => `
     <article class="action-card ${action.overdue ? 'is-overdue' : ''} ${action.escalated ? 'is-escalated' : ''}" data-action-id="${escapeHtml(action.id)}">
       <div class="action-card-topline">
@@ -2026,6 +2069,7 @@ $('#show-pairing')?.addEventListener('click', showPairingBox);
 $('#request-pairing-code')?.addEventListener('click', requestPairingCode);
 $('#switch-waha-user').addEventListener('click', switchWahaUser);
 $('#load-groups').addEventListener('click', loadGroups);
+$('#manage-whatsapp-groups')?.addEventListener('click', loadGroups);
 $('#group-list').addEventListener('click', chooseGroup);
 $('#start-telegram')?.addEventListener('click', startTelegram);
 $('#load-telegram-groups')?.addEventListener('click', loadTelegramGroups);
@@ -2033,6 +2077,7 @@ $('#submit-telegram-password')?.addEventListener('click', submitTelegramPassword
 $('#load-telegram-messages')?.addEventListener('click', () => setMessagePeriodOpen(true, 'telegram'));
 $('#load-whatsapp-messages')?.addEventListener('click', () => setMessagePeriodOpen(true, 'whatsapp'));
 $('#disconnect-telegram')?.addEventListener('click', disconnectTelegram);
+$('#manage-telegram-groups')?.addEventListener('click', loadTelegramGroups);
 $('#configure-webhook').addEventListener('click', configureWebhook);
 document.querySelectorAll('[data-message-period]').forEach((button) => button.addEventListener('click', selectMessagePeriod));
 $('#confirm-message-period')?.addEventListener('click', confirmMessagePeriod);
@@ -2040,7 +2085,6 @@ $('#close-message-period')?.addEventListener('click', () => setMessagePeriodOpen
 $('#message-period-backdrop')?.addEventListener('click', () => setMessagePeriodOpen(false));
 $('#approve').addEventListener('click', approveRecap);
 $('#purge').addEventListener('click', purgeDraft);
-$('#refresh-actions')?.addEventListener('click', loadActions);
 $('#actions-list')?.addEventListener('click', handleActionInteraction);
 $('#actions-list')?.addEventListener('change', handleActionInteraction);
 document.querySelectorAll('[data-action-filter]').forEach((button) => button.addEventListener('click', () => {
