@@ -6,7 +6,7 @@ This working checklist supports, but does not replace, advice from a qualified U
 
 - [ ] Rotate every credential exposed in messages or screenshots: Stripe live secret, Stripe webhook secret, Telegram API hash, WAHA key, server passwords and any exposed SSH key.
 - [ ] Complete the ICO data-protection fee self-assessment and register/pay unless exempt.
-- [ ] Add RohariGroup LTD's registered-office address and company number to the privacy notice and terms.
+- [x] Add Rohari Group Ltd's registered-office address and company number to the privacy notice and terms.
 - [ ] Maintain a Record of Processing Activities covering accounts, connected conversations, reports, billing, support, logs and marketing.
 - [ ] Select and document Article 6 lawful bases for RohariGroup LTD's controller activities.
 - [ ] Sign and publish a customer Data Processing Agreement containing Article 28 terms.
