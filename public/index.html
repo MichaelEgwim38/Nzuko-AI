@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260903-73" />
+    <link rel="stylesheet" href="/styles.css?v=20260903-75" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -134,7 +134,25 @@
               <div class="mode-demo-transform" aria-hidden="true"><span>✦</span><small>NZUKO AI</small></div>
               <section class="mode-demo-output"><span class="mode-demo-step">02 · Reconciled outcome</span><div id="mode-demo-report" class="mode-report-list"><p><span>Reconciled issue</span><strong>Pressure loss; cause not yet confirmed</strong></p><p><span>Action</span><strong>Inspect boiler and report findings</strong></p><p><span>Owner &amp; due</span><strong>James · Tomorrow, 9am</strong></p><p><span>Not a decision</span><strong>Do not record an unconfirmed leak</strong></p><p><span>Needs follow-up</span><strong>Confirm access with Flat 3</strong></p></div></section>
             </div>
-            <button id="try-selected-mode" class="mode-demo-cta" type="button">Try Property &amp; facilities free <span aria-hidden="true">→</span></button>
+            <div class="mode-demo-actions">
+              <button id="view-mode-story" class="mode-story-button" type="button" aria-expanded="false">See the full real-world story</button>
+              <button id="try-selected-mode" class="mode-demo-cta" type="button">Try Property &amp; facilities free <span aria-hidden="true">→</span></button>
+            </div>
+            <section id="mode-story" class="mode-story" hidden>
+              <div class="mode-story-grid">
+                <article><span>THE OPERATIONAL PROBLEM</span><h3 id="mode-story-company">Oak House Facilities</h3><p id="mode-story-problem"></p></article>
+                <article><span>HOW NZUKO AI HELPS</span><h3>A report ready for human review</h3><p id="mode-story-process"></p></article>
+                <article><span>BUSINESS VALUE</span><h3 id="mode-story-value-title"></h3><p id="mode-story-value"></p></article>
+              </div>
+              <div class="mode-story-trust">
+                <div class="mode-story-lock" aria-hidden="true">🔒</div>
+                <div><strong>This demonstration is safe to explore.</strong><p>The example is fictional, connects to no account, saves no customer conversation and shares nothing. Real workspace reports remain drafts until a person approves them.</p></div>
+              </div>
+              <div class="mode-story-conversion">
+                <div><small>READY TO USE THIS WITH YOUR OWN TEAM?</small><strong id="mode-story-conversion-title">Turn operational conversations into accountable work.</strong><span>No card required · Connect WhatsApp or Telegram later · Human approval stays in control</span></div>
+                <button id="create-mode-workspace" class="mode-demo-cta" type="button">Create my workspace <span aria-hidden="true">→</span></button>
+              </div>
+            </section>
           </article>
         </div>
       </section>
@@ -877,7 +895,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260903-74" type="module"></script>
+    <script src="/app.js?v=20260903-75" type="module"></script>
   </body>
 </html>
 

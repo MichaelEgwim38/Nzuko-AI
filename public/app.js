@@ -74,22 +74,47 @@ const landingModeExamples = {
   'property-facilities': {
     conversation: '“The boiler at Oak House is losing pressure again. It may be a leak, but that is not confirmed. James: I’ll inspect it tomorrow at 9am. Access from Flat 3 is still awaiting confirmation.”',
     report: [['Reconciled issue', 'Pressure loss; cause not yet confirmed'], ['Action', 'Inspect boiler and report findings'], ['Owner & due', 'James · Tomorrow, 9am'], ['Not a decision', 'Do not record an unconfirmed leak'], ['Needs follow-up', 'Confirm access with Flat 3']],
+    company: 'Oak House Facilities',
+    problem: 'Fault reports, access updates and contractor promises are scattered across a busy group chat, making it easy to record an unconfirmed cause or miss a visit.',
+    process: 'The facilities manager selects the reporting period. Nzuko AI reconciles the messages, separates confirmed facts from assumptions and produces an approval-ready maintenance report.',
+    valueTitle: 'Fewer missed site actions',
+    value: 'Teams gain a clear issue, owner, deadline and unresolved access requirement without manually rebuilding the story from dozens of messages.',
   },
   'healthcare-operations': {
     conversation: '“The evening rota is one person short. Amara suggested calling the agency. Later, Daniel confirmed he can cover from 6pm, so the manager said agency cover is no longer needed. Amara will update the rota by 4pm.”',
     report: [['Final outcome', 'Daniel covers the 6pm shift'], ['Superseded proposal', 'Agency call no longer required'], ['Action', 'Update and circulate the rota'], ['Owner & due', 'Amara · Today, 4pm'], ['Control', 'Administrative handover; human approval required']],
+    company: 'Meadow Care Operations',
+    problem: 'Administrative staffing changes develop across several messages, leaving the incoming coordinator unsure whether agency cover is still required.',
+    process: 'Nzuko AI follows the whole discussion, recognises that Daniel’s confirmation supersedes the agency proposal and prepares a non-clinical handover for approval.',
+    valueTitle: 'Cleaner administrative handovers',
+    value: 'The rota outcome, responsible coordinator and deadline remain visible while a person reviews the report before it becomes an operational record.',
   },
   'field-service': {
     conversation: '“Leon marked Unit 14 complete at noon. The customer then reported the alarm returned during testing. Leon: I’ll revisit at 3pm and send the valve part number to Aisha before I leave.”',
     report: [['Reconciled status', 'Job reopened after customer test'], ['Site action', 'Revisit and diagnose recurring alarm'], ['Owner & due', 'Leon · Today, 3pm'], ['Follow-up', 'Send valve part number to Aisha'], ['Risk prevented', 'Not incorrectly recorded as completed']],
+    company: 'QuickDrop Logistics',
+    problem: 'Drivers and dispatchers report delays, vehicle faults and delivery commitments through voice notes and messages while moving between jobs.',
+    process: 'At handover, the dispatcher selects the previous shift. Nzuko AI transcribes relevant voice notes, reconciles changed job statuses and prepares actions, owners and deadlines for review.',
+    valueTitle: 'A faster, safer shift handover',
+    value: 'If three handovers save about 10 minutes each, the illustrative time recovered can reach roughly 15 staff hours per month while reducing the risk of buried actions.',
   },
   'community-charity': {
     conversation: '“Most members preferred reminders before late-payment penalties, but no penalty was approved. Yusuf: I can collect the receipts every Saturday and post the totals. The venue question remains open.”',
     report: [['Confirmed action', 'Collect receipts and post totals'], ['Owner & schedule', 'Yusuf · Every Saturday'], ['Not a decision', 'Late-payment penalty remains unapproved'], ['Discussion', 'Reminders preferred before penalties'], ['Open question', 'Confirm the regular venue']],
+    company: 'NeighbourLink Community',
+    problem: 'Suggestions, volunteer commitments and unresolved policy questions appear together, so discussion can easily be mistaken for an approved decision.',
+    process: 'Nzuko AI links related statements, assigns Yusuf’s first-person commitment to Yusuf and keeps the unapproved penalty under open questions.',
+    valueTitle: 'Trustworthy community records',
+    value: 'Coordinators can publish concise minutes without turning opinions into decisions or losing named volunteer commitments.',
   },
   personal: {
     conversation: '“I originally planned to send the application on Monday, but the reference will not arrive until Wednesday. I’ll submit it by Thursday at noon, then follow up with Maya about the unpaid invoice on Friday.”',
     report: [['Updated commitment', 'Submit application Thursday'], ['Reason reconciled', 'Waiting for Wednesday reference'], ['Deadline', 'Thursday, 12pm'], ['Next follow-up', 'Contact Maya about invoice Friday'], ['Superseded date', 'Monday is no longer current']],
+    company: 'A busy independent professional',
+    problem: 'Commitments and changed dates are spread between personal notes and conversations, making the original deadline easy to remember incorrectly.',
+    process: 'Nzuko AI reconciles the changed plan, retains the reason and produces a short list of current commitments and follow-ups.',
+    valueTitle: 'A clearer personal action list',
+    value: 'The latest deadline replaces the obsolete one, while the separate invoice follow-up stays visible and actionable.',
   },
 };
 
@@ -890,6 +915,23 @@ function renderLandingMode(modeId) {
   $('#mode-demo-conversation').textContent = example.conversation;
   $('#mode-demo-report').innerHTML = example.report.map(([label, value]) => `<p><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
   $('#try-selected-mode').innerHTML = `Try ${escapeHtml(template.name)} free <span aria-hidden="true">→</span>`;
+  $('#mode-story-company').textContent = example.company;
+  $('#mode-story-problem').textContent = example.problem;
+  $('#mode-story-process').textContent = example.process;
+  $('#mode-story-value-title').textContent = example.valueTitle;
+  $('#mode-story-value').textContent = example.value;
+  $('#mode-story-conversion-title').textContent = `Bring ${template.name.toLowerCase()} conversations into one clear, reviewable workflow.`;
+}
+
+function toggleModeStory() {
+  const story = $('#mode-story');
+  const button = $('#view-mode-story');
+  if (!story || !button) return;
+  const shouldOpen = story.hidden;
+  story.hidden = !shouldOpen;
+  button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  button.textContent = shouldOpen ? 'Hide the full story' : 'See the full real-world story';
+  if (shouldOpen) story.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function scrollToModeDiscovery() {
@@ -2238,6 +2280,8 @@ document.querySelectorAll('[data-landing-mode]').forEach((card) => card.addEvent
 document.querySelectorAll('[data-mode-discovery]').forEach((button) => button.addEventListener('click', scrollToModeDiscovery));
 document.querySelectorAll('[data-source-choice]').forEach((button) => button.addEventListener('click', chooseConversationSource));
 $('#try-selected-mode')?.addEventListener('click', startSelectedMode);
+$('#create-mode-workspace')?.addEventListener('click', startSelectedMode);
+$('#view-mode-story')?.addEventListener('click', toggleModeStory);
 $('#source-skip')?.addEventListener('click', showApp);
 $('#change-workspace-purpose')?.addEventListener('click', () => setPurposeScreenOpen(true));
 $('#purpose-back')?.addEventListener('click', () => setPurposeScreenOpen(false));
