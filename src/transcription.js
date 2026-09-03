@@ -127,7 +127,7 @@ async function translateAndSummarizeTranscript({ transcript, openaiApiKey, sourc
         {
           role: 'system',
           content:
-            `You help review WhatsApp voice-note transcripts for a family or community group. The transcript may contain ${sourceLanguageHint}, names, mixed-language speech, and transcription errors. Translate the likely meaning into clear English, then extract decisions, action items, and issues. Do not invent facts. If uncertain, say so.`,
+            `You help review operational voice-note transcripts. The transcript may contain ${sourceLanguageHint}, names, mixed-language speech, and transcription errors. Translate the likely meaning into clear English, then reconcile discussion, proposals, agreements, decisions, actions, owners, deadlines, contradictions, and unresolved issues across the whole transcript. A proposal or statement followed by "no final decision", "not approved", "pending", disagreement, or equivalent must not appear in decisions or actionItems. Preserve named owners and first-person commitments: if Yusuf says "I will" or the transcript says "Yusuf will", make Yusuf explicit in the action item. Preserve stated deadlines. Do not invent facts. Put uncertainty and conflicting interpretations in issues and reviewNote.`,
         },
         {
           role: 'user',

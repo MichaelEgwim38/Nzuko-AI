@@ -1,6 +1,8 @@
 const decisionPattern = /\b(agreed|decision|decided|approved|resolved|final|we will|conclusion)\b/i;
-const actionPattern = /\b(i will|will|action|assigned|deadline|before|by monday|by tuesday|by wednesday|by thursday|by friday|follow up|send|draft|collect|share|post|prepare)\b/i;
+const actionPattern = /\b(i (?:will|can|shall)|will|shall|is to|action|assigned|deadline|before|by monday|by tuesday|by wednesday|by thursday|by friday|follow up|send|draft|collect|share|post|prepare)\b/i;
 const unresolvedPattern = /\?|no final|not final|unclear|argue|disagree|disagreement|pending|confirm|should we|can we/i;
+const rejectedOutcomePattern = /\b(?:no|not)\b[^.!?]{0,80}\b(?:final|approved|agreed|decided|resolved|confirmed)\b|\b(?:remains?|still)\s+(?:open|unresolved|pending)\b/i;
+const discussionPattern = /\b(?:discussed|discussion|proposed|suggested|preferred|supported|considered|raised|debated)\b/i;
 const linkOnlyPattern = /^https?:\/\/\S+$/i;
 const noisyActionPattern = /\b(action items?:|voice note translated summary|voice note transcript|privacy|connected only to the approved|not connected to people)/i;
 const voiceTypes = new Set(['audio', 'ptt']);
@@ -64,8 +66,43 @@ function isUsefulAction(line) {
   const item = stripSpeaker(cleanLine(line));
   if (!isUsefulContent(item)) return false;
   if (noisyActionPattern.test(item)) return false;
+  if (unresolvedPattern.test(item) || rejectedOutcomePattern.test(item)) return false;
   if (item.length > 240) return false;
   return actionPattern.test(item);
+}
+
+function isConfirmedDecision(line) {
+  const item = stripSpeaker(cleanLine(line));
+  return isUsefulContent(item)
+    && decisionPattern.test(item)
+    && !unresolvedPattern.test(item)
+    && !rejectedOutcomePattern.test(item);
+}
+
+function isDiscussionPoint(line) {
+  const item = stripSpeaker(cleanLine(line));
+  return isUsefulContent(item) && (discussionPattern.test(item) || unresolvedPattern.test(item) || rejectedOutcomePattern.test(item));
+}
+
+function statementTopics(value) {
+  const text = String(value || '').toLowerCase();
+  const topics = new Set();
+  if (/\b(?:penalt(?:y|ies)|late payments?|payment reminders?)\b/.test(text)) topics.add('late-payment-policy');
+  if (/\b(?:venue|venues|location|locations)\b/.test(text)) topics.add('venue');
+  if (/\b(?:receipt|receipts|screenshots?|totals?)\b/.test(text)) topics.add('receipt-reporting');
+  if (/\b(?:contribution list|contributions list)\b/.test(text)) topics.add('contribution-list');
+  if (/\b(?:8\s*(?:pm|p\.m\.)|meeting every evening|meet every evening|daily meeting)\b/.test(text)) topics.add('meeting-schedule');
+  return topics;
+}
+
+function contradictedByUnresolved(item, unresolvedItems = []) {
+  const topics = statementTopics(item?.text);
+  if (!topics.size) return false;
+  return unresolvedItems.some((unresolved) => {
+    if (!rejectedOutcomePattern.test(unresolved?.text || '')) return false;
+    const unresolvedTopics = statementTopics(unresolved.text);
+    return [...topics].some((topic) => unresolvedTopics.has(topic));
+  });
 }
 
 function normaliseTimestamp(value) {
@@ -195,8 +232,51 @@ function inferOwner(item) {
   if (/^secretary\b/i.test(text)) return 'Secretary';
   if (/^chair(man)?\b/i.test(text)) return 'Chairman';
   if (/^group\b/i.test(text)) return 'Group';
-  if (/\bi will\b/i.test(text)) return item.speaker;
+  if (/\bi (?:will|can|shall)\b/i.test(text)) return item.speaker;
+  const namedCommitment = text.match(/^(?:decision\s*:\s*)?([\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*){0,2})\s+(?:will|shall|is to|can)\b/iu);
+  if (namedCommitment?.[1]) return namedCommitment[1].trim();
   return 'Needs owner';
+}
+
+function inferDue(item) {
+  const text = item.text || '';
+  const beforeDay = text.match(/\bbefore\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
+  if (beforeDay) return `Before ${beforeDay[1]}`;
+  const byDay = text.match(/\bby\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
+  if (byDay) return `By ${byDay[1]}`;
+  const recurringDay = text.match(/\b(?:every|on)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)s?\b|\b(Mondays|Tuesdays|Wednesdays|Thursdays|Fridays|Saturdays|Sundays)\b/i);
+  if (recurringDay) return recurringDay[1] ? `Every ${recurringDay[1]}` : recurringDay[2];
+  return 'Not stated';
+}
+
+function reconcileActionItems(items = []) {
+  const reconciled = [];
+  const reviewNotes = [];
+  for (const item of items) {
+    if (item.source?.includes('Review note')) {
+      reconciled.push(item);
+      continue;
+    }
+    const owner = inferOwner(item);
+    const topics = statementTopics(item.text);
+    const duplicateIndex = owner === 'Needs owner' || !topics.size
+      ? -1
+      : reconciled.findIndex((candidate) => {
+          if (inferOwner(candidate).toLowerCase() !== owner.toLowerCase()) return false;
+          const candidateTopics = statementTopics(candidate.text);
+          return [...topics].some((topic) => candidateTopics.has(topic));
+        });
+    if (duplicateIndex < 0) {
+      reconciled.push(item);
+      continue;
+    }
+    const existing = reconciled[duplicateIndex];
+    const itemIsExplicitDecision = /^decision\s*:/i.test(item.text);
+    const existingIsExplicitDecision = /^decision\s*:/i.test(existing.text);
+    if (itemIsExplicitDecision && !existingIsExplicitDecision) reconciled[duplicateIndex] = item;
+    reviewNotes.push(`Confirm whether “${existing.text}” and “${item.text}” describe the same action for ${owner}.`);
+  }
+  return { items: reconciled, reviewNotes };
 }
 
 function formatActionItems(items) {
@@ -204,7 +284,7 @@ function formatActionItems(items) {
     .map(
       (item, index) => `${index + 1}. Owner: ${inferOwner(item)}
    Task: ${item.text}
-   Due: Not stated
+   Due: ${inferDue(item)}
    Source: ${item.source}
    Time: ${item.time}
    Speaker: ${item.speaker}`
@@ -265,38 +345,45 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
 
   const textMessages = orderedMessages.filter((message) => !isVoiceMessage(message));
   const textDecisionItems = textMessages
-    .filter((message) => decisionPattern.test(message.body || ''))
+    .filter((message) => isConfirmedDecision(message.body || ''))
     .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
   const textActionItems = textMessages
     .filter((message) => isUsefulAction(message.body || ''))
     .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
   const textQuestionItems = textMessages
-    .filter((message) => unresolvedPattern.test(message.body || ''))
+    .filter((message) => unresolvedPattern.test(message.body || '') || rejectedOutcomePattern.test(message.body || ''))
     .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
   const textPointItems = textMessages
     .filter((message) => isUsefulContent(message.body))
-    .filter((message) => !decisionPattern.test(message.body || ''))
+    .filter((message) => !isConfirmedDecision(message.body || ''))
     .filter((message) => !isUsefulAction(message.body || ''))
-    .filter((message) => !unresolvedPattern.test(message.body || ''))
+    .filter((message) => isDiscussionPoint(message.body || '') || !unresolvedPattern.test(message.body || ''))
     .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
 
-  const decisionLines = allLines.filter((line) => decisionPattern.test(line)).map((line) => itemFromLine(line));
+  const decisionLines = allLines.filter(isConfirmedDecision).map((line) => itemFromLine(line));
   const actionLines = allLines.filter(isUsefulAction).map((line) => itemFromLine(line));
-  const questionLines = allLines.filter((line) => unresolvedPattern.test(line)).map((line) => itemFromLine(line));
+  const questionLines = allLines
+    .filter((line) => unresolvedPattern.test(line) || rejectedOutcomePattern.test(line))
+    .map((line) => itemFromLine(line));
   const pointLines = allLines
     .filter((line) => isUsefulContent(line))
-    .filter((line) => !decisionPattern.test(line))
+    .filter((line) => !isConfirmedDecision(line))
     .filter((line) => !isUsefulAction(line))
-    .filter((line) => !unresolvedPattern.test(line))
+    .filter((line) => isDiscussionPoint(line) || !unresolvedPattern.test(line))
     .map((line) => itemFromLine(line))
     .slice(0, 10);
 
-  const decisions = uniqueFirst(
-    itemText(uniqueItems([...structuredVoice.decisions, ...textDecisionItems, ...decisionLines], 'No confirmed decision found. Mark the main point as needs confirmation before posting.')),
+  const reconciliationIssues = [...structuredVoice.issues, ...textQuestionItems, ...questionLines];
+  const decisionItems = uniqueItems(
+    [
+      ...structuredVoice.decisions.filter((item) => isConfirmedDecision(item.text)),
+      ...textDecisionItems,
+      ...decisionLines,
+    ].filter((item) => !contradictedByUnresolved(item, reconciliationIssues)),
     'No confirmed decision found. Mark the main point as needs confirmation before posting.'
   );
-  const decisionItems = uniqueItems(
-    [...structuredVoice.decisions, ...textDecisionItems, ...decisionLines],
+  const decisions = uniqueFirst(
+    itemText(decisionItems),
     'No confirmed decision found. Mark the main point as needs confirmation before posting.'
   );
   const points = uniqueFirst(
@@ -304,16 +391,21 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     'No discussion points captured yet.'
   );
   const pointItems = uniqueItems([...textPointItems, ...pointLines], 'No discussion points captured yet.', 8);
-  const actionItems = uniqueItems(
-    [...structuredVoice.actions, ...textActionItems, ...actionLines],
+  const extractedActionItems = uniqueItems(
+    [
+      ...structuredVoice.actions.filter((item) => isUsefulAction(item.text)),
+      ...textActionItems,
+      ...actionLines,
+    ],
     'No action item with owner found. Add owner and deadline if the group has one.'
   );
+  const { items: actionItems, reviewNotes: actionReconciliationNotes } = reconcileActionItems(extractedActionItems);
   const actions = uniqueFirst(
     actionItems.map((item) => `${inferOwner(item)}: ${item.text}`),
     'No action item with owner found. Add owner and deadline if the group has one.'
   );
   const unresolvedItems = uniqueItems(
-    [...structuredVoice.issues, ...textQuestionItems, ...questionLines],
+    reconciliationIssues,
     'No unresolved question detected.'
   );
   const unresolved = uniqueFirst(
@@ -334,12 +426,22 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     'No voice-note transcript added.',
     4
   );
-  const executivePoints = [
-    `${pointItems.filter((item) => !item.source.includes('Review note')).length} key discussion point(s) captured for review.`,
-    `${decisionItems.filter((item) => !item.source.includes('Review note')).length} possible decision(s) identified.`,
-    `${actionItems.filter((item) => !item.source.includes('Review note')).length} possible action item(s) identified.`,
-    `${voiceSummaryItems.filter((item) => item.source === 'Voice note').length} translated voice-note item(s) need human review.`,
-  ];
+  const realDecisions = decisionItems.filter((item) => !item.source.includes('Review note'));
+  const realActions = actionItems.filter((item) => !item.source.includes('Review note'));
+  const realUnresolved = unresolvedItems.filter((item) => !item.source.includes('Review note'));
+  const translatedVoiceCount = voiceSummaryItems.filter((item) => item.source === 'Voice note').length;
+  const humanReviewItems = uniqueFirst([
+    ...voiceSummaryItems
+      .filter((item) => item.source === 'Voice note')
+      .map((item) => `Validate ${item.speaker}'s translated voice note: ${item.text}`),
+    ...actionReconciliationNotes,
+  ], 'Confirm the draft against the source conversation before approval.', 6);
+  const executivePoints = uniqueFirst([
+    ...realDecisions.map((item) => item.text),
+    ...realActions.map((item) => `${inferOwner(item)} will handle: ${item.text}`),
+    ...realUnresolved.map((item) => `Still unresolved: ${item.text}`),
+    translatedVoiceCount ? `${translatedVoiceCount} translated voice-note item(s) require human validation.` : '',
+  ], 'No confirmed outcome was detected. Review the source conversation.', 6);
 
   return {
     groupName,
@@ -358,20 +460,20 @@ Status: Draft for human review
 Executive summary:
 ${formatBullets(executivePoints)}
 
-Decisions:
+Confirmed / likely decisions:
 ${formatSourcedNumbered(decisionItems)}
 
 Action items:
 ${formatActionItems(actionItems)}
 
-Key discussion points:
+Discussion points:
 ${formatSourcedNumbered(pointItems)}
 
 Open questions / needs confirmation:
 ${formatSourcedNumbered(unresolvedItems)}
 
-Voice-note review:
-${formatVoiceReview(voiceSummaryItems)}
+Human review required:
+${formatBullets(humanReviewItems)}
 
 Corrections:
 Please reply within 24 hours if any speaker, timestamp, decision, action item, or translation is missing or inaccurate.`,
