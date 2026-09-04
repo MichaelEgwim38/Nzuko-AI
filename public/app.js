@@ -2112,7 +2112,7 @@ async function eraseOperationalData() {
     auditEntriesCache = [];
     operationalActionsCache = [];
     renderAuditFeed();
-    renderOperationalActions();
+    renderActions();
     setButtonDisabled('approve', true);
     setHintMessage('privacy-data-status', payload.message);
   } catch (error) {
@@ -2367,7 +2367,6 @@ function renderLatestAdminBilling(payload = {}) {
 }
 
 function renderAdminBilling(payload = {}) {
-  return renderLatestAdminBilling(payload);
   const status = $('#billing-admin-status');
   const list = $('#billing-admin-list');
   if (!status || !list) return;

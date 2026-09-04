@@ -7,3 +7,9 @@ test('Netlify API routes use the defined JSON request parser', async () => {
   assert.match(source, /async function readBody\(request\)/);
   assert.doesNotMatch(source, /\breadJson\(/);
 });
+
+test('browser client does not call removed tracker render functions', async () => {
+  const source = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /\brenderOperationalActions\(/);
+  assert.match(source, /function renderActions\(\)/);
+});

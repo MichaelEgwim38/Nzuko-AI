@@ -93,7 +93,7 @@ function isDiscussionPoint(line) {
 
 function requestedAction(line) {
   const item = stripSpeaker(cleanLine(line));
-  const match = item.match(/^can\s+([\p{L}][\p{L}'â€™-]*(?:\s+[\p{L}][\p{L}'â€™-]*){0,2})\s+(confirm|check|inspect|contact|book|send|prepare|update|collect|share|report|review)\s+(.+?)\??$/iu);
+  const match = item.match(/^can\s+([\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*){0,2})\s+(confirm|check|inspect|contact|book|send|prepare|update|collect|share|report|review)\s+(.+?)\??$/iu);
   if (!match) return '';
   return `${match[1]} is to ${match[2]} ${match[3]} (requested; acceptance needs confirmation)`;
 }
