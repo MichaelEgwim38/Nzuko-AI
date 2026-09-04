@@ -1084,6 +1084,33 @@ textarea {
   letter-spacing: 0.12em;
 }
 
+.connection-privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #cfe4c7;
+  border-radius: 12px;
+  background: #f4faef;
+  color: #31533d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.connection-privacy-note strong { margin-right: 3px; }
+
+.trial-upgrade-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .pairing-result ol {
   margin: 7px 0 0;
   padding-left: 22px;
@@ -5519,7 +5546,10 @@ pre {
     min-height: 62px;
     padding: 9px 12px;
     align-items: center;
+    flex-wrap: nowrap;
   }
+
+  .app-brand { flex: 1 1 auto; min-width: 0; }
 
   .app-brand .brand-lockup-tagline,
   .topbar-account-copy,
@@ -5529,7 +5559,8 @@ pre {
   }
 
   .topbar-actions {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     margin-left: auto;
     justify-content: flex-end;
     flex-wrap: nowrap;

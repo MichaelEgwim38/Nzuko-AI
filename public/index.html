@@ -440,6 +440,7 @@
                     <input id="pairing-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. 447700900123" />
                   </label>
                   <p class="hint">Include the country code and omit the leading + or 0.</p>
+                  <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><strong>Your number is not stored in the Nzuko AI database.</strong> It is handled only to request this pairing code and is not saved to your workspace.</p>
                   <button id="request-pairing-code" class="button" type="button">Get secure pairing code</button>
                   <div id="pairing-result" class="pairing-result" hidden></div>
                 </div>
@@ -517,6 +518,7 @@
                           <input id="telegram-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. +447700900123" />
                         </label>
                         <p class="hint">Include + and your country code. Telegram will send the code inside the Telegram app.</p>
+                        <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><strong>Your number is not stored in the Nzuko AI database.</strong> It is handled only for this connection attempt and is not saved to your workspace.</p>
                         <button id="request-telegram-code" class="button" type="button">Send Telegram code</button>
                       </div>
                       <div id="telegram-code-stage" hidden>

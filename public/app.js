@@ -31,6 +31,7 @@ let operationalActionsCache = [];
 let activeActionFilter = 'open';
 let messagePeriodSource = '';
 let selectedMessagePeriod = 'today';
+let expiredPricingPromptShown = false;
 
 const workspaceTemplates = {
   'healthcare-operations': {
@@ -323,8 +324,14 @@ function renderWorkspaceStatus(status = {}) {
       trialSummary.textContent = `Trial: ${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left - ${trial.recapRemaining} of ${trial.recapLimit} recaps remaining.`;
     } else {
       trialSummary.hidden = false;
-      trialSummary.textContent = 'Your trial limit has ended. Upgrade to continue using this workspace.';
+      trialSummary.innerHTML = 'Your trial has ended. <button type="button" class="trial-upgrade-link">Choose a plan to continue</button>.';
+      trialSummary.querySelector('.trial-upgrade-link')?.addEventListener('click', openPricing);
+      if (!expiredPricingPromptShown && status.user?.userId) {
+        expiredPricingPromptShown = true;
+        window.setTimeout(() => openPricing(), 150);
+      }
     }
+    if (trial.canUseApp || trial.isSubscribed || trial.isPendingActivation) expiredPricingPromptShown = false;
   }
 
   if (manageBillingButton) {

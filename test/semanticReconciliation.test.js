@@ -16,18 +16,18 @@ test('reconciles unresolved proposals and infers action owners and deadlines', (
     ].join('\n'),
   });
 
-  const decisionsSection = recap.text.split('Confirmed decisions:')[1].split('Action register:')[0];
+  const decisionsSection = recap.text.split('Confirmed Outcomes:')[1].split('Action Register:')[0];
   assert.doesNotMatch(decisionsSection, /late payments|penalty/i);
   assert.match(decisionsSection, /Yusuf will collect receipts/i);
   assert.match(decisionsSection, /meeting every evening at 8pm/i);
 
-  const actionsSection = recap.text.split('Action register:')[1].split('Discussion points:')[0];
+  const actionsSection = recap.text.split('Action Register:')[1].split('Discussion points:')[0];
   assert.doesNotMatch(actionsSection, /No final penalty was approved/i);
   assert.match(actionsSection, /Owner: Yusuf/i);
   assert.equal((actionsSection.match(/Owner: Yusuf/gi) || []).length, 1);
   assert.match(actionsSection, /Due: (Every Saturday|Saturdays)/i);
   assert.match(actionsSection, /Owner: Tunde/i);
-  assert.match(actionsSection, /Due: Before Friday/i);
+  assert.match(actionsSection, /Due: Before \d{2} \w{3,4} \d{4}/i);
 
   assert.match(recap.text, /Discussion points:[\s\S]*late payments/i);
   assert.match(recap.text, /Items requiring a decision or confirmation:[\s\S]*No final penalty was approved/i);

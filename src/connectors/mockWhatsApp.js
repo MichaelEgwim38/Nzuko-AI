@@ -63,6 +63,45 @@ export function sampleScenarioForMode(mode = '') {
   return sampleScenarios[mode] || sampleScenarios['community-charity'];
 }
 
+export function sampleMessagesForMode(mode = '', referenceDate = new Date()) {
+  const sample = sampleScenarioForMode(mode);
+  const base = new Date(referenceDate);
+  base.setHours(8, 5, 0, 0);
+  const messages = sample.chatText.split(/\r?\n/).filter(Boolean).map((line, index) => {
+    const separator = line.indexOf(':');
+    return {
+      from: separator > -1 ? line.slice(0, separator).trim() : 'Participant',
+      body: separator > -1 ? line.slice(separator + 1).trim() : line.trim(),
+      type: 'text',
+      timestamp: base.getTime() + index * 25 * 60 * 1000,
+      demonstration: true,
+    };
+  });
+  const voiceBase = base.getTime() + messages.length * 25 * 60 * 1000;
+  sample.voiceNotes.split(/\r?\n/).filter(Boolean).forEach((line, index) => {
+    const separator = line.indexOf(':');
+    const speaker = separator > -1 ? line.slice(0, separator).replace(/^Voice note (?:from|-)?\s*/i, '').trim() : 'Participant';
+    const meaning = separator > -1 ? line.slice(separator + 1).trim() : line.trim();
+    messages.push({
+      from: speaker,
+      body: '',
+      type: 'audio',
+      timestamp: voiceBase + index * 25 * 60 * 1000,
+      demonstration: true,
+      voiceNote: { translation: {
+        status: 'translated',
+        englishSummary: meaning,
+        decisions: [],
+        actionItems: /\b(?:I|we)\s+(?:will|shall)\b/i.test(meaning) ? [meaning] : [],
+        issues: /\b(?:pending|unconfirmed|not confirmed|cannot|risk)\b/i.test(meaning) ? [meaning] : [],
+        confidence: 'Demonstration',
+        reviewNote: 'Fictional sample voice note.',
+      } },
+    });
+  });
+  return messages;
+}
+
 const defaultScenario = sampleScenarioForMode('community-charity');
 export const sampleChat = defaultScenario.chatText;
 export const sampleVoiceNotes = defaultScenario.voiceNotes;

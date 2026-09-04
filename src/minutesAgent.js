@@ -17,12 +17,17 @@ export function splitReadableLines(value) {
 }
 
 export function stripSpeaker(line) {
-  return line.replace(/^(?!https?:\/\/)([^:\n]{2,100}):\s*/, '').trim();
+  const match = String(line || '').match(/^(?!https?:\/\/)([^:\n]{2,50}):\s+/);
+  if (!match || /^(?:decision|action|issue|owner|due|time|source)$/i.test(match[1].trim())) return String(line || '').trim();
+  if (match[1].trim().split(/\s+/).length > 5 || /\b(?:will|shall|can|agreed|decided)\b/i.test(match[1])) return String(line || '').trim();
+  return String(line || '').slice(match[0].length).trim();
 }
 
 export function extractSpeaker(line) {
-  const match = line.match(/^(?!https?:\/\/)([^:\n]{2,100}):/);
-  return match?.[1]?.trim();
+  const match = String(line || '').match(/^(?!https?:\/\/)([^:\n]{2,50}):\s+/);
+  if (!match || /^(?:decision|action|issue|owner|due|time|source)$/i.test(match[1].trim())) return undefined;
+  if (match[1].trim().split(/\s+/).length > 5 || /\b(?:will|shall|can|agreed|decided)\b/i.test(match[1])) return undefined;
+  return match[1].trim();
 }
 
 function uniqueFirst(items, fallback, limit = 6) {
@@ -86,6 +91,13 @@ function isDiscussionPoint(line) {
   return isUsefulContent(item) && (discussionPattern.test(item) || unresolvedPattern.test(item) || rejectedOutcomePattern.test(item));
 }
 
+function requestedAction(line) {
+  const item = stripSpeaker(cleanLine(line));
+  const match = item.match(/^can\s+([\p{L}][\p{L}'â€™-]*(?:\s+[\p{L}][\p{L}'â€™-]*){0,2})\s+(confirm|check|inspect|contact|book|send|prepare|update|collect|share|report|review)\s+(.+?)\??$/iu);
+  if (!match) return '';
+  return `${match[1]} is to ${match[2]} ${match[3]} (requested; acceptance needs confirmation)`;
+}
+
 function statementTopics(value) {
   const text = String(value || '').toLowerCase();
   const topics = new Set();
@@ -143,8 +155,11 @@ function formatDateLabel(date) {
 }
 
 function formatTimeLabel(timestamp) {
-  if (!timestamp) return 'time not captured';
+  if (!timestamp) return '';
   return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -173,6 +188,7 @@ function itemFromMessage(message, text, fallbackSource) {
     text: cleanLine(text),
     speaker: displaySpeaker(message.from),
     time: formatTimeLabel(messageTimestamp(message)),
+    timestamp: messageTimestamp(message),
     source: fallbackSource || sourceLabel(message),
     confidence: message.voiceNote?.translation?.confidence || '',
     reviewNote: message.voiceNote?.translation?.reviewNote || '',
@@ -185,7 +201,8 @@ function itemFromLine(line, fallbackSource = 'Manual input') {
   return {
     text: stripSpeaker(cleaned),
     speaker: displaySpeaker(extractSpeaker(cleaned)),
-    time: 'time not captured',
+    time: '',
+    timestamp: null,
     source: fallbackSource,
     confidence: '',
     reviewNote: '',
@@ -200,7 +217,7 @@ function uniqueItems(items, fallbackText, limit = 6) {
       ...item,
       text: cleanLine(item?.text),
       speaker: displaySpeaker(item?.speaker),
-      time: item?.time || 'time not captured',
+      time: item?.time || '',
       source: item?.source || 'Manual input',
     }))
     .filter((item) => {
@@ -218,7 +235,7 @@ function uniqueItems(items, fallbackText, limit = 6) {
         {
           text: fallbackText,
           speaker: 'NZUKO AI',
-          time: 'time not captured',
+          time: '',
           source: 'Review note',
           confidence: '',
           reviewNote: '',
@@ -233,8 +250,25 @@ function itemText(items) {
 
 function formatSourcedNumbered(items) {
   return items
-    .map((item, index) => `${index + 1}. [${item.time}] ${item.speaker} (${item.source}): ${item.text}`)
+    .map((item, index) => `${index + 1}. ${item.time ? `[${item.time}] ` : ''}${item.speaker} (${item.source}): ${item.text}`)
     .join('\n');
+}
+
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function explicitDate(reference, dayOffset = 0, time = '') {
+  const date = new Date(reference || Date.now());
+  date.setDate(date.getDate() + dayOffset);
+  const dateText = formatDateLabel(date);
+  return time ? `${dateText}, ${String(time).toUpperCase()}` : dateText;
+}
+
+function nextWeekday(reference, weekday) {
+  const date = new Date(reference || Date.now());
+  const target = weekdays.findIndex((value) => value.toLowerCase() === String(weekday).toLowerCase());
+  let offset = (target - date.getDay() + 7) % 7;
+  if (offset === 0) offset = 7;
+  return explicitDate(date, offset);
 }
 
 function inferOwner(item) {
@@ -251,20 +285,23 @@ function inferOwner(item) {
 
 function inferDue(item) {
   const text = item.text || '';
+  const reference = item.timestamp || Date.now();
   const recurringWithTime = text.match(/\b(?:every|on)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)s?\b[^.!?]{0,80}?\bby\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
   if (recurringWithTime) return `Every ${recurringWithTime[1]}, by ${recurringWithTime[2]}`;
+  const dayThenDeadline = text.match(/\bon\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b[^.!?]{0,100}?\b(by|before)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (dayThenDeadline) return `${dayThenDeadline[2][0].toUpperCase()}${dayThenDeadline[2].slice(1).toLowerCase()} ${nextWeekday(reference, dayThenDeadline[1])}, ${dayThenDeadline[3].toUpperCase()}`;
   const todayOrTomorrow = text.match(/\b(today|tomorrow)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
-  if (todayOrTomorrow) return `${todayOrTomorrow[1][0].toUpperCase()}${todayOrTomorrow[1].slice(1).toLowerCase()}, ${todayOrTomorrow[2]}`;
+  if (todayOrTomorrow) return explicitDate(reference, todayOrTomorrow[1].toLowerCase() === 'tomorrow' ? 1 : 0, todayOrTomorrow[2]);
   const byDayTime = text.match(/\b(by|before)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
-  if (byDayTime) return `${byDayTime[1][0].toUpperCase()}${byDayTime[1].slice(1).toLowerCase()} ${byDayTime[2]}, ${byDayTime[3]}`;
+  if (byDayTime) return `${byDayTime[1][0].toUpperCase()}${byDayTime[1].slice(1).toLowerCase()} ${nextWeekday(reference, byDayTime[2])}, ${byDayTime[3].toUpperCase()}`;
   const onDayTime = text.match(/\bon\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
-  if (onDayTime) return `On ${onDayTime[1]}, ${onDayTime[2]}`;
+  if (onDayTime) return `${nextWeekday(reference, onDayTime[1])}, ${onDayTime[2].toUpperCase()}`;
   const byTime = text.match(/\b(by|before)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))(?:\s+(today|tomorrow))?\b/i);
-  if (byTime) return `${byTime[1][0].toUpperCase()}${byTime[1].slice(1).toLowerCase()} ${byTime[2]}${byTime[3] ? ` ${byTime[3].toLowerCase()}` : ''}`;
+  if (byTime) return `${byTime[1][0].toUpperCase()}${byTime[1].slice(1).toLowerCase()} ${explicitDate(reference, byTime[3]?.toLowerCase() === 'tomorrow' ? 1 : 0, byTime[2])}`;
   const beforeDay = text.match(/\bbefore\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
-  if (beforeDay) return `Before ${beforeDay[1]}`;
+  if (beforeDay) return `Before ${nextWeekday(reference, beforeDay[1])}`;
   const byDay = text.match(/\bby\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
-  if (byDay) return `By ${byDay[1]}`;
+  if (byDay) return `By ${nextWeekday(reference, byDay[1])}`;
   const recurringDay = text.match(/\b(?:every|on)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)s?\b|\b(Mondays|Tuesdays|Wednesdays|Thursdays|Fridays|Saturdays|Sundays)\b/i);
   if (recurringDay) return recurringDay[1] ? `Every ${recurringDay[1]}` : recurringDay[2];
   return 'Not stated';
@@ -325,7 +362,7 @@ function formatActionItems(items) {
    Task: ${actionTask(item)}
    Due: ${inferDue(item)}
    Source: ${item.source}
-   Time: ${item.time}
+   Time: ${item.time || 'Not supplied in manual source'}
    Speaker: ${item.speaker}`
     )
     .join('\n');
@@ -406,22 +443,30 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
   const textMessages = orderedMessages.filter((message) => !isVoiceMessage(message));
   const textDecisionItems = textMessages
     .filter((message) => isConfirmedDecision(message.body || ''))
-    .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
+    .map((message) => itemFromMessage(message, cleanLine(message.body), 'Text chat'));
   const textActionItems = textMessages
     .filter((message) => isUsefulAction(message.body || ''))
-    .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
+    .map((message) => itemFromMessage(message, cleanLine(message.body), 'Text chat'));
+  const requestedTextActionItems = textMessages
+    .map((message) => ({ message, action: requestedAction(message.body || '') }))
+    .filter(({ action }) => action)
+    .map(({ message, action }) => itemFromMessage(message, action, 'Requested in text chat'));
   const textQuestionItems = textMessages
     .filter((message) => unresolvedPattern.test(message.body || '') || rejectedOutcomePattern.test(message.body || ''))
-    .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
+    .map((message) => itemFromMessage(message, cleanLine(message.body), 'Text chat'));
   const textPointItems = textMessages
     .filter((message) => isUsefulContent(message.body))
     .filter((message) => !isConfirmedDecision(message.body || ''))
     .filter((message) => !isUsefulAction(message.body || ''))
     .filter((message) => isDiscussionPoint(message.body || '') || !unresolvedPattern.test(message.body || ''))
-    .map((message) => itemFromMessage(message, stripSpeaker(message.body), 'Text chat'));
+    .map((message) => itemFromMessage(message, cleanLine(message.body), 'Text chat'));
 
   const decisionLines = allLines.filter(isConfirmedDecision).map((line) => itemFromLine(line));
   const actionLines = allLines.filter(isUsefulAction).map((line) => itemFromLine(line));
+  const requestedActionLines = allLines
+    .map((line) => ({ line, action: requestedAction(line) }))
+    .filter(({ action }) => action)
+    .map(({ action }) => itemFromLine(action, 'Requested in manual input'));
   const questionLines = allLines
     .filter((line) => unresolvedPattern.test(line) || rejectedOutcomePattern.test(line))
     .map((line) => itemFromLine(line));
@@ -460,7 +505,9 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     [
       ...structuredVoice.actions.filter((item) => isUsefulAction(item.text)),
       ...textActionItems,
+      ...requestedTextActionItems,
       ...actionLines,
+      ...requestedActionLines,
     ],
     'No action item with owner found. Add owner and deadline if the group has one.'
   );
@@ -507,6 +554,7 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     ...actionReconciliationNotes,
   ], 'Confirm the draft against the source conversation before approval.', 6);
   const executivePoints = uniqueFirst([
+    ...(distinctPointItems[0] && !distinctPointItems[0].source?.includes('Review note') ? [distinctPointItems[0].text] : []),
     ...realDecisions.map((item) => decisionOutcome(item)),
     ...executiveActions.map((item) => `${actionTask(item)} — Owner: ${inferOwner(item)}${inferDue(item) === 'Not stated' ? '' : `; ${inferDue(item)}`}`),
     ...realUnresolved.map((item) => `Still unresolved: ${item.text}`),
@@ -542,13 +590,13 @@ Group: ${groupName}
 Coverage: ${coverageLabel}
 Status: Draft for human review
 
-Executive summary:
+Current Position:
 ${formatBullets(executivePoints)}
 
-Confirmed decisions:
+Confirmed Outcomes:
 ${formatOutcomeRegister(decisionItems)}
 
-Action register:
+Action Register:
 ${formatActionRegister(actionItems)}
 
 Discussion points:
@@ -557,7 +605,7 @@ ${formatSourcedNumbered(pointItems)}
 Items requiring a decision or confirmation:
 ${formatIssueRegister(unresolvedItems)}
 
-Human review required:
+Human Review Required:
 ${formatBullets(humanReviewItems)}
 
 Corrections:

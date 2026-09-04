@@ -10,7 +10,7 @@ import { actionView, actionsFromApprovedRecap, updateOperationalAction } from '.
 import { deleteCapturedMessages, loadCapturedMessages, saveCapturedMessage, timestampMs } from './storage.js';
 import { applyPrivacyRetention } from './privacyRetention.js';
 import { buildPendingVoiceNote, isVoiceMedia, transcribeVoiceNote } from './transcription.js';
-import { mockGroups, postApprovedRecap, sampleScenarioForMode } from './connectors/mockWhatsApp.js';
+import { mockGroups, postApprovedRecap, sampleMessagesForMode, sampleScenarioForMode } from './connectors/mockWhatsApp.js';
 import {
   configureWahaWebhook,
   createWahaSession,
@@ -600,8 +600,9 @@ async function handleApi(request, response) {
   if (request.method === 'GET' && requestUrl.pathname === '/api/sample') {
     const sample = sampleScenarioForMode(state.settings.workspaceTemplate);
     const recap = generateWorkflowReport({
-      chatText: sample.chatText,
-      voiceNotes: sample.voiceNotes,
+      chatText: '',
+      voiceNotes: '',
+      messages: sampleMessagesForMode(state.settings.workspaceTemplate),
       groupName: sample.groupName,
       workflowType: state.settings.workflowType,
       customInstructions: state.settings.workflowCustomInstructions,

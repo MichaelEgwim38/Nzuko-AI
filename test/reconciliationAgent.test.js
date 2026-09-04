@@ -26,7 +26,7 @@ test('formats the required reconciled report sections', () => {
   assert.match(report, /Owner: Yusuf/);
   assert.match(report, /Due date\/schedule: Every Saturday/);
   assert.match(report, /No confirmed decisions identified/);
-  assert.match(report, /HUMAN REVIEW FLAGS/);
+  assert.match(report, /HUMAN REVIEW REQUIRED/);
 });
 
 test('uses the conservative engine when no API key is configured', async () => {

@@ -29,7 +29,7 @@ import { billingTopUpById, consumeAllowanceWithCredits, listBillingTopUps } from
 import { createCustomerPortalSession, createSubscriptionCheckoutSession, createTopUpCheckoutSession, stripeCheckoutReady } from '../../src/stripeBilling.js';
 import { buildPendingVoiceNote, isVoiceMedia } from '../../src/transcription.js';
 import { isValidTranscriptionLanguage, transcriptionLanguageOptions } from '../../src/transcriptionLanguages.js';
-import { mockGroups, postApprovedRecap, sampleScenarioForMode } from '../../src/connectors/mockWhatsApp.js';
+import { mockGroups, postApprovedRecap, sampleMessagesForMode, sampleScenarioForMode } from '../../src/connectors/mockWhatsApp.js';
 import {
   configureWahaWebhook,
   createWahaSession,
@@ -2147,9 +2147,10 @@ export default async function handler(request) {
       const context = await loadWorkspaceContext(session);
       const sample = sampleScenarioForMode(context.state.settings.workspaceTemplate);
       const recap = generateWorkflowReport({
-        chatText: sample.chatText,
-        voiceNotes: sample.voiceNotes,
+        chatText: '',
+        voiceNotes: '',
         groupName: sample.groupName,
+        messages: sampleMessagesForMode(context.state.settings.workspaceTemplate),
         workflowType: context.state.settings.workflowType,
         customInstructions: context.state.settings.workflowCustomInstructions,
       });
