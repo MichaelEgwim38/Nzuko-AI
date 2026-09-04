@@ -82,6 +82,9 @@ const landingModeExamples = {
     process: 'The facilities manager selects the reporting period. Nzuko AI reconciles the messages, separates confirmed facts from assumptions and produces an approval-ready maintenance report.',
     valueTitle: 'Fewer missed site actions',
     value: 'Teams gain a clear issue, owner, deadline and unresolved access requirement without manually rebuilding the story from dozens of messages.',
+    trackerTitle: 'The inspection becomes accountable',
+    tracker: 'After approval, James appears as the owner with the inspection date. The action stays open until the finding is recorded.',
+    alert: 'Boiler inspection due tomorrow at 9:00 AM',
   },
   'healthcare-operations': {
     conversation: '“The evening rota is one person short. Amara suggested calling the agency. Later, Daniel confirmed he can cover from 6pm, so the manager said agency cover is no longer needed. Amara will update the rota by 4pm.”',
@@ -91,6 +94,9 @@ const landingModeExamples = {
     process: 'Nzuko AI follows the whole discussion, recognises that Daniel’s confirmation supersedes the agency proposal and prepares a non-clinical handover for approval.',
     valueTitle: 'Cleaner administrative handovers',
     value: 'The rota outcome, responsible coordinator and deadline remain visible while a person reviews the report before it becomes an operational record.',
+    trackerTitle: 'The rota update reaches the next shift',
+    tracker: 'Once approved, Amara owns the rota update. The superseded agency call is not created as a second task.',
+    alert: 'Rota update due today at 4:00 PM',
   },
   'field-service': {
     conversation: '“Leon marked Unit 14 complete at noon. The customer then reported the alarm returned during testing. Leon: I’ll revisit at 3pm and send the valve part number to Aisha before I leave.”',
@@ -100,6 +106,9 @@ const landingModeExamples = {
     process: 'At handover, the dispatcher selects the previous shift. Nzuko AI transcribes relevant voice notes, reconciles changed job statuses and prepares actions, owners and deadlines for review.',
     valueTitle: 'A faster, safer shift handover',
     value: 'If three handovers save about 10 minutes each, the illustrative time recovered can reach roughly 15 staff hours per month while reducing the risk of buried actions.',
+    trackerTitle: 'A reopened job cannot disappear',
+    tracker: 'Leon sees the revisit and part-number follow-up in the approved tracker, even though the job was previously marked complete.',
+    alert: 'Unit 14 revisit due today at 3:00 PM',
   },
   'community-charity': {
     conversation: '“Most members preferred reminders before late-payment penalties, but no penalty was approved. Yusuf: I can collect the receipts every Saturday and post the totals. The venue question remains open.”',
@@ -109,6 +118,9 @@ const landingModeExamples = {
     process: 'Nzuko AI links related statements, assigns Yusuf’s first-person commitment to Yusuf and keeps the unapproved penalty under open questions.',
     valueTitle: 'Trustworthy community records',
     value: 'Coordinators can publish concise minutes without turning opinions into decisions or losing named volunteer commitments.',
+    trackerTitle: 'Volunteer commitments stay visible',
+    tracker: 'Yusuf owns one reconciled Saturday task. The unapproved penalty remains an open question, not an action.',
+    alert: 'Receipt totals are due Saturday at 6:00 PM',
   },
   personal: {
     conversation: '“I originally planned to send the application on Monday, but the reference will not arrive until Wednesday. I’ll submit it by Thursday at noon, then follow up with Maya about the unpaid invoice on Friday.”',
@@ -118,6 +130,9 @@ const landingModeExamples = {
     process: 'Nzuko AI reconciles the changed plan, retains the reason and produces a short list of current commitments and follow-ups.',
     valueTitle: 'A clearer personal action list',
     value: 'The latest deadline replaces the obsolete one, while the separate invoice follow-up stays visible and actionable.',
+    trackerTitle: 'Private or shared, both stay organised',
+    tracker: 'Use a private self-only space for your own reminders, or an authorised professional group for shared commitments. Only approved actions enter the tracker.',
+    alert: 'Application due Thursday at 12:00 PM',
   },
 };
 
@@ -936,6 +951,9 @@ function renderLandingMode(modeId) {
   $('#mode-story-process').textContent = example.process;
   $('#mode-story-value-title').textContent = example.valueTitle;
   $('#mode-story-value').textContent = example.value;
+  $('#mode-story-tracker-title').textContent = example.trackerTitle;
+  $('#mode-story-tracker').textContent = example.tracker;
+  $('#mode-story-alert').textContent = example.alert;
   $('#mode-story-conversion-title').textContent = `Bring ${template.name.toLowerCase()} conversations into one clear, reviewable workflow.`;
 }
 
