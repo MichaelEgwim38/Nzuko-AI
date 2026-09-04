@@ -24,11 +24,12 @@ test('provides a distinct real-world sample for every Nzuko Mode', () => {
   }
 });
 
-test('community sample merges Yusuf commitments and keeps policy unresolved', () => {
+test('community sample merges related commitments and keeps proposals unresolved', () => {
   const sample = sampleScenarioForMode('community-charity');
   const recap = generateWorkflowReport({ ...sample, workflowType: 'meeting-minutes' });
-  const actions = recap.text.split('Action items:')[1].split('Discussion points:')[0];
+  const actions = recap.text.split('Action register:')[1].split('Discussion points:')[0];
   assert.equal((actions.match(/Owner: Yusuf/gi) || []).length, 1);
-  assert.match(actions, /Task: Collect donation receipts/i);
-  assert.doesNotMatch(recap.text.split('Confirmed / likely decisions:')[1].split('Action items:')[0], /penalty/i);
+  assert.match(actions, /Collect the hired van/i);
+  assert.match(actions, /Publish the final rota/i);
+  assert.doesNotMatch(recap.text.split('Confirmed decisions:')[1].split('Action register:')[0], /second distribution session/i);
 });

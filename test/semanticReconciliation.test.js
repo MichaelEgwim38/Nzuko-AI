@@ -16,12 +16,12 @@ test('reconciles unresolved proposals and infers action owners and deadlines', (
     ].join('\n'),
   });
 
-  const decisionsSection = recap.text.split('Confirmed / likely decisions:')[1].split('Action items:')[0];
+  const decisionsSection = recap.text.split('Confirmed decisions:')[1].split('Action register:')[0];
   assert.doesNotMatch(decisionsSection, /late payments|penalty/i);
   assert.match(decisionsSection, /Yusuf will collect receipts/i);
   assert.match(decisionsSection, /meeting every evening at 8pm/i);
 
-  const actionsSection = recap.text.split('Action items:')[1].split('Discussion points:')[0];
+  const actionsSection = recap.text.split('Action register:')[1].split('Discussion points:')[0];
   assert.doesNotMatch(actionsSection, /No final penalty was approved/i);
   assert.match(actionsSection, /Owner: Yusuf/i);
   assert.equal((actionsSection.match(/Owner: Yusuf/gi) || []).length, 1);
@@ -30,6 +30,6 @@ test('reconciles unresolved proposals and infers action owners and deadlines', (
   assert.match(actionsSection, /Due: Before Friday/i);
 
   assert.match(recap.text, /Discussion points:[\s\S]*late payments/i);
-  assert.match(recap.text, /Open questions \/ needs confirmation:[\s\S]*No final penalty was approved/i);
-  assert.match(recap.text, /Human review required:[\s\S]*describe the same action for Yusuf/i);
+  assert.match(recap.text, /Items requiring a decision or confirmation:[\s\S]*No final penalty was approved/i);
+  assert.match(recap.text, /Human review required:[\s\S]*Yusuf's related commitment and confirmation were merged/i);
 });

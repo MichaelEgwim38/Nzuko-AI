@@ -19,10 +19,10 @@ test('generates purpose-specific output from the same conversation', () => {
 
   assert.match(meeting.text, /MEETING MINUTES/);
   assert.match(handover.text, /SHIFT HANDOVER/);
-  assert.match(handover.text, /Outstanding actions:/);
-  assert.match(handover.text, /Information for the next shift:/);
+  assert.match(handover.text, /Action register:/);
+  assert.match(handover.text, /Context for the incoming shift:/);
   assert.match(project.text, /PROJECT UPDATE/);
-  assert.match(project.text, /Blockers and questions:/);
+  assert.match(project.text, /Blockers and confirmations required:/);
   assert.notEqual(meeting.text, handover.text);
 });
 

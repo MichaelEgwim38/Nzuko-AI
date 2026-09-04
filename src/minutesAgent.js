@@ -99,6 +99,7 @@ function statementTopics(value) {
   if (/\b(?:flat 3|tenant access|building access|site access)\b/.test(text)) topics.add('access');
   if (/\b(?:unit 14|job 14|alarm|valve part|replacement valve)\b/.test(text)) topics.add('field-job-14');
   if (/\b(?:volunteer rota|food-bank|food bank)\b/.test(text)) topics.add('volunteer-rota');
+  if (/\b(?:hired van|transport|deliver the parcels|distribution)\b/.test(text)) topics.add('community-distribution');
   if (/\b(?:application|reference)\b/.test(text)) topics.add('application');
   return topics;
 }
@@ -250,10 +251,14 @@ function inferOwner(item) {
 
 function inferDue(item) {
   const text = item.text || '';
+  const recurringWithTime = text.match(/\b(?:every|on)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)s?\b[^.!?]{0,80}?\bby\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (recurringWithTime) return `Every ${recurringWithTime[1]}, by ${recurringWithTime[2]}`;
   const todayOrTomorrow = text.match(/\b(today|tomorrow)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
   if (todayOrTomorrow) return `${todayOrTomorrow[1][0].toUpperCase()}${todayOrTomorrow[1].slice(1).toLowerCase()}, ${todayOrTomorrow[2]}`;
   const byDayTime = text.match(/\b(by|before)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
   if (byDayTime) return `${byDayTime[1][0].toUpperCase()}${byDayTime[1].slice(1).toLowerCase()} ${byDayTime[2]}, ${byDayTime[3]}`;
+  const onDayTime = text.match(/\bon\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+at)?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (onDayTime) return `On ${onDayTime[1]}, ${onDayTime[2]}`;
   const byTime = text.match(/\b(by|before)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))(?:\s+(today|tomorrow))?\b/i);
   if (byTime) return `${byTime[1][0].toUpperCase()}${byTime[1].slice(1).toLowerCase()} ${byTime[2]}${byTime[3] ? ` ${byTime[3].toLowerCase()}` : ''}`;
   const beforeDay = text.match(/\bbefore\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
@@ -274,6 +279,14 @@ function actionTask(item) {
     .replace(new RegExp(`^${escapedOwner}\\s+(?:will|shall|is to|can)\\s+`, 'i'), '')
     .replace(/^.*?\bi\s+(?:will|shall|can)\s+/i, '')
     .replace(/^i\s+(?:will|shall|can)\s+/i, '')
+    .replace(/^./, (character) => character.toUpperCase())
+    .trim();
+}
+
+function decisionOutcome(item) {
+  return String(item?.text || '')
+    .replace(/^decision\s*:\s*/i, '')
+    .replace(/^we\s+(?:agreed|decided|approved|resolved)(?:\s+that|\s+to)?\s*/i, '')
     .replace(/^./, (character) => character.toUpperCase())
     .trim();
 }
@@ -300,7 +313,7 @@ function reconcileActionItems(items = []) {
       continue;
     }
     const existing = reconciled[duplicateIndex];
-    reviewNotes.push(`Confirm whether “${existing.text}” and “${item.text}” describe the same action for ${owner}.`);
+    reviewNotes.push(`${owner}'s related commitment and confirmation were merged into one action; verify the final wording.`);
   }
   return { items: reconciled, reviewNotes };
 }
@@ -316,6 +329,27 @@ function formatActionItems(items) {
    Speaker: ${item.speaker}`
     )
     .join('\n');
+}
+
+function formatActionRegister(items) {
+  const useful = items.filter((item) => !item.source.includes('Review note'));
+  if (!useful.length) return 'No action was identified.';
+  return useful.map((item, index) => {
+    const due = inferDue(item);
+    return `${index + 1}. ${actionTask(item)}\n   Owner: ${inferOwner(item)} | Due: ${due === 'Not stated' ? 'Confirm during review' : due}`;
+  }).join('\n');
+}
+
+function formatOutcomeRegister(items) {
+  const useful = items.filter((item) => !item.source.includes('Review note'));
+  if (!useful.length) return 'No confirmed decision was identified.';
+  return useful.map((item, index) => `${index + 1}. ${decisionOutcome(item)}`).join('\n');
+}
+
+function formatIssueRegister(items) {
+  const useful = items.filter((item) => !item.source.includes('Review note'));
+  if (!useful.length) return 'No unresolved matter was identified.';
+  return useful.map((item, index) => `${index + 1}. ${item.text}`).join('\n');
 }
 
 function reviewStatus(item) {
@@ -473,8 +507,8 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     ...actionReconciliationNotes,
   ], 'Confirm the draft against the source conversation before approval.', 6);
   const executivePoints = uniqueFirst([
-    ...realDecisions.map((item) => item.text),
-    ...executiveActions.map((item) => `${inferOwner(item)}: ${actionTask(item)}`),
+    ...realDecisions.map((item) => decisionOutcome(item)),
+    ...executiveActions.map((item) => `${actionTask(item)} — Owner: ${inferOwner(item)}${inferDue(item) === 'Not stated' ? '' : `; ${inferDue(item)}`}`),
     ...realUnresolved.map((item) => `Still unresolved: ${item.text}`),
     translatedVoiceCount ? `${translatedVoiceCount} translated voice-note item(s) require human validation.` : '',
   ], 'No confirmed outcome was detected. Review the source conversation.', 6);
@@ -486,6 +520,21 @@ export function generateRecap({ chatText = '', voiceNotes = '', groupName = 'App
     decisions,
     points,
     actions,
+    actionDetails: actionItems
+      .filter((item) => !item.source.includes('Review note'))
+      .map((item) => ({
+        owner: inferOwner(item),
+        task: actionTask(item),
+        due: inferDue(item),
+        source: item.source,
+        time: item.time,
+      })),
+    decisionDetails: decisionItems
+      .filter((item) => !item.source.includes('Review note'))
+      .map((item) => ({ outcome: decisionOutcome(item), source: item.source, time: item.time })),
+    unresolvedDetails: unresolvedItems
+      .filter((item) => !item.source.includes('Review note'))
+      .map((item) => ({ issue: item.text, source: item.source, time: item.time })),
     unresolved,
     voiceSummary,
     text: `NZUKO AI DAILY MINUTES - ${dateLabel}
@@ -496,17 +545,17 @@ Status: Draft for human review
 Executive summary:
 ${formatBullets(executivePoints)}
 
-Confirmed / likely decisions:
-${formatSourcedNumbered(decisionItems)}
+Confirmed decisions:
+${formatOutcomeRegister(decisionItems)}
 
-Action items:
-${formatActionItems(actionItems)}
+Action register:
+${formatActionRegister(actionItems)}
 
 Discussion points:
 ${formatSourcedNumbered(pointItems)}
 
-Open questions / needs confirmation:
-${formatSourcedNumbered(unresolvedItems)}
+Items requiring a decision or confirmation:
+${formatIssueRegister(unresolvedItems)}
 
 Human review required:
 ${formatBullets(humanReviewItems)}

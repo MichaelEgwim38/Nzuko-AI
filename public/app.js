@@ -303,6 +303,13 @@ function renderWorkspaceStatus(status = {}) {
   const checkWahaButton = $('#check-waha');
   const usageWarning = $('#usage-warning');
   const usageWarningText = $('#usage-warning-text');
+  const approveButton = $('#approve');
+
+  if (approveButton) {
+    approveButton.textContent = status.settings?.connectorMode === 'waha'
+      ? 'Approve & post to WhatsApp'
+      : 'Approve & save report';
+  }
 
   if (trialSummary) {
     if (trial.isSubscribed) {

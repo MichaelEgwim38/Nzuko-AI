@@ -22,7 +22,7 @@ Manager: Can reception confirm Daniel's building access before 5pm?`,
     groupName: 'Oak House Facilities',
     chatText: `Resident services: The boiler at Oak House is losing pressure again. A leak is suspected but not confirmed.
 James: I will inspect the boiler tomorrow at 9am and report the confirmed cause by 11am.
-Facilities manager: We agreed the boiler must remain in service until James completes the safety inspection.
+Facilities manager: We agreed the boiler must remain out of service until James completes the safety inspection.
 Concierge: Access through Flat 3 is still awaiting confirmation.
 Facilities manager: Can Leila confirm access with the tenant before 5pm today?`,
     voiceNotes: `Voice note from James: I checked the plant-room floor. It is dry, so the cause remains unconfirmed until tomorrow's inspection.`,
@@ -39,13 +39,14 @@ Dispatch: Can the customer confirm site access for 3pm?`,
   },
   'community-charity': {
     groupName: 'NeighbourLink Community',
-    chatText: `Chair Ada: We agreed the volunteer meeting will remain at 8pm every Thursday.
-Yusuf: I will collect donation receipts every Saturday and post the totals by 6pm.
-Chair Ada: We agreed Yusuf will manage the Saturday receipt report.
-Mariam: Members preferred payment reminders before penalties.
-Secretary: No late-payment penalty was approved.
-Mariam: Which community hall should become our permanent venue?`,
-    voiceNotes: `Voice note from Chidi: Twelve families have registered for the food-bank collection. I will confirm the volunteer rota by Friday.`,
+    chatText: `Mariam: We have 120 food parcels ready for families affected by the flooding.
+Chair Ada: The council confirmed Riverside Hall is available on Saturday from 8am to 2pm.
+Yusuf: I will collect the hired van at 7:30am on Saturday and deliver the parcels to Riverside Hall before 9am.
+Chair Ada: Decision: Yusuf will lead transport and distribution will begin at 9am.
+Coordinator: Nine volunteers are confirmed; three rota places still need volunteers.
+Safeguarding lead: Two new volunteers cannot work unsupervised because their checks are still pending.
+Mariam: Can we run a second distribution session on Sunday? No final decision was made.`,
+    voiceNotes: `Voice note from Chidi: I will confirm the remaining three volunteers and publish the final rota by Friday at 5pm.`,
   },
   personal: {
     groupName: 'My weekly commitments',

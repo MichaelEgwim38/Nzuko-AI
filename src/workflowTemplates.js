@@ -26,19 +26,42 @@ function section(title, items, fallback) {
   return `${title}:\n${bullets(useful.length ? useful : [fallback])}`;
 }
 
+function numbered(items = []) {
+  return items.map((item, index) => `${index + 1}. ${item}`).join('\n');
+}
+
+function actionRegister(recap, fallback = 'No outstanding action was identified.') {
+  const actions = recap.actionDetails || [];
+  if (!actions.length) return fallback;
+  return numbered(actions.map((action) => {
+    const due = action.due && action.due !== 'Not stated' ? ` | Due: ${action.due}` : ' | Due: confirm during review';
+    return `${action.task}\n   Owner: ${action.owner}${due}`;
+  }));
+}
+
+function confirmedOutcomes(recap, fallback = 'No confirmed outcome was identified.') {
+  const outcomes = (recap.decisionDetails || []).map((item) => item.outcome);
+  return outcomes.length ? numbered(outcomes) : fallback;
+}
+
+function itemsForDecision(recap, fallback = 'No unresolved matter was identified.') {
+  const issues = (recap.unresolvedDetails || []).map((item) => item.issue);
+  return issues.length ? numbered(issues) : fallback;
+}
+
 function workflowText(recap, type, customInstructions = '') {
   const header = `${workflowTemplate(type).name.toUpperCase()} - ${recap.dateLabel}\nWorkspace: ${recap.groupName}\nCoverage: ${recap.coverageLabel}\nStatus: Draft for human review`;
   const review = 'Human review required:\nConfirm owners, deadlines, priorities and sensitive information before approval.';
 
   if (type === 'shift-handover') {
-    return `${header}\n\n${section('Completed / confirmed', recap.decisions, 'No completed work was confirmed.')}\n\n${section('Outstanding actions', recap.actions, 'No outstanding action was detected.')}\n\n${section('Operational concerns', recap.unresolved, 'No operational concern was detected.')}\n\n${section('Information for the next shift', recap.points, 'No additional handover note was captured.')}\n\n${review}`;
+    return `${header}\n\nConfirmed handover outcomes:\n${confirmedOutcomes(recap, 'No handover outcome has been confirmed yet.')}\n\nAction register:\n${actionRegister(recap)}\n\nRisks and confirmations required:\n${itemsForDecision(recap, 'No operational concern was identified.')}\n\nContext for the incoming shift:\n${bullets(recap.points)}\n\n${review}`;
   }
   if (type === 'project-update') {
-    return `${header}\n\n${section('Progress and key updates', recap.points, 'No progress update was captured.')}\n\n${section('Decisions', recap.decisions, 'No confirmed decision was detected.')}\n\n${section('Actions and next steps', recap.actions, 'No next action was detected.')}\n\n${section('Blockers and questions', recap.unresolved, 'No blocker was detected.')}\n\n${review}`;
+    return `${header}\n\nCurrent position:\n${bullets(recap.points)}\n\nConfirmed outcomes:\n${confirmedOutcomes(recap)}\n\nNext-action register:\n${actionRegister(recap, 'No next action was identified.')}\n\nBlockers and confirmations required:\n${itemsForDecision(recap, 'No blocker was identified.')}\n\n${review}`;
   }
   if (type === 'custom') {
     const focus = String(customInstructions || '').trim() || 'No custom instructions supplied; organise the important outcomes for review.';
-    return `${header}\n\nWorkspace instructions:\n${focus}\n\n${section('Key information', recap.points, 'No key information was captured.')}\n\n${section('Confirmed outcomes', recap.decisions, 'No confirmed outcome was detected.')}\n\n${section('Actions', recap.actions, 'No action was detected.')}\n\n${section('Items needing attention', recap.unresolved, 'No unresolved item was detected.')}\n\n${review}`;
+    return `${header}\n\nReport focus:\n${focus}\n\nCurrent position:\n${bullets(recap.points)}\n\nConfirmed outcomes:\n${confirmedOutcomes(recap)}\n\nAction register:\n${actionRegister(recap, 'No action was identified.')}\n\nItems requiring confirmation:\n${itemsForDecision(recap)}\n\n${review}`;
   }
   return recap.text.replace(/^NZUKO AI DAILY MINUTES/, 'NZUKO AI MEETING MINUTES');
 }
