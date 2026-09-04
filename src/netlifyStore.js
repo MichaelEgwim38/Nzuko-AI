@@ -89,6 +89,7 @@ export function defaultSettings() {
     workflowType: 'meeting-minutes',
     workflowCustomInstructions: '',
     workspaceTemplate: '',
+    personalUsageType: 'private',
     outboundWebhookUrl: '',
     outboundWebhookSecret: '',
     outboundWebhookEnabled: false,

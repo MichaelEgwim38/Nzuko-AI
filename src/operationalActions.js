@@ -59,6 +59,7 @@ export function actionsFromApprovedRecap(recap = {}, auditEntry = {}, options = 
         acknowledgedAt: personal ? approvedAt : null,
         acknowledgedBy: personal ? 'Me' : '',
         completedAt: null,
+        reminderLeadDays: null,
       };
     })
     .filter(Boolean);
@@ -76,6 +77,14 @@ export function updateOperationalAction(action = {}, changes = {}, actor = {}) {
   if (changes.title !== undefined) next.title = clean(changes.title).slice(0, 500);
   if (changes.owner !== undefined) next.owner = clean(changes.owner).slice(0, 120);
   if (changes.dueDate !== undefined) next.dueDate = /^20\d{2}-\d{2}-\d{2}$/.test(String(changes.dueDate)) ? changes.dueDate : null;
+  if (changes.reminderLeadDays !== undefined) {
+    if (changes.reminderLeadDays === '' || changes.reminderLeadDays === null) {
+      next.reminderLeadDays = null;
+    } else {
+      const lead = Number(changes.reminderLeadDays);
+      next.reminderLeadDays = [0, 1, 3].includes(lead) ? lead : null;
+    }
+  }
   if (['normal', 'urgent'].includes(changes.priority)) next.priority = changes.priority;
   if (typeof changes.escalated === 'boolean') next.escalated = changes.escalated;
   if (changes.acknowledgement === 'acknowledged') {

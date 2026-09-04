@@ -2087,7 +2087,7 @@ h2 {
 
 .action-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) minmax(150px, 190px);
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -2104,6 +2104,35 @@ h2 {
   border-radius: 12px;
 }
 
+.action-fields select {
+  width: 100%;
+  margin-top: 5px;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid rgba(36, 93, 56, 0.18);
+  border-radius: 12px;
+  background: #fbfdf9;
+  color: var(--ink);
+}
+
+.reminder-permission-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(36, 93, 56, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.reminder-permission-button:hover,
+.reminder-permission-button:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(28, 75, 40, .12); }
+.reminder-permission-button.is-enabled { background: #edf9df; border-color: #91ce4d; }
+.reminder-permission-button.is-blocked { color: #9a3a3a; background: #fff5f4; border-color: #efc0bc; }
+
 .actions-empty {
   padding: 22px;
   border: 1px dashed rgba(36, 93, 56, 0.22);
@@ -2118,6 +2147,9 @@ h2 {
   .action-metrics.personal-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .action-fields { grid-template-columns: 1fr; }
   .action-card-controls .button { flex: 1 1 140px; }
+  .actions-heading { gap: 14px; }
+  .reminder-permission-button { align-self: flex-start; }
+  .personal-space-options { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {
@@ -5018,6 +5050,20 @@ pre {
 .source-heading-row p:last-child { color: #667169; font-size: 16px; }
 .source-heading-row img { width: 126px; height: 126px; object-fit: contain; filter: drop-shadow(0 15px 18px rgba(24,65,32,.14)); }
 .source-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 34px; }
+.personal-space-choice { margin-top: 24px; padding: 18px; border: 1px solid rgba(81,68,173,.16); border-radius: 22px; background: linear-gradient(135deg, #fbfaff, #f3f7ff); }
+.personal-space-copy { display: flex; align-items: center; gap: 12px; }
+.personal-space-copy h2 { margin: 2px 0 0; font-size: 21px; }
+.personal-space-copy .eyebrow { margin: 0; }
+.personal-space-orb { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(145deg, #8067ef, #5144ad); color: #fff; box-shadow: 0 10px 22px rgba(81,68,173,.22); }
+.personal-space-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+.personal-space-options button { display: grid; grid-template-columns: 38px 1fr; grid-template-rows: auto auto; column-gap: 10px; padding: 14px; border: 1px solid rgba(81,68,173,.14); border-radius: 17px; background: rgba(255,255,255,.86); color: #29243c; text-align: left; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
+.personal-space-options button > span { grid-row: 1 / 3; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: #eeeaff; }
+.personal-space-options strong { align-self: end; font-size: 14px; }
+.personal-space-options small { align-self: start; margin-top: 2px; color: #746f80; }
+.personal-space-options button:hover,
+.personal-space-options button:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(55,43,125,.1); }
+.personal-space-options button.selected { border-color: #6e58df; box-shadow: inset 0 0 0 1px #6e58df, 0 10px 25px rgba(81,68,173,.12); }
+.personal-space-choice > .hint { margin: 12px 2px 0; }
 .source-choice-grid button { min-height: 112px; display: grid; grid-template-columns: 54px minmax(0,1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 15px; border: 1px solid #d7e3d4; border-radius: 20px; background: #fff; color: #173321; cursor: pointer; padding: 18px; text-align: left; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
 .source-choice-grid button:hover,
 .source-choice-grid button:focus-visible { border-color: #75b92f; box-shadow: 0 14px 30px rgba(29,72,37,.1); outline: 0; transform: translateY(-3px); }

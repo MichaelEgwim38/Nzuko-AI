@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260904-88" />
+    <link rel="stylesheet" href="/styles.css?v=20260904-89" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -223,6 +223,17 @@
           <div><p class="eyebrow">Your workspace is ready</p><h1 id="source-heading">Where are your conversations?</h1><p>Choose one way to begin. Connections are optional and can always be added later.</p></div>
           <img id="source-mode-icon" src="/assets/purpose/personal-productivity.png" alt="" />
         </div>
+        <section id="personal-space-choice" class="personal-space-choice" hidden aria-labelledby="personal-space-heading">
+          <div class="personal-space-copy">
+            <span class="personal-space-orb" aria-hidden="true">&#10022;</span>
+            <div><p class="eyebrow">Personal setup</p><h2 id="personal-space-heading">Who is this workspace for?</h2></div>
+          </div>
+          <div class="personal-space-options" role="group" aria-label="Personal workspace type">
+            <button type="button" data-personal-usage="private"><span aria-hidden="true">&#128274;</span><strong>Private space</strong><small>My own notes, reminders and follow-ups</small></button>
+            <button type="button" data-personal-usage="shared"><span aria-hidden="true">&#128101;</span><strong>Shared or professional group</strong><small>Conversations with colleagues, clients or family</small></button>
+          </div>
+          <p id="personal-space-status" class="hint">You can change this later. Shared groups still require permission.</p>
+        </section>
         <div class="source-choice-grid">
           <button type="button" data-source-choice="whatsapp"><span class="source-symbol source-whatsapp">◉</span><strong>Connect WhatsApp</strong><small>Use a linked device securely</small><i>→</i></button>
           <button type="button" data-source-choice="telegram"><span class="source-symbol source-telegram">➤</span><strong>Connect Telegram</strong><small>Open Telegram and approve</small><i>→</i></button>
@@ -368,6 +379,7 @@
                     <h2 id="actions-heading">Keep every commitment moving</h2>
                     <p id="actions-description" class="hint">Actions appear here only after a person approves the source report.</p>
                   </div>
+                  <button id="enable-action-alerts" class="reminder-permission-button" type="button"><span aria-hidden="true">&#128276;</span><span>Enable reminders</span></button>
                 </div>
                 <div id="action-metrics" class="action-metrics" aria-label="Action overview">
                   <article><strong>0</strong><span>Open</span></article>
@@ -952,7 +964,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260904-88" type="module"></script>
+    <script src="/app.js?v=20260904-89" type="module"></script>
   </body>
 </html>
 

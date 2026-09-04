@@ -1,9 +1,9 @@
-const CACHE_NAME = 'nzuko-ai-shell-v88';
+const CACHE_NAME = 'nzuko-ai-shell-v89';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/styles.css?v=20260904-88',
-  '/app.js?v=20260904-88',
+  '/styles.css?v=20260904-89',
+  '/app.js?v=20260904-89',
   '/supabase-browser.js',
   '/importText.js',
   '/manifest.webmanifest',
@@ -78,6 +78,20 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
       });
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => 'focus' in client);
+      if (existing) {
+        existing.navigate('/#actions');
+        return existing.focus();
+      }
+      return self.clients.openWindow('/#actions');
     })
   );
 });

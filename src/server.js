@@ -73,6 +73,8 @@ const state = {
     wahaApiKey: process.env.WAHA_API_KEY || '',
     workflowType: 'meeting-minutes',
     workflowCustomInstructions: '',
+    workspaceTemplate: '',
+    personalUsageType: 'private',
   },
   currentDraft: null,
   capturedMessages: initialCapturedMessages,
@@ -634,6 +636,12 @@ async function handleApi(request, response) {
       wahaApiKey: body.wahaApiKey ?? state.settings.wahaApiKey,
       workflowType: normaliseWorkflowType(body.workflowType || state.settings.workflowType),
       workflowCustomInstructions: String(body.workflowCustomInstructions ?? state.settings.workflowCustomInstructions ?? '').trim().slice(0, 1000),
+      workspaceTemplate: body.workspaceTemplate === undefined
+        ? (state.settings.workspaceTemplate || '')
+        : (['healthcare-operations', 'property-facilities', 'field-service', 'community-charity', 'personal'].includes(String(body.workspaceTemplate || '')) ? String(body.workspaceTemplate) : ''),
+      personalUsageType: body.personalUsageType === undefined
+        ? (state.settings.personalUsageType || 'private')
+        : (body.personalUsageType === 'shared' ? 'shared' : 'private'),
     };
     sendJson(response, 200, { settings: publicSettings(state.settings) });
     return;

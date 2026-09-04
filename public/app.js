@@ -32,6 +32,8 @@ let activeActionFilter = 'open';
 let messagePeriodSource = '';
 let selectedMessagePeriod = 'today';
 let expiredPricingPromptShown = false;
+let currentPersonalUsageType = 'private';
+let actionReminderTimer = null;
 
 const workspaceTemplates = {
   'healthcare-operations': {
@@ -964,8 +966,33 @@ function showSourceScreen() {
   $('#app-shell').hidden = true;
   $('#source-screen').hidden = false;
   $('#source-screen').dataset.activeMode = currentWorkspaceTemplate || 'personal';
+  renderPersonalSpaceChoice();
   if ($('#source-mode-icon')) $('#source-mode-icon').src = template?.icon || '/assets/purpose/personal-productivity.png';
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function renderPersonalSpaceChoice() {
+  const section = $('#personal-space-choice');
+  if (!section) return;
+  section.hidden = currentWorkspaceTemplate !== 'personal';
+  section.querySelectorAll('[data-personal-usage]').forEach((button) => {
+    const selected = button.dataset.personalUsage === currentPersonalUsageType;
+    button.classList.toggle('selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+}
+
+async function choosePersonalUsage(event) {
+  currentPersonalUsageType = event.currentTarget.dataset.personalUsage === 'shared' ? 'shared' : 'private';
+  renderPersonalSpaceChoice();
+  try {
+    await api('/api/settings', { method: 'POST', body: JSON.stringify(settingsPayload()) });
+    setHintMessage('personal-space-status', currentPersonalUsageType === 'private'
+      ? 'Private space selected. Use a self-only chat or your own source material.'
+      : 'Shared group selected. Only use conversations you are authorised to process.');
+  } catch (error) {
+    setHintMessage('personal-space-status', `This choice could not be saved: ${error.message}`);
+  }
 }
 
 async function chooseConversationSource(event) {
@@ -1191,6 +1218,7 @@ async function loadStatus() {
   const pendingWorkspaceTemplate = window.localStorage.getItem('nzuko-pending-mode') || '';
   const shouldApplyPendingTemplate = !status.settings.workspaceTemplate && Boolean(workspaceTemplates[pendingWorkspaceTemplate]);
   currentWorkspaceTemplate = status.settings.workspaceTemplate || (shouldApplyPendingTemplate ? pendingWorkspaceTemplate : '');
+  currentPersonalUsageType = status.settings.personalUsageType === 'shared' ? 'shared' : 'private';
   if (shouldApplyPendingTemplate) {
     const pendingTemplate = workspaceTemplates[currentWorkspaceTemplate];
     setWorkflowSelection(pendingTemplate.workflowType);
@@ -1334,6 +1362,7 @@ function settingsPayload(extra = {}) {
     workflowType: selectedWorkflowType(),
     workflowCustomInstructions: $('#workflow-custom-instructions').value.trim(),
     workspaceTemplate: currentWorkspaceTemplate,
+    personalUsageType: currentPersonalUsageType,
     outboundWebhookUrl: $('#outbound-webhook-url')?.value.trim() || '',
     outboundWebhookEnabled: Boolean($('#outbound-webhook-enabled')?.checked),
     telegramGroupId: currentTelegramGroupId,
@@ -2098,6 +2127,55 @@ function actionStateLabel(action) {
   return 'Awaiting acknowledgement';
 }
 
+function syncReminderPermissionButton() {
+  const button = $('#enable-action-alerts');
+  if (!button) return;
+  if (!('Notification' in window)) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
+  const enabled = Notification.permission === 'granted';
+  const blocked = Notification.permission === 'denied';
+  button.classList.toggle('is-enabled', enabled);
+  button.classList.toggle('is-blocked', blocked);
+  button.querySelector('span:last-child').textContent = enabled ? 'Reminders on' : blocked ? 'Alerts blocked' : 'Enable reminders';
+}
+
+async function enableActionAlerts() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') await Notification.requestPermission();
+  syncReminderPermissionButton();
+  if (Notification.permission === 'granted') checkActionReminders();
+}
+
+function reminderMoment(action) {
+  if (!action.dueDate || ![0, 1, 3].includes(Number(action.reminderLeadDays))) return null;
+  const moment = new Date(`${action.dueDate}T09:00:00`);
+  moment.setDate(moment.getDate() - Number(action.reminderLeadDays));
+  return Number.isNaN(moment.getTime()) ? null : moment;
+}
+
+async function showActionNotification(action) {
+  const title = action.overdue ? 'Nzuko AI: action overdue' : 'Nzuko AI action reminder';
+  const options = { body: `${action.title}${action.owner ? ` - ${action.owner}` : ''}`, icon: '/assets/icon-192.png', tag: `nzuko-action-${action.id}` };
+  const registration = await navigator.serviceWorker?.ready.catch(() => null);
+  if (registration?.showNotification) return registration.showNotification(title, options);
+  new Notification(title, options);
+}
+
+function checkActionReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  operationalActionsCache.filter((action) => action.status !== 'done').forEach((action) => {
+    const moment = reminderMoment(action);
+    if (!moment || now < moment) return;
+    const reminderKey = `nzuko-reminder:${action.id}:${action.dueDate}:${action.reminderLeadDays}`;
+    if (window.localStorage.getItem(reminderKey)) return;
+    showActionNotification(action).then(() => window.localStorage.setItem(reminderKey, new Date().toISOString())).catch(() => {});
+  });
+}
+
 function renderActions() {
   const list = $('#actions-list');
   const status = $('#actions-status');
@@ -2143,6 +2221,12 @@ function renderActions() {
       <div class="action-fields">
         <label>${escapeHtml(modeCopy?.owner || 'Owner')}<input data-action-field="owner" value="${escapeHtml(action.owner || (personal ? 'Me' : ''))}" placeholder="${personal ? 'Me' : 'Assign an owner'}" /></label>
         <label>Due date<input data-action-field="dueDate" type="date" value="${escapeHtml(action.dueDate || '')}" /></label>
+        <label>Reminder<select data-action-field="reminderLeadDays" ${action.dueDate ? '' : 'disabled'} aria-label="Reminder for ${escapeHtml(action.title)}">
+          <option value="" ${action.reminderLeadDays == null ? 'selected' : ''}>No reminder</option>
+          <option value="0" ${action.reminderLeadDays === 0 ? 'selected' : ''}>On due date</option>
+          <option value="1" ${action.reminderLeadDays === 1 ? 'selected' : ''}>1 day before</option>
+          <option value="3" ${action.reminderLeadDays === 3 ? 'selected' : ''}>3 days before</option>
+        </select></label>
       </div>
       <div class="action-card-controls">
         ${!personal && action.acknowledgement !== 'acknowledged' && action.status !== 'done' ? '<button class="button secondary compact-button" type="button" data-action-command="acknowledge">Acknowledge</button>' : ''}
@@ -2157,6 +2241,8 @@ async function loadActions() {
     const payload = await api('/api/actions');
     operationalActionsCache = Array.isArray(payload.actions) ? payload.actions : [];
     renderActions();
+    syncReminderPermissionButton();
+    checkActionReminders();
   } catch (error) {
     const status = $('#actions-status');
     if (status) status.textContent = `Actions could not be loaded: ${error.message}`;
@@ -2437,6 +2523,8 @@ document.querySelectorAll('[data-action-filter]').forEach((button) => button.add
   document.querySelectorAll('[data-action-filter]').forEach((entry) => entry.classList.toggle('active', entry === button));
   renderActions();
 }));
+document.querySelectorAll('[data-personal-usage]').forEach((button) => button.addEventListener('click', choosePersonalUsage));
+$('#enable-action-alerts')?.addEventListener('click', enableActionAlerts);
 $('#continue-google').addEventListener('click', continueWithGoogle);
 $('#sign-in-link').addEventListener('click', continueWithGoogle);
 document.querySelectorAll('[data-google-login]').forEach((button) => button.addEventListener('click', continueWithGoogle));
@@ -2517,6 +2605,8 @@ window.addEventListener('appinstalled', () => {
 clearDraftFields();
 paymentQueryState = readPaymentQueryState();
 await registerServiceWorker();
+syncReminderPermissionButton();
+actionReminderTimer = window.setInterval(checkActionReminders, 60000);
 updateInstallButton();
 configureConnectionExperience();
 const auth = await api('/api/auth/status');

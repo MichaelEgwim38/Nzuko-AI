@@ -30,6 +30,16 @@ test('personal mode defaults ownership to Me and skips team acknowledgement', ()
   assert.equal(action.workspaceTemplate, 'personal');
 });
 
+test('stores supported action reminder lead times and allows reminders to be cleared', () => {
+  const action = { id: 'action-1', title: 'Inspect boiler', dueDate: '2026-09-05', status: 'open' };
+  const reminded = updateOperationalAction(action, { reminderLeadDays: 1 });
+  assert.equal(reminded.reminderLeadDays, 1);
+  const cleared = updateOperationalAction(reminded, { reminderLeadDays: '' });
+  assert.equal(cleared.reminderLeadDays, null);
+  const rejected = updateOperationalAction(action, { reminderLeadDays: 7 });
+  assert.equal(rejected.reminderLeadDays, null);
+});
+
 test('acknowledges, completes and derives overdue status', () => {
   const original = { id: 'a1', title: 'Inspect alarm', status: 'open', acknowledgement: 'pending', dueDate: '2026-08-30' };
   const acknowledged = updateOperationalAction(original, { acknowledgement: 'acknowledged' }, { name: 'Egwim' });

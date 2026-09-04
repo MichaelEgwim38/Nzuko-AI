@@ -2192,6 +2192,9 @@ export default async function handler(request) {
           : ['healthcare-operations', 'property-facilities', 'field-service', 'community-charity', 'personal'].includes(String(body.workspaceTemplate || ''))
             ? String(body.workspaceTemplate)
             : '',
+        personalUsageType: body.personalUsageType === undefined
+          ? (state.settings.personalUsageType || 'private')
+          : (body.personalUsageType === 'shared' ? 'shared' : 'private'),
         outboundWebhookUrl: body.outboundWebhookUrl === undefined
           ? state.settings.outboundWebhookUrl || ''
           : validateOutboundWebhookUrl(body.outboundWebhookUrl),
