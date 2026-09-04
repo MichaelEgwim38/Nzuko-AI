@@ -26,7 +26,7 @@ test('generates purpose-specific output from the same conversation', () => {
   assert.notEqual(meeting.text, handover.text);
 });
 
-test('includes workspace instructions in a custom workflow draft', () => {
+test('applies workspace instructions without exposing the internal prompt in the draft', () => {
   const report = generateWorkflowReport({
     ...input,
     workflowType: 'custom',
@@ -34,7 +34,8 @@ test('includes workspace instructions in a custom workflow draft', () => {
   });
 
   assert.equal(report.workflowType, 'custom');
-  assert.match(report.text, /Identify customer promises and follow-up dates/);
+  assert.equal(report.customInstructions, 'Identify customer promises and follow-up dates.');
+  assert.doesNotMatch(report.text, /Identify customer promises and follow-up dates/);
   assert.match(report.text, /Human review required/);
 });
 

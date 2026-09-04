@@ -60,8 +60,7 @@ function workflowText(recap, type, customInstructions = '') {
     return `${header}\n\nCurrent position:\n${bullets(recap.points)}\n\nConfirmed outcomes:\n${confirmedOutcomes(recap)}\n\nNext-action register:\n${actionRegister(recap, 'No next action was identified.')}\n\nBlockers and confirmations required:\n${itemsForDecision(recap, 'No blocker was identified.')}\n\n${review}`;
   }
   if (type === 'custom') {
-    const focus = String(customInstructions || '').trim() || 'No custom instructions supplied; organise the important outcomes for review.';
-    return `${header}\n\nReport focus:\n${focus}\n\nCurrent position:\n${bullets(recap.points)}\n\nConfirmed outcomes:\n${confirmedOutcomes(recap)}\n\nAction register:\n${actionRegister(recap, 'No action was identified.')}\n\nItems requiring confirmation:\n${itemsForDecision(recap)}\n\n${review}`;
+    return `${header}\n\nCurrent position:\n${bullets(recap.points)}\n\nConfirmed outcomes:\n${confirmedOutcomes(recap)}\n\nAction register:\n${actionRegister(recap, 'No action was identified.')}\n\nItems requiring confirmation:\n${itemsForDecision(recap)}\n\n${review}`;
   }
   return recap.text.replace(/^NZUKO AI DAILY MINUTES/, 'NZUKO AI MEETING MINUTES');
 }
