@@ -2024,7 +2024,7 @@ export default async function handler(request) {
       ensureTrialAllowed(trial);
       ensureSharedOwnerAllowed(ownerSummary, session);
       await claimSharedOwner(scope, state, session);
-      const body = await readJson(request);
+      const body = await readBody(request);
       const phoneNumber = String(body.phoneNumber || '').replace(/\D/g, '');
       if (phoneNumber.length < 8 || phoneNumber.length > 15) {
         return sendJson(400, { error: 'Enter the WhatsApp number in international format, including the country code.' });
@@ -2615,7 +2615,7 @@ export default async function handler(request) {
       const actionId = decodeURIComponent(actionRoute[1]);
       const index = (state.operationalActions || []).findIndex((entry) => entry.id === actionId);
       if (index < 0) return sendJson(404, { error: 'Action not found.' });
-      const body = await readJson(request);
+      const body = await readBody(request);
       state.operationalActions[index] = updateOperationalAction(state.operationalActions[index], body, {
         name: sessionOwnerName(session),
         email: session.email || '',
