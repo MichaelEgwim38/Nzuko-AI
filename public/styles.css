@@ -5756,6 +5756,19 @@ body[data-nzuko-mode="personal"] {
   --mode-glow: rgba(63, 117, 219, 0.22);
 }
 
+/* Keep the public mode demonstration visually consistent across every use case. */
+.landing-modes[data-active-mode="property-facilities"],
+.landing-modes[data-active-mode="healthcare-operations"],
+.landing-modes[data-active-mode="field-service"],
+.landing-modes[data-active-mode="community-charity"],
+.landing-modes[data-active-mode="personal"] {
+  --mode-accent: #76b82a;
+  --mode-accent-strong: #4e8619;
+  --mode-dark: #12361f;
+  --mode-soft: #edf8df;
+  --mode-glow: rgba(118, 184, 42, 0.22);
+}
+
 .landing-mode-card[data-landing-mode="property-facilities"],
 .purpose-card[data-workspace-template="property-facilities"] { --card-accent: #76b82a; --card-soft: #edf8df; }
 .landing-mode-card[data-landing-mode="healthcare-operations"],
