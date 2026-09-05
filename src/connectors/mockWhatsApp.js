@@ -28,14 +28,14 @@ Facilities manager: Can Leila confirm access with the tenant before 5pm today?`,
     voiceNotes: `Voice note from James: I checked the plant-room floor. It is dry, so the cause remains unconfirmed until tomorrow's inspection.`,
   },
   'field-service': {
-    groupName: 'Northline Field Service',
-    chatText: `Dispatch: Unit 14 was marked complete at noon.
-Customer desk: The alarm returned during the customer's final test, so the job is not complete.
-Leon: I will revisit Unit 14 today at 3pm and send the valve part number to Aisha before I leave.
-Dispatch: We agreed to reopen job 14 and keep the customer informed.
-Aisha: I will reserve the replacement valve once Leon confirms the part number.
-Dispatch: Can the customer confirm site access for 3pm?`,
-    voiceNotes: `Voice note from Leon: I am twenty minutes from the site and still on schedule for the 3pm visit.`,
+    groupName: 'QuickDrop Logistics Operations',
+    chatText: `Marcus: The motorway closure will delay the Smithfield medical-crate delivery by about 40 minutes.
+Day dispatch: The delivery is delayed, not cancelled. Can Priya receive the crates when the evening vehicle arrives tonight?
+Priya: I confirm I will receive the Smithfield crates and upload the signed delivery record tonight.
+Sarah: Van 4 showed a brake warning, so I parked it in Bay 2 and marked it unavailable.
+Operations manager: Decision: Van 4 must remain out of service until it passes inspection.
+Daniel: I will inspect Van 4 tomorrow by 8am and report whether it is safe to return to service.`,
+    voiceNotes: `Voice note from Marcus: Traffic is moving again. My revised arrival time at Smithfield is 6:40pm.`,
   },
   'community-charity': {
     groupName: 'NeighbourLink Community',

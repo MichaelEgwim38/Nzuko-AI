@@ -33,3 +33,10 @@ test('community sample merges related commitments and keeps proposals unresolved
   assert.match(actions, /Publish the final rota/i);
   assert.doesNotMatch(recap.text.split('Confirmed Outcomes:')[1].split('Action Register:')[0], /second distribution session/i);
 });
+
+test('logistics and operations sample covers delivery and fleet handovers', () => {
+  const sample = sampleScenarioForMode('field-service');
+  assert.match(sample.groupName, /Logistics Operations/i);
+  assert.match(sample.chatText, /Smithfield medical-crate delivery/i);
+  assert.match(sample.chatText, /Van 4 must remain out of service/i);
+});

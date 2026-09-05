@@ -51,9 +51,9 @@ const workspaceTemplates = {
     instructions: 'Identify the site or asset, reported fault, urgency or safety concern, work completed, evidence provided, responsible person, access requirement, deadline and unresolved follow-up.',
   },
   'field-service': {
-    name: 'Field service',
+    name: 'Logistics & operations',
     icon: '/assets/purpose/field-service.png',
-    description: 'Job updates, blockers and next steps',
+    description: 'Shift handovers, deliveries, incidents and next steps',
     workflowType: 'project-update',
     instructions: '',
   },
@@ -99,16 +99,16 @@ const landingModeExamples = {
     alert: 'Rota update due today at 4:00 PM',
   },
   'field-service': {
-    conversation: '“Leon marked Unit 14 complete at noon. The customer then reported the alarm returned during testing. Leon: I’ll revisit at 3pm and send the valve part number to Aisha before I leave.”',
-    report: [['Reconciled status', 'Job reopened after customer test'], ['Site action', 'Revisit and diagnose recurring alarm'], ['Owner & due', 'Leon · Today, 3pm'], ['Follow-up', 'Send valve part number to Aisha'], ['Risk prevented', 'Not incorrectly recorded as completed']],
+    conversation: '“Marcus reported a 40-minute motorway delay affecting the Smithfield medical-crate delivery. Dispatch reassigned Priya to receive it tonight. Sarah parked Van 4 in Bay 2 after a brake warning; Daniel will inspect it tomorrow by 8am.”',
+    report: [['Reconciled status', 'Smithfield delivery delayed, not cancelled'], ['Delivery action', 'Priya to receive medical crates tonight'], ['Fleet action', 'Inspect Van 4 in Bay 2'], ['Owner & due', 'Daniel · Tomorrow, 8am'], ['Risk prevented', 'Van 4 remains unavailable pending inspection']],
     company: 'QuickDrop Logistics',
     problem: 'Drivers and dispatchers report delays, vehicle faults and delivery commitments through voice notes and messages while moving between jobs.',
     process: 'At handover, the dispatcher selects the previous shift. Nzuko AI transcribes relevant voice notes, reconciles changed job statuses and prepares actions, owners and deadlines for review.',
     valueTitle: 'A faster, safer shift handover',
     value: 'If three handovers save about 10 minutes each, the illustrative time recovered can reach roughly 15 staff hours per month while reducing the risk of buried actions.',
-    trackerTitle: 'A reopened job cannot disappear',
-    tracker: 'Leon sees the revisit and part-number follow-up in the approved tracker, even though the job was previously marked complete.',
-    alert: 'Unit 14 revisit due today at 3:00 PM',
+    trackerTitle: 'Every delivery and fleet issue stays visible',
+    tracker: 'After approval, Priya owns the delivery handover and Daniel owns the vehicle inspection. Van 4 remains unavailable until the inspection is completed.',
+    alert: 'Van 4 inspection due tomorrow at 8:00 AM',
   },
   'community-charity': {
     conversation: '“Most members preferred reminders before late-payment penalties, but no penalty was approved. Yusuf: I can collect the receipts every Saturday and post the totals. The venue question remains open.”',
@@ -144,7 +144,7 @@ let whatsappPollTimer = null;
 const actionModeCopy = {
   'healthcare-operations': { eyebrow: 'Approved shift actions', heading: 'Keep every handover accountable', owner: 'Responsible staff member', empty: 'Approved handover actions will appear here.' },
   'property-facilities': { eyebrow: 'Approved site actions', heading: 'Keep every site issue moving', owner: 'Owner or contractor', empty: 'Approved faults, visits and follow-ups will appear here.' },
-  'field-service': { eyebrow: 'Approved job actions', heading: 'Move every job to completion', owner: 'Technician or owner', empty: 'Approved job actions and next steps will appear here.' },
+  'field-service': { eyebrow: 'Approved operations actions', heading: 'Keep every handover moving', owner: 'Dispatcher or owner', empty: 'Approved delivery, fleet and operational actions will appear here.' },
   'community-charity': { eyebrow: 'Approved community actions', heading: 'Keep every commitment moving', owner: 'Volunteer or owner', empty: 'Approved meeting commitments will appear here.' },
   personal: { eyebrow: 'My approved actions', heading: 'Turn conversations into progress', owner: 'Owner', empty: 'Your approved reminders and follow-ups will appear here.' },
 };
