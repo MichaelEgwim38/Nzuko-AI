@@ -5839,10 +5839,10 @@ body[data-nzuko-mode="field-service"] {
 body[data-nzuko-mode="community-charity"] {
   --mode-accent: #8157ce;
   --mode-accent-strong: #5b32a7;
-  --mode-dark: #6d4bb1;
-  --mode-dark-deep: #493078;
+  --mode-dark: #2f1d50;
+  --mode-dark-deep: #160d28;
   --mode-soft: #f0eaff;
-  --mode-glow: rgba(129, 87, 206, 0.3);
+  --mode-glow: rgba(129, 87, 206, 0.22);
   --mode-on-accent: #fff;
 }
 
@@ -5851,10 +5851,10 @@ body[data-nzuko-mode="community-charity"] {
 body[data-nzuko-mode="personal"] {
   --mode-accent: #3f75db;
   --mode-accent-strong: #2755ad;
-  --mode-dark: #3f6fb8;
-  --mode-dark-deep: #244d88;
+  --mode-dark: #172f5a;
+  --mode-dark-deep: #09162f;
   --mode-soft: #e8f0ff;
-  --mode-glow: rgba(63, 117, 219, 0.3);
+  --mode-glow: rgba(63, 117, 219, 0.22);
   --mode-on-accent: #fff;
 }
 
