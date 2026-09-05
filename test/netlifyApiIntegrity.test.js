@@ -13,3 +13,10 @@ test('browser client does not call removed tracker render functions', async () =
   assert.doesNotMatch(source, /\brenderOperationalActions\(/);
   assert.match(source, /function renderActions\(\)/);
 });
+
+test('WhatsApp pairing explains privacy and rejects account-security codes', async () => {
+  const page = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.match(page, /Phone number linked to WhatsApp/);
+  assert.match(page, /not saved in your Nzuko AI workspace or database/);
+  assert.match(page, /never ask for an SMS login code or your WhatsApp two-step-verification PIN/i);
+});

@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260904-92" />
+    <link rel="stylesheet" href="/styles.css?v=20260905-93" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -451,13 +451,18 @@
                 </div>
                 </div>
                 <div id="pairing-box" class="pairing-box mobile-connect-control" hidden>
+                  <div class="pairing-introduction">
+                    <strong>Connect WhatsApp on this phone</strong>
+                    <p>Link Nzuko AI as a WhatsApp companion device. You stay in control and choose which group Nzuko AI can work with after connecting.</p>
+                  </div>
                   <label>
-                    WhatsApp number
+                    Phone number linked to WhatsApp
                     <input id="pairing-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. 447700900123" />
                   </label>
                   <p class="hint">Include the country code and omit the leading + or 0.</p>
-                  <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><strong>Your number is not stored in the Nzuko AI database.</strong> It is handled only to request this pairing code and is not saved to your workspace.</p>
-                  <button id="request-pairing-code" class="button" type="button">Get secure pairing code</button>
+                  <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><span><strong>Your phone number is not saved in your Nzuko AI workspace or database.</strong> It is passed temporarily to the WhatsApp connection service only to request this device-pairing code.</span></p>
+                  <p class="connection-security-warning"><span aria-hidden="true">&#9888;</span><span><strong>Nzuko AI will never ask for an SMS login code or your WhatsApp two-step-verification PIN.</strong> Only enter the pairing code displayed here inside WhatsApp.</span></p>
+                  <button id="request-pairing-code" class="button" type="button">Request pairing code</button>
                   <div id="pairing-result" class="pairing-result" hidden></div>
                 </div>
                 <div id="qr-box" class="qr-box" hidden></div>
@@ -812,7 +817,7 @@
             <ol>
               <li>Expand the WhatsApp or Telegram connection card.</li>
               <li>Select <strong>Connect on this phone</strong> instead of trying to scan your own screen.</li>
-              <li><strong>WhatsApp:</strong> enter your number, request a pairing code, then enter it in WhatsApp under <strong>Linked Devices → Link with phone number</strong>.</li>
+              <li><strong>WhatsApp:</strong> enter the phone number linked to WhatsApp, request a pairing code, then enter it inside WhatsApp under <strong>Linked Devices → Link with phone number instead</strong>. Never give Nzuko AI an SMS login code or two-step-verification PIN.</li>
               <li><strong>Telegram:</strong> enter your number, then enter the code Telegram sends you. Enter your Telegram password only if two-step verification is enabled.</li>
               <li>When connected, return to Nzuko AI and choose the authorised group.</li>
             </ol>
@@ -968,7 +973,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260904-92" type="module"></script>
+    <script src="/app.js?v=20260905-93" type="module"></script>
   </body>
 </html>
 

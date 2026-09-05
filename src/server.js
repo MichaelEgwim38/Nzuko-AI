@@ -586,7 +586,7 @@ async function handleApi(request, response) {
     const payload = await readBody(request);
     const phoneNumber = String(payload.phoneNumber || '').replace(/\D/g, '');
     if (phoneNumber.length < 8 || phoneNumber.length > 15) {
-      sendJson(response, 400, { error: 'Enter the WhatsApp number in international format, including the country code.' });
+      sendJson(response, 400, { error: 'Enter the phone number linked to WhatsApp in international format, including the country code.' });
       return;
     }
     const result = await requestWahaPairingCode({

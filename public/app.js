@@ -1646,14 +1646,15 @@ async function requestPairingCode() {
     });
     if (!payload.code) throw new Error('WhatsApp did not return a pairing code. Use the QR fallback instead.');
     result.innerHTML = `
-      <span>Your pairing code</span>
+      <span>Enter this code inside WhatsApp</span>
       <strong>${escapeHtml(payload.code)}</strong>
       <ol>
         <li>Open WhatsApp on this phone.</li>
-        <li>Go to Linked Devices and choose <b>Link with phone number instead</b>.</li>
-        <li>Enter the code above, then return to Nzuko AI.</li>
+        <li>Open <b>Settings or Menu → Linked Devices → Link a device</b>.</li>
+        <li>Choose <b>Link with phone number instead</b> and enter the code above.</li>
+        <li>Return to Nzuko AI when WhatsApp confirms the connection.</li>
       </ol>`;
-    setHintMessage('waha-status', 'Pairing code ready. Complete the three steps shown, then load your WhatsApp groups.');
+    setHintMessage('waha-status', 'Pairing code ready. Enter it inside WhatsApp—not in Nzuko AI—then choose your group.');
   } catch (error) {
     result.textContent = `Pairing code unavailable: ${error.message}`;
   }

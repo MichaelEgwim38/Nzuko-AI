@@ -2027,7 +2027,7 @@ export default async function handler(request) {
       const body = await readBody(request);
       const phoneNumber = String(body.phoneNumber || '').replace(/\D/g, '');
       if (phoneNumber.length < 8 || phoneNumber.length > 15) {
-        return sendJson(400, { error: 'Enter the WhatsApp number in international format, including the country code.' });
+        return sendJson(400, { error: 'Enter the phone number linked to WhatsApp in international format, including the country code.' });
       }
       const settings = managedSettings(state.settings, context.workspace);
       await ensureManagedWahaSession({ settings, requestUrl, scope });
