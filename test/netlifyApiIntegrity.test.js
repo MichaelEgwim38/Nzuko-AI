@@ -28,3 +28,11 @@ test('Telegram login explains session authority and temporary credential handlin
   assert.match(page, /Only continue if you started this connection on nzukoai\.com/i);
   assert.match(page, /details authorise a Telegram session/i);
 });
+
+test('public mode discovery keeps five distinct selected-mode colour identities', async () => {
+  const styles = await readFile(new URL('../public/styles.css', import.meta.url), 'utf8');
+  const modeColours = ['#76b82a', '#13a89e', '#e88d26', '#8157ce', '#3f75db'];
+  for (const colour of modeColours) assert.match(styles, new RegExp(colour, 'i'));
+  assert.doesNotMatch(styles, /Keep the public mode demonstration visually consistent across every use case/i);
+  assert.match(styles, /linear-gradient\(145deg, var\(--mode-dark\), var\(--mode-dark-deep\)\)/);
+});

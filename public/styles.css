@@ -5804,8 +5804,10 @@ body[data-nzuko-mode="property-facilities"] {
   --mode-accent: #76b82a;
   --mode-accent-strong: #4e8619;
   --mode-dark: #12361f;
+  --mode-dark-deep: #071d15;
   --mode-soft: #edf8df;
   --mode-glow: rgba(118, 184, 42, 0.22);
+  --mode-on-accent: #102b17;
 }
 
 .landing-modes[data-active-mode="healthcare-operations"],
@@ -5814,8 +5816,10 @@ body[data-nzuko-mode="healthcare-operations"] {
   --mode-accent: #13a89e;
   --mode-accent-strong: #08786f;
   --mode-dark: #083d3a;
+  --mode-dark-deep: #04211f;
   --mode-soft: #e2f8f4;
   --mode-glow: rgba(19, 168, 158, 0.22);
+  --mode-on-accent: #052a27;
 }
 
 .landing-modes[data-active-mode="field-service"],
@@ -5824,8 +5828,10 @@ body[data-nzuko-mode="field-service"] {
   --mode-accent: #e88d26;
   --mode-accent-strong: #a95c0d;
   --mode-dark: #4b2910;
+  --mode-dark-deep: #241207;
   --mode-soft: #fff1dc;
   --mode-glow: rgba(232, 141, 38, 0.24);
+  --mode-on-accent: #2b1604;
 }
 
 .landing-modes[data-active-mode="community-charity"],
@@ -5834,8 +5840,10 @@ body[data-nzuko-mode="community-charity"] {
   --mode-accent: #8157ce;
   --mode-accent-strong: #5b32a7;
   --mode-dark: #2f1d50;
+  --mode-dark-deep: #160d28;
   --mode-soft: #f0eaff;
   --mode-glow: rgba(129, 87, 206, 0.22);
+  --mode-on-accent: #fff;
 }
 
 .landing-modes[data-active-mode="personal"],
@@ -5844,21 +5852,10 @@ body[data-nzuko-mode="personal"] {
   --mode-accent: #3f75db;
   --mode-accent-strong: #2755ad;
   --mode-dark: #172f5a;
+  --mode-dark-deep: #09162f;
   --mode-soft: #e8f0ff;
   --mode-glow: rgba(63, 117, 219, 0.22);
-}
-
-/* Keep the public mode demonstration visually consistent across every use case. */
-.landing-modes[data-active-mode="property-facilities"],
-.landing-modes[data-active-mode="healthcare-operations"],
-.landing-modes[data-active-mode="field-service"],
-.landing-modes[data-active-mode="community-charity"],
-.landing-modes[data-active-mode="personal"] {
-  --mode-accent: #76b82a;
-  --mode-accent-strong: #4e8619;
-  --mode-dark: #12361f;
-  --mode-soft: #edf8df;
-  --mode-glow: rgba(118, 184, 42, 0.22);
+  --mode-on-accent: #fff;
 }
 
 .landing-mode-card[data-landing-mode="property-facilities"],
@@ -5886,6 +5883,8 @@ body[data-nzuko-mode="personal"] {
   border-color: var(--mode-accent);
   background: var(--mode-soft);
   box-shadow: inset 5px 0 0 var(--mode-accent), 0 14px 34px var(--mode-glow);
+  outline: 2px solid color-mix(in srgb, var(--mode-accent) 42%, transparent);
+  outline-offset: 2px;
 }
 
 .landing-mode-card.active > span:last-child,
@@ -5903,8 +5902,9 @@ body[data-nzuko-mode="personal"] {
   border-color: var(--mode-accent);
   background:
     radial-gradient(circle at 86% 4%, var(--mode-glow), transparent 32%),
-    linear-gradient(145deg, var(--mode-dark), #071710);
+    linear-gradient(145deg, var(--mode-dark), var(--mode-dark-deep));
   box-shadow: 0 28px 70px var(--mode-glow);
+  transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
 }
 
 .mode-demo::before {
@@ -5917,9 +5917,17 @@ body[data-nzuko-mode="personal"] {
   background: var(--mode-accent);
 }
 
+.mode-demo-status i {
+  box-shadow: 0 0 0 6px var(--mode-glow);
+}
+
+.mode-demo-transform span {
+  box-shadow: 0 10px 25px var(--mode-glow);
+}
+
 .mode-demo-transform span,
 .mode-demo-cta {
-  color: #fff;
+  color: var(--mode-on-accent);
 }
 
 .mode-demo-output {
@@ -5934,6 +5942,35 @@ body[data-nzuko-mode="personal"] {
 
 .mode-report-list p {
   border-color: var(--mode-glow);
+}
+
+.mode-story-grid span,
+.mode-story-conversion small,
+.story-alert-preview small {
+  color: var(--mode-accent);
+}
+
+.mode-story-reminder {
+  background: linear-gradient(135deg, var(--mode-glow), rgba(255,255,255,.06)) !important;
+}
+
+.story-alert-preview {
+  border-color: var(--mode-glow);
+}
+
+.story-alert-preview > i,
+.mode-story-journey b {
+  background: var(--mode-accent);
+  color: var(--mode-on-accent);
+}
+
+.mode-story-trust {
+  background: var(--mode-soft);
+  color: var(--mode-dark);
+}
+
+.mode-story-lock {
+  background: color-mix(in srgb, var(--mode-accent) 18%, #fff);
 }
 
 .purpose-card {
