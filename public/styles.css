@@ -1130,6 +1130,10 @@ textarea {
   line-height: 1.45;
 }
 
+.telegram-password-box {
+  margin-top: 14px;
+}
+
 .trial-upgrade-link {
   border: 0;
   padding: 0;

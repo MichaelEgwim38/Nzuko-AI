@@ -20,3 +20,11 @@ test('WhatsApp pairing explains privacy and rejects account-security codes', asy
   assert.match(page, /not saved in your Nzuko AI workspace or database/);
   assert.match(page, /never ask for an SMS login code or your WhatsApp two-step-verification PIN/i);
 });
+
+test('Telegram login explains session authority and temporary credential handling', async () => {
+  const page = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.match(page, /Phone number linked to Telegram/);
+  assert.match(page, /phone number, verification code and password are not saved/i);
+  assert.match(page, /Only continue if you started this connection on nzukoai\.com/i);
+  assert.match(page, /details authorise a Telegram session/i);
+});

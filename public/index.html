@@ -12,7 +12,7 @@
     <link rel="icon" href="/assets/nzuko-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/assets/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260905-93" />
+    <link rel="stylesheet" href="/styles.css?v=20260905-94" />
   </head>
   <body>
     <main id="login-screen" class="login-shell" hidden>
@@ -533,29 +533,36 @@
                     </div>
                     </div>
                     <div id="telegram-phone-box" class="pairing-box mobile-connect-control" hidden>
+                      <div class="pairing-introduction">
+                        <strong>Connect Telegram on this phone</strong>
+                        <p>Sign in to create a private Telegram session for this workspace. After connecting, you choose the group Nzuko AI is authorised to work with.</p>
+                      </div>
                       <div id="telegram-phone-stage">
                         <label>
-                          Telegram phone number
+                          Phone number linked to Telegram
                           <input id="telegram-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. +447700900123" />
                         </label>
-                        <p class="hint">Include + and your country code. Telegram will send the code inside the Telegram app.</p>
-                        <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><strong>Your number is not stored in the Nzuko AI database.</strong> It is handled only for this connection attempt and is not saved to your workspace.</p>
-                        <button id="request-telegram-code" class="button" type="button">Send Telegram code</button>
+                        <p class="hint">Include + and your country code. Telegram will send a verification code inside the official Telegram app.</p>
+                        <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><span><strong>Your phone number, verification code and password are not saved in your Nzuko AI workspace or database.</strong> They are passed temporarily to the Telegram connection service only to authorise this session.</span></p>
+                        <p class="connection-security-warning"><span aria-hidden="true">&#9888;</span><span><strong>Only continue if you started this connection on nzukoai.com.</strong> These details authorise a Telegram session, so never send them to another person or enter them on an unfamiliar website.</span></p>
+                        <button id="request-telegram-code" class="button" type="button">Request verification code</button>
                       </div>
                       <div id="telegram-code-stage" hidden>
                         <label>
                           Telegram verification code
                           <input id="telegram-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Enter the code" />
                         </label>
+                        <p class="hint">Enter only the code Telegram sent inside its official app. Nzuko AI uses it once to authorise this connection and does not save it to your workspace.</p>
                         <button id="submit-telegram-code" class="button" type="button">Verify and connect</button>
                       </div>
                     </div>
                     <div id="telegram-qr-box" class="qr-box" hidden></div>
-                    <div id="telegram-password-box" hidden>
+                    <div id="telegram-password-box" class="pairing-box telegram-password-box" hidden>
                       <label>
                         Telegram two-step verification password
                         <input id="telegram-password" type="password" autocomplete="current-password" />
                       </label>
+                      <p class="connection-privacy-note"><span aria-hidden="true">&#128274;</span><span><strong>This password is not saved in your Nzuko AI workspace or database.</strong> It is passed temporarily to Telegram to finish the connection and is cleared from this form immediately.</span></p>
                       <button id="submit-telegram-password" class="button" type="button">Continue connection</button>
                     </div>
                     <div class="connector-step">
@@ -818,7 +825,7 @@
               <li>Expand the WhatsApp or Telegram connection card.</li>
               <li>Select <strong>Connect on this phone</strong> instead of trying to scan your own screen.</li>
               <li><strong>WhatsApp:</strong> enter the phone number linked to WhatsApp, request a pairing code, then enter it inside WhatsApp under <strong>Linked Devices → Link with phone number instead</strong>. Never give Nzuko AI an SMS login code or two-step-verification PIN.</li>
-              <li><strong>Telegram:</strong> enter your number, then enter the code Telegram sends you. Enter your Telegram password only if two-step verification is enabled.</li>
+              <li><strong>Telegram:</strong> enter the phone number linked to Telegram, then enter the code sent inside the official Telegram app. If two-step verification is enabled, Telegram will also require that password. Nzuko AI uses these details only to authorise the connection and does not save them to your workspace.</li>
               <li>When connected, return to Nzuko AI and choose the authorised group.</li>
             </ol>
           </section>
@@ -973,7 +980,7 @@
         </form>
       </section>
     </div>
-    <script src="/app.js?v=20260905-93" type="module"></script>
+    <script src="/app.js?v=20260905-94" type="module"></script>
   </body>
 </html>
 

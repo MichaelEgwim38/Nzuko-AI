@@ -1701,6 +1701,8 @@ function renderTelegramStatus(payload = {}) {
   $('#telegram-password-box').hidden = !payload.passwordRequired;
   if (payload.connected) {
     telegramQrVisible = false;
+    $('#telegram-phone').value = '';
+    $('#telegram-code').value = '';
     $('#telegram-qr-box').hidden = true;
     $('#start-telegram').textContent = 'Get QR code';
     $('#telegram-phone-box').hidden = true;
@@ -1726,7 +1728,7 @@ function renderTelegramStatus(payload = {}) {
     $('#telegram-phone-stage').hidden = true;
     $('#telegram-code-stage').hidden = false;
     $('#telegram-code')?.focus();
-    setHintMessage('telegram-status', `Telegram sent a verification code${payload.phoneNumber ? ` to ${payload.phoneNumber}` : ''}. Enter it here to connect.`);
+    setHintMessage('telegram-status', 'Telegram sent a verification code inside its official app. Enter it here to authorise this connection.');
     return;
   }
   if (payload.passwordRequired) {
@@ -1799,6 +1801,7 @@ async function requestTelegramCode() {
 
 async function submitTelegramCode() {
   const code = $('#telegram-code').value.trim();
+  $('#telegram-code').value = '';
   try {
     setConnectionStatus('telegram-summary-status', 'telegram-manage-connection', 'Verifying…', 'pending');
     renderTelegramStatus(await api('/api/telegram/code', { method: 'POST', body: JSON.stringify({ code }) }));
